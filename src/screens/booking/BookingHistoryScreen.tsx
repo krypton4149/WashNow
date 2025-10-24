@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import authService from '../../services/authService';
 
 interface Booking {
   id: string;
-  name: string;
-  type: string;
-  date: string;
-  time: string;
-  status: 'In Progress' | 'Completed' | 'Canceled';
-  total: string;
+  booking_id?: string;
+  service_centre_id?: string;
+  service_centre_name?: string;
+  service_name?: string;
+  booking_date?: string;
+  booking_time?: string;
+  vehicle_no?: string;
+  status?: string;
+  total_amount?: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Legacy fields for backward compatibility
+  name?: string;
+  type?: string;
+  date?: string;
+  time?: string;
+  total?: string;
 }
 
 interface Props {
@@ -18,52 +31,90 @@ interface Props {
 
 const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<'Ongoing' | 'Completed' | 'Canceled'>('Ongoing');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const bookings: Booking[] = [
-    {
-      id: '1',
-      name: 'Premium Auto Wash',
-      type: 'Full Detailing',
-      date: 'Oct 6, 2025',
-      time: '10:00 AM',
-      status: 'In Progress',
-      total: '$50',
-    },
-    {
-      id: '2',
-      name: 'Quick Shine Car Care',
-      type: 'Exterior Wash',
-      date: 'Sep 20, 2025',
-      time: '02:00 PM',
-      status: 'Completed',
-      total: '$30',
-    },
-    {
-      id: '3',
-      name: 'Elite Car Spa',
-      type: 'Deep Clean',
-      date: 'Aug 15, 2025',
-      time: '11:00 AM',
-      status: 'Completed',
-      total: '$75',
-    },
-    {
-      id: '4',
-      name: 'Express Auto Detail',
-      type: 'Maintenance',
-      date: 'Jul 10, 2025',
-      time: '09:00 AM',
-      status: 'Canceled',
-      total: '$40',
-    },
-  ];
+  // Load bookings from API
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
-  const filteredBookings = bookings.filter(booking => {
-    if (activeTab === 'Ongoing') return booking.status === 'In Progress';
-    if (activeTab === 'Completed') return booking.status === 'Completed';
-    if (activeTab === 'Canceled') return booking.status === 'Canceled';
-    return true;
-  });
+  const loadBookings = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const result = await authService.getBookingList();
+      
+      if (result.success && result.bookings) {
+        setBookings(Array.isArray(result.bookings) ? result.bookings : []);
+      } else {
+        setError(result.error || 'Failed to load bookings');
+        // Set empty array to show no bookings state
+        setBookings([]);
+      }
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+      setError('Failed to load bookings');
+      setBookings([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to get display values from booking data
+  const getBookingDisplayData = (booking: Booking) => {
+    return {
+      id: booking.id || booking.booking_id || 'unknown',
+      name: booking.service_centre_name || booking.name || 'Unknown Center',
+      type: booking.service_name || booking.type || 'Car Wash',
+      date: formatDate(booking.booking_date || booking.date || ''),
+      time: booking.booking_time || booking.time || 'Unknown Time',
+      status: mapBookingStatus(booking.status || 'pending'),
+      total: booking.total_amount || booking.total || '$0',
+    };
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Unknown Date';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch (error) {
+      return 'Unknown Date';
+    }
+  };
+
+  // Map API status to display status
+  const mapBookingStatus = (apiStatus: string): 'In Progress' | 'Completed' | 'Canceled' => {
+    const status = apiStatus.toLowerCase();
+    
+    if (status.includes('pending') || status.includes('confirmed') || status.includes('ongoing')) {
+      return 'In Progress';
+    } else if (status.includes('completed') || status.includes('done')) {
+      return 'Completed';
+    } else if (status.includes('canceled') || status.includes('cancelled')) {
+      return 'Canceled';
+    }
+    
+    return 'In Progress'; // Default fallback
+  };
+
+  const filteredBookings = (bookings || [])
+    .map(booking => getBookingDisplayData(booking))
+    .filter(booking => {
+      if (activeTab === 'Ongoing') return booking.status === 'In Progress';
+      if (activeTab === 'Completed') return booking.status === 'Completed';
+      if (activeTab === 'Canceled') return booking.status === 'Canceled';
+      return true;
+    });
 
   const getStatusColor = (status: Booking['status']) => {
     switch (status) {
@@ -134,7 +185,21 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
       </View>
 
       <ScrollView style={styles.bookingsList} showsVerticalScrollIndicator={false}>
-        {filteredBookings.length > 0 ? (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#000000" />
+            <Text style={styles.loadingText}>Loading your bookings...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
+            <Text style={styles.errorText}>Failed to load bookings</Text>
+            <Text style={styles.errorSubtext}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadBookings}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        ) : filteredBookings.length > 0 ? (
           filteredBookings.map((booking) => (
             <View key={booking.id} style={styles.bookingCard}>
               <View style={styles.cardHeader}>
@@ -328,6 +393,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999999',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666666',
+    marginTop: 16,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#DC2626',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

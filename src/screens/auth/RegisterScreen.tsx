@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,18 +10,16 @@ import {
   TouchableOpacity,
   TextInput,
   Keyboard,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import BackButton from '../../components/ui/BackButton';
+import { validateRegistrationForm, FormErrors } from '../../utils/validation';
 
 interface RegisterScreenProps {
   onBack: () => void;
-  onRegister: (userData: {
-    fullName: string;
-    email: string;
-    phone: string;
-    password: string;
-    confirmPassword: string;
-  }) => void;
+  onRegister: (userData: any) => void;
   onLogin: () => void;
 }
 
@@ -33,22 +30,76 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
 }) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const handleRegister = () => {
-    if (fullName.trim() && email.trim() && phone.trim() && password.trim() && confirmPassword.trim() && agreeToTerms) {
-      onRegister({
-        fullName,
-        email,
-        phone,
-        password,
-        confirmPassword,
-      });
+  const handleRegister = async () => {
+    // Validate form using validation utility
+    const validation = validateRegistrationForm({
+      name: fullName,
+      email: email,
+      phone: phoneNumber,
+      password: password,
+      password_confirmation: confirmPassword,
+    });
+
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
+    }
+
+    if (!agreeToTerms) {
+      Alert.alert('Error', 'Please agree to the Terms of Service and Privacy Policy');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrors({});
+
+    const userData = {
+      fullName: fullName.trim(),
+      email: email.trim(),
+      phoneNumber: phoneNumber.trim(),
+      password: password.trim(),
+    };
+
+    try {
+      await onRegister(userData);
+    } catch (error) {
+      console.error('Registration error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    // Clear error when user starts typing
+    if (errors[field as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+
+    switch (field) {
+      case 'name':
+        setFullName(value);
+        break;
+      case 'email':
+        setEmail(value);
+        break;
+      case 'phone':
+        setPhoneNumber(value);
+        break;
+      case 'password':
+        setPassword(value);
+        break;
+      case 'password_confirmation':
+        setConfirmPassword(value);
+        break;
     }
   };
 
@@ -56,130 +107,146 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     Keyboard.dismiss();
   };
 
-  const isRegisterEnabled = 
-    fullName.trim() && 
-    email.trim() && 
-    phone.trim() && 
-    password.trim() && 
-    confirmPassword.trim() && 
+  const isFormValid = 
+    fullName.trim().length > 0 &&
+    email.trim().length > 0 &&
+    phoneNumber.trim().length > 0 &&
+    password.trim().length > 0 &&
+    confirmPassword.trim().length > 0 &&
+    password === confirmPassword &&
     agreeToTerms;
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View style={styles.touchableContainer}>
-          <KeyboardAvoidingView 
-            style={styles.keyboardAvoidingView}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-          >
-            <ScrollView 
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
+          <TouchableWithoutFeedback onPress={dismissKeyboard}>
+            <View style={styles.contentContainer}>
               {/* Back Button */}
               <BackButton onPress={onBack} />
 
               {/* Header */}
               <View style={styles.header}>
                 <Text style={styles.title}>Create your account</Text>
-                <Text style={styles.subtitle}>Join us to book premium car wash services</Text>
+                <Text style={styles.subtitle}>
+                  Join us to book premium car wash services
+                </Text>
               </View>
 
-              {/* Input Fields */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputField}>
-                  <View style={styles.inputIcon}>
-                    <Text style={styles.iconText}>👤</Text>
+              {/* Form Fields */}
+              <View style={styles.formContainer}>
+                {/* Full Name Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Full Name</Text>
+                  <View style={[styles.inputField, errors.name && styles.inputFieldError]}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your full name"
+                      placeholderTextColor="#999999"
+                      value={fullName}
+                      onChangeText={(value) => handleInputChange('name', value)}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                    />
                   </View>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Full Name"
-                    placeholderTextColor="#999999"
-                    value={fullName}
-                    onChangeText={setFullName}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                  />
+                  {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
                 </View>
 
-                <View style={styles.inputField}>
-                  <View style={styles.inputIcon}>
-                    <Text style={styles.iconText}>✉</Text>
+                {/* Email Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Email Address</Text>
+                  <View style={[styles.inputField, errors.email && styles.inputFieldError]}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your email"
+                      placeholderTextColor="#999999"
+                      value={email}
+                      onChangeText={(value) => handleInputChange('email', value)}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
                   </View>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Email"
-                    placeholderTextColor="#999999"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                  {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
                 </View>
 
-                <View style={styles.inputField}>
-                  <View style={styles.inputIcon}>
-                    <Text style={styles.iconText}>📱</Text>
+                {/* Phone Number Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Phone Number</Text>
+                  <View style={[styles.inputField, errors.phone && styles.inputFieldError]}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your phone number"
+                      placeholderTextColor="#999999"
+                      value={phoneNumber}
+                      onChangeText={(value) => handleInputChange('phone', value)}
+                      keyboardType="phone-pad"
+                      autoCorrect={false}
+                    />
                   </View>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Phone Number"
-                    placeholderTextColor="#999999"
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                  />
+                  {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
                 </View>
 
-                <View style={styles.inputField}>
-                  <View style={styles.inputIcon}>
-                    <Text style={styles.iconText}>🔒</Text>
+                {/* Password Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={[styles.inputField, errors.password && styles.inputFieldError]}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#999999"
+                      value={password}
+                      onChangeText={(value) => handleInputChange('password', value)}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Password"
-                    placeholderTextColor="#999999"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Text style={styles.iconText}>👁</Text>
-                  </TouchableOpacity>
+                  {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
                 </View>
 
-                <View style={styles.inputField}>
-                  <View style={styles.inputIcon}>
-                    <Text style={styles.iconText}>🔒</Text>
+                {/* Confirm Password Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <View style={[styles.inputField, errors.password_confirmation && styles.inputFieldError]}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Confirm your password"
+                      placeholderTextColor="#999999"
+                      value={confirmPassword}
+                      onChangeText={(value) => handleInputChange('password_confirmation', value)}
+                      secureTextEntry={!showConfirmPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      <Text style={styles.eyeText}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Confirm Password"
-                    placeholderTextColor="#999999"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    <Text style={styles.iconText}>👁</Text>
-                  </TouchableOpacity>
+                  {errors.password_confirmation && <Text style={styles.errorText}>{errors.password_confirmation}</Text>}
                 </View>
               </View>
 
-              {/* Terms and Privacy Agreement */}
+              {/* Terms and Privacy */}
               <View style={styles.termsContainer}>
                 <TouchableOpacity
                   style={styles.checkboxContainer}
@@ -188,37 +255,39 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
                   <View style={[styles.checkbox, agreeToTerms && styles.checkboxChecked]}>
                     {agreeToTerms && <Text style={styles.checkmark}>✓</Text>}
                   </View>
-                </TouchableOpacity>
-                <View style={styles.termsTextContainer}>
                   <Text style={styles.termsText}>
                     I agree to the{' '}
                     <Text style={styles.termsLink}>Terms of Service</Text>
                     {' '}and{' '}
                     <Text style={styles.termsLink}>Privacy Policy</Text>
                   </Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
               {/* Create Account Button */}
               <TouchableOpacity
-                style={[styles.createAccountButton, !isRegisterEnabled && styles.createAccountButtonDisabled]}
+                style={[styles.createAccountButton, (!isFormValid || isLoading) && styles.createAccountButtonDisabled]}
                 onPress={handleRegister}
-                disabled={!isRegisterEnabled}
+                disabled={!isFormValid || isLoading}
               >
-                <Text style={styles.createAccountButtonText}>Create Account</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.createAccountButtonText}>Create Account</Text>
+                )}
               </TouchableOpacity>
 
-              {/* Login Prompt */}
-              <View style={styles.loginPromptContainer}>
-                <Text style={styles.loginPromptText}>Already have an account?</Text>
+              {/* Login Link */}
+              <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>Already have an account? </Text>
                 <TouchableOpacity onPress={onLogin}>
                   <Text style={styles.loginLink}>Log in</Text>
                 </TouchableOpacity>
               </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -228,16 +297,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  touchableContainer: {
+  keyboardAvoidingView: {
     flex: 1,
   },
-  keyboardAvoidingView: {
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+  },
+  contentContainer: {
+    flex: 1,
     paddingHorizontal: 24,
-    paddingBottom: Platform.OS === 'android' ? 20 : 0,
+    paddingBottom: 50,
   },
   header: {
     marginBottom: 32,
@@ -259,8 +331,18 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     lineHeight: 22,
   },
-  inputContainer: {
+  formContainer: {
     marginBottom: 24,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    fontFamily: 'System',
   },
   inputField: {
     flexDirection: 'row',
@@ -269,13 +351,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  iconText: {
-    fontSize: 18,
+  inputFieldError: {
+    borderColor: '#FF3B30',
+    backgroundColor: '#FFF5F5',
   },
   textInput: {
     flex: 1,
@@ -283,41 +364,46 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: 'System',
   },
-  eyeIcon: {
-    marginLeft: 12,
+  eyeButton: {
+    padding: 4,
+  },
+  eyeText: {
+    fontSize: 18,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#FF3B30',
+    marginTop: 4,
+    fontFamily: 'System',
   },
   termsContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     marginBottom: 24,
   },
   checkboxContainer: {
-    marginRight: 12,
-    marginTop: 2,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#E5E5EA',
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
+    borderColor: '#CCCCCC',
+    marginRight: 12,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#000000',
-    borderColor: '#000000',
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
   checkmark: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 'bold',
   },
-  termsTextContainer: {
-    flex: 1,
-  },
   termsText: {
+    flex: 1,
     fontSize: 14,
     color: '#666666',
     lineHeight: 20,
@@ -326,17 +412,27 @@ const styles = StyleSheet.create({
   termsLink: {
     color: '#007AFF',
     textDecorationLine: 'underline',
-    fontWeight: '600',
   },
   createAccountButton: {
     backgroundColor: '#000000',
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: 'center',
+    marginTop: 16,
     marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   createAccountButtonDisabled: {
     backgroundColor: '#CCCCCC',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   createAccountButtonText: {
     color: '#FFFFFF',
@@ -344,21 +440,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'System',
   },
-  loginPromptContainer: {
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 'auto',
-    marginBottom: 60,
+    marginBottom: 10,
   },
-  loginPromptText: {
+  loginText: {
     fontSize: 14,
     color: '#666666',
-    marginBottom: 8,
     fontFamily: 'System',
   },
   loginLink: {
     fontSize: 14,
     color: '#007AFF',
-    textDecorationLine: 'underline',
     fontWeight: '600',
     fontFamily: 'System',
   },

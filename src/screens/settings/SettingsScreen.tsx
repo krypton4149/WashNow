@@ -10,14 +10,15 @@ import {
   Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
   onBack?: () => void;
   onHelpCenter?: () => void;
   onChangePassword?: () => void;
-  onLanguageChange?: () => void;
+  onLanguageChange?: (language: string) => void;
+  onDarkModeChange?: (isDarkMode: boolean) => void;
   onLogout?: () => void;
-  onDeleteAccount?: () => void;
 }
 
 const SettingsScreen: React.FC<Props> = ({
@@ -25,12 +26,13 @@ const SettingsScreen: React.FC<Props> = ({
   onHelpCenter,
   onChangePassword,
   onLanguageChange,
+  onDarkModeChange,
   onLogout,
-  onDeleteAccount,
 }) => {
+  const { isDarkMode, colors, toggleDarkMode } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(true);
   const [promotionalAlerts, setPromotionalAlerts] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
 
   const handleLogout = () => {
     Alert.alert(
@@ -43,13 +45,22 @@ const SettingsScreen: React.FC<Props> = ({
     );
   };
 
-  const handleDeleteAccount = () => {
+
+  const handleDarkModeChange = (value: boolean) => {
+    toggleDarkMode();
+    onDarkModeChange?.(value);
+  };
+
+  const handleLanguageChange = () => {
     Alert.alert(
-      'Delete Account',
-      'This action cannot be undone. Are you sure you want to delete your account?',
+      'Select Language',
+      'Choose your preferred language',
       [
+        { text: 'English (US)', onPress: () => setSelectedLanguage('English (US)') },
+        { text: 'Spanish', onPress: () => setSelectedLanguage('Spanish') },
+        { text: 'French', onPress: () => setSelectedLanguage('French') },
+        { text: 'German', onPress: () => setSelectedLanguage('German') },
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: onDeleteAccount },
       ]
     );
   };
@@ -63,35 +74,35 @@ const SettingsScreen: React.FC<Props> = ({
   ) => (
     <TouchableOpacity style={styles.settingItem} onPress={onPress}>
       <View style={styles.settingLeft}>
-        <View style={styles.settingIcon}>
-          <Ionicons name={icon} size={20} color="#6B7280" />
+        <View style={[styles.settingIcon, { backgroundColor: colors.border }]}>
+          <Ionicons name={icon} size={20} color={colors.textSecondary} />
         </View>
         <View style={styles.settingContent}>
-          <Text style={styles.settingTitle}>{title}</Text>
-          {description && <Text style={styles.settingDescription}>{description}</Text>}
+          <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
+          {description && <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>{description}</Text>}
         </View>
       </View>
       {rightComponent || (
-        <Ionicons name="chevron-forward" size={20} color="#6B7280" />
+        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
       )}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Notifications Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
             {renderSettingItem(
               'notifications-outline',
               'Push Notifications',
@@ -104,7 +115,7 @@ const SettingsScreen: React.FC<Props> = ({
                 thumbColor={pushNotifications ? '#FFFFFF' : '#FFFFFF'}
               />
             )}
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             {renderSettingItem(
               'megaphone-outline',
               'Promotional Alerts',
@@ -122,25 +133,25 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
             {renderSettingItem(
               'globe-outline',
               'Language',
-              'English (US)',
-              onLanguageChange
+              selectedLanguage,
+              handleLanguageChange
             )}
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             {renderSettingItem(
               'moon-outline',
               'Dark Mode',
               'Switch to dark theme',
               undefined,
               <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
+                value={isDarkMode}
+                onValueChange={handleDarkModeChange}
                 trackColor={{ false: '#E5E7EB', true: '#1F2937' }}
-                thumbColor={darkMode ? '#FFFFFF' : '#FFFFFF'}
+                thumbColor={isDarkMode ? '#FFFFFF' : '#FFFFFF'}
               />
             )}
           </View>
@@ -148,8 +159,8 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Security Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Security</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Security</Text>
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
             {renderSettingItem(
               'lock-closed-outline',
               'Change Password',
@@ -161,8 +172,8 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Support Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Support</Text>
+          <View style={[styles.card, { backgroundColor: colors.surface }]}>
             {renderSettingItem(
               'help-circle-outline',
               'Help Center',
@@ -174,20 +185,15 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAccount}>
-            <Ionicons name="trash-outline" size={20} color="#DC2626" />
-            <Text style={styles.deleteButtonText}>Delete Account</Text>
+          <TouchableOpacity style={[styles.logoutButton, { borderColor: colors.error }]} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color={colors.error} />
+            <Text style={[styles.logoutButtonText, { color: colors.error }]}>Logout</Text>
           </TouchableOpacity>
         </View>
 
         {/* Version Info */}
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>Version 1.0.0</Text>
+          <Text style={[styles.versionText, { color: colors.textSecondary }]}>Version 1.0.0</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -197,7 +203,6 @@ const SettingsScreen: React.FC<Props> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
@@ -205,9 +210,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     padding: 4,
@@ -215,7 +218,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
   },
   content: {
     flex: 1,
@@ -228,11 +230,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1F2937',
     marginBottom: 12,
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -256,7 +256,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -267,16 +266,13 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
     marginBottom: 2,
   },
   settingDescription: {
     fontSize: 14,
-    color: '#6B7280',
   },
   divider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
     marginLeft: 52,
   },
   actionButtons: {
@@ -291,29 +287,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DC2626',
     gap: 8,
   },
   logoutButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#DC2626',
-  },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#DC2626',
-    gap: 8,
-  },
-  deleteButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#DC2626',
   },
   versionContainer: {
     alignItems: 'center',
@@ -322,8 +300,8 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 14,
-    color: '#6B7280',
   },
 });
 
 export default SettingsScreen;
+

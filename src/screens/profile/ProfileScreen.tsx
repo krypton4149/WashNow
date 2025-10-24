@@ -6,9 +6,18 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  Image,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+
+interface UserData {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  type: string;
+  carModel?: string;
+  licensePlate?: string;
+}
 
 interface Props {
   onBack?: () => void;
@@ -16,6 +25,7 @@ interface Props {
   onBookingHistory?: () => void;
   onHelpSupport?: () => void;
   onSettings?: () => void;
+  userData?: UserData | null;
 }
 
 const ProfileScreen: React.FC<Props> = ({
@@ -24,7 +34,26 @@ const ProfileScreen: React.FC<Props> = ({
   onBookingHistory,
   onHelpSupport,
   onSettings,
+  userData,
 }) => {
+  // Helper function to get initials from full name
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Default values if userData is not available
+  const displayName = userData?.fullName || 'joe';
+  const displayEmail = userData?.email || 'joe@gmail.com';
+  const displayPhone = userData?.phoneNumber || '3242424324';
+  const displayCarModel = userData?.carModel || 'Tesla Model 3';
+  const displayLicensePlate = userData?.licensePlate || 'ABC-1234';
+  const initials = getInitials(displayName);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header Section */}
@@ -34,16 +63,16 @@ const ProfileScreen: React.FC<Props> = ({
             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity style={styles.editButton} onPress={onEditProfile}>
             <Ionicons name="create-outline" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
         
         <View style={styles.profileSection}>
           <View style={styles.profilePicture}>
-            <Text style={styles.profileInitials}>JD</Text>
+            <Text style={styles.profileInitials}>{initials}</Text>
           </View>
-          <Text style={styles.userName}>John Doe</Text>
+          <Text style={styles.userName}>{displayName}</Text>
           <Text style={styles.userStatus}>Premium Member</Text>
         </View>
       </View>
@@ -60,7 +89,7 @@ const ProfileScreen: React.FC<Props> = ({
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Full Name</Text>
-              <Text style={styles.infoValue}>John Doe</Text>
+              <Text style={styles.infoValue}>{displayName}</Text>
             </View>
           </View>
 
@@ -70,7 +99,7 @@ const ProfileScreen: React.FC<Props> = ({
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>john.doe@example.com</Text>
+              <Text style={styles.infoValue}>{displayEmail}</Text>
             </View>
           </View>
 
@@ -80,7 +109,7 @@ const ProfileScreen: React.FC<Props> = ({
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Phone</Text>
-              <Text style={styles.infoValue}>+1 (555) 123-4567</Text>
+              <Text style={styles.infoValue}>{displayPhone}</Text>
             </View>
           </View>
         </View>
@@ -95,7 +124,7 @@ const ProfileScreen: React.FC<Props> = ({
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Car Model</Text>
-              <Text style={styles.infoValue}>Tesla Model 3</Text>
+              <Text style={styles.infoValue}>{displayCarModel}</Text>
             </View>
           </View>
 
@@ -105,7 +134,7 @@ const ProfileScreen: React.FC<Props> = ({
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>License Plate</Text>
-              <Text style={styles.infoValue}>ABC-1234</Text>
+              <Text style={styles.infoValue}>{displayLicensePlate}</Text>
             </View>
           </View>
         </View>

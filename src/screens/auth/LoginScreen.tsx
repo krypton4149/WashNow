@@ -11,33 +11,46 @@ import {
   TouchableOpacity,
   TextInput,
   Keyboard,
+  Alert,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
 
 interface LoginScreenProps {
   onBack: () => void;
-  onLogin: (email: string, password: string) => void;
-  onRegister: () => void;
+  onLogin: (emailOrPhone: string, password: string, loginType: 'email' | 'phone') => void;
+  onSendOTP: (phoneNumber: string) => void;
   onForgotPassword: () => void;
+  onRegister: () => void;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({
   onBack,
   onLogin,
-  onRegister,
+  onSendOTP,
   onForgotPassword,
+  onRegister,
 }) => {
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
+  const [loginType, setLoginType] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = () => {
-    if (authMethod === 'email' && email.trim() && password.trim()) {
-      onLogin(email, password);
-    } else if (authMethod === 'phone' && phone.trim() && password.trim()) {
-      onLogin(phone, password);
+    if (loginType === 'phone') {
+      // For phone login, only check phone number
+      if (phone.trim()) {
+        onSendOTP(phone.trim());
+      } else {
+        Alert.alert('Error', 'Please enter your phone number');
+      }
+    } else {
+      // For email login, check both email and password
+      if (email.trim() && password.trim()) {
+        onLogin(email.trim(), password.trim(), loginType);
+      } else {
+        Alert.alert('Error', 'Please fill in all fields');
+      }
     }
   };
 
@@ -45,9 +58,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     Keyboard.dismiss();
   };
 
-  const isLoginEnabled = 
-    (authMethod === 'email' && email.trim() && password.trim()) ||
-    (authMethod === 'phone' && phone.trim() && password.trim());
+  const isFormValid = 
+    (loginType === 'email' ? email.trim().length > 0 : phone.trim().length > 0) && 
+    (loginType === 'email' ? password.trim().length > 0 : true);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -68,139 +81,115 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
               {/* Header */}
               <View style={styles.header}>
-                <Text style={styles.title}>Welcome back</Text>
-                <Text style={styles.subtitle}>Log in to your account</Text>
+                <Text style={styles.title}>Welcome Back</Text>
+                <Text style={styles.subtitle}>
+                  Sign in to your account to continue
+                </Text>
               </View>
 
-              {/* Auth Method Selector */}
-              <View style={styles.authMethodContainer}>
+              {/* Login Type Selector */}
+              <View style={styles.loginTypeContainer}>
                 <TouchableOpacity
                   style={[
-                    styles.authMethodButton,
-                    authMethod === 'email' && styles.authMethodButtonActive
+                    styles.loginTypeButton,
+                    loginType === 'email' && styles.loginTypeButtonActive
                   ]}
-                  onPress={() => setAuthMethod('email')}
+                  onPress={() => setLoginType('email')}
                 >
                   <Text style={[
-                    styles.authMethodText,
-                    authMethod === 'email' && styles.authMethodTextActive
+                    styles.loginTypeText,
+                    loginType === 'email' && styles.loginTypeTextActive
                   ]}>
                     Email
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
-                    styles.authMethodButton,
-                    authMethod === 'phone' && styles.authMethodButtonActive
+                    styles.loginTypeButton,
+                    loginType === 'phone' && styles.loginTypeButtonActive
                   ]}
-                  onPress={() => setAuthMethod('phone')}
+                  onPress={() => setLoginType('phone')}
                 >
                   <Text style={[
-                    styles.authMethodText,
-                    authMethod === 'phone' && styles.authMethodTextActive
+                    styles.loginTypeText,
+                    loginType === 'phone' && styles.loginTypeTextActive
                   ]}>
                     Phone
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Input Fields */}
-              <View style={styles.inputContainer}>
-                {authMethod === 'email' ? (
+              {/* Form Fields */}
+              <View style={styles.formContainer}>
+                {/* Email/Phone Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>
+                    {loginType === 'email' ? 'Email Address' : 'Phone Number'}
+                  </Text>
                   <View style={styles.inputField}>
-                    <View style={styles.inputIcon}>
-                      <Text style={styles.iconText}>✉</Text>
-                    </View>
                     <TextInput
                       style={styles.textInput}
-                      placeholder="Email"
+                      placeholder={loginType === 'email' ? 'Enter your email' : 'Enter your phone number'}
                       placeholderTextColor="#999999"
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
+                      value={loginType === 'email' ? email : phone}
+                      onChangeText={loginType === 'email' ? setEmail : setPhone}
+                      keyboardType={loginType === 'email' ? 'email-address' : 'phone-pad'}
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
                   </View>
-                ) : (
-                  <View style={styles.inputField}>
-                    <View style={styles.inputIcon}>
-                      <Text style={styles.iconText}>📱</Text>
+                </View>
+
+                {/* Password Field - Only show for email login */}
+                {loginType === 'email' && (
+                  <View style={styles.inputContainer}>
+                    <Text style={styles.label}>Password</Text>
+                    <View style={styles.inputField}>
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="Enter your password"
+                        placeholderTextColor="#999999"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                      <TouchableOpacity
+                        style={styles.eyeButton}
+                        onPress={() => setShowPassword(!showPassword)}
+                      >
+                        <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                      </TouchableOpacity>
                     </View>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Phone Number"
-                      placeholderTextColor="#999999"
-                      value={phone}
-                      onChangeText={setPhone}
-                      keyboardType="phone-pad"
-                    />
                   </View>
                 )}
-
-                <View style={styles.inputField}>
-                  <View style={styles.inputIcon}>
-                    <Text style={styles.iconText}>🔒</Text>
-                  </View>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Password"
-                    placeholderTextColor="#999999"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Text style={styles.iconText}>👁</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
 
-              {/* Forgot Password */}
-              <TouchableOpacity style={styles.forgotPasswordContainer} onPress={onForgotPassword}>
-                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-              </TouchableOpacity>
+              {/* Forgot Password Link - Only show for email login */}
+              {loginType === 'email' && (
+                <TouchableOpacity style={styles.forgotPasswordContainer} onPress={onForgotPassword}>
+                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                </TouchableOpacity>
+              )}
 
               {/* Login Button */}
               <TouchableOpacity
-                style={[styles.loginButton, !isLoginEnabled && styles.loginButtonDisabled]}
+                style={[styles.loginButton, !isFormValid && styles.loginButtonDisabled]}
                 onPress={handleLogin}
-                disabled={!isLoginEnabled}
+                disabled={!isFormValid}
               >
-                <Text style={styles.loginButtonText}>Log In</Text>
+                <Text style={styles.loginButtonText}>
+                  {loginType === 'phone' ? 'Send OTP' : 'Sign In'}
+                </Text>
               </TouchableOpacity>
 
-              {/* Divider */}
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Create Account Section */}
-              <View style={styles.createAccountContainer}>
-                <Text style={styles.createAccountText}>Don't have an account?</Text>
-                <TouchableOpacity
-                  style={styles.createAccountButton}
-                  onPress={onRegister}
-                >
-                  <Text style={styles.createAccountButtonText}>Create Account</Text>
+              {/* Register Link */}
+              <View style={styles.registerContainer}>
+                <Text style={styles.registerText}>Don't have an account? </Text>
+                <TouchableOpacity onPress={onRegister}>
+                  <Text style={styles.registerLink}>Sign Up</Text>
                 </TouchableOpacity>
-              </View>
-
-              {/* Terms and Privacy */}
-              <View style={styles.legalContainer}>
-                <Text style={styles.legalText}>
-                  By continuing, you agree to our{' '}
-                  <Text style={styles.legalLink}>Terms of Service</Text>
-                  {' '}and{' '}
-                  <Text style={styles.legalLink}>Privacy Policy</Text>
-                </Text>
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
@@ -246,21 +235,21 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     lineHeight: 22,
   },
-  authMethodContainer: {
+  loginTypeContainer: {
     flexDirection: 'row',
     backgroundColor: '#F5F5F5',
     borderRadius: 12,
     padding: 4,
     marginBottom: 24,
   },
-  authMethodButton: {
+  loginTypeButton: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
-  authMethodButtonActive: {
+  loginTypeButtonActive: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: {
@@ -271,18 +260,28 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  authMethodText: {
+  loginTypeText: {
     fontSize: 16,
     fontWeight: '500',
     color: '#666666',
     fontFamily: 'System',
   },
-  authMethodTextActive: {
+  loginTypeTextActive: {
     color: '#000000',
     fontWeight: '600',
   },
-  inputContainer: {
+  formContainer: {
     marginBottom: 16,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
+    fontFamily: 'System',
   },
   inputField: {
     flexDirection: 'row',
@@ -291,13 +290,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    marginBottom: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  iconText: {
-    fontSize: 18,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   textInput: {
     flex: 1,
@@ -305,17 +299,20 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontFamily: 'System',
   },
-  eyeIcon: {
-    marginLeft: 12,
+  eyeButton: {
+    padding: 4,
+  },
+  eyeText: {
+    fontSize: 18,
   },
   forgotPasswordContainer: {
     alignItems: 'flex-end',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#666666',
-    textDecorationLine: 'underline',
+    color: '#007AFF',
+    fontWeight: '600',
     fontFamily: 'System',
   },
   loginButton: {
@@ -334,62 +331,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'System',
   },
-  dividerContainer: {
+  registerContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E5EA',
-  },
-  dividerText: {
-    marginHorizontal: 16,
+  registerText: {
     fontSize: 14,
     color: '#666666',
     fontFamily: 'System',
   },
-  createAccountContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  createAccountText: {
+  registerLink: {
     fontSize: 14,
-    color: '#666666',
-    marginBottom: 16,
-    fontFamily: 'System',
-  },
-  createAccountButton: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    width: '100%',
-    alignItems: 'center',
-  },
-  createAccountButtonText: {
-    color: '#000000',
-    fontSize: 16,
+    color: '#007AFF',
     fontWeight: '600',
     fontFamily: 'System',
-  },
-  legalContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginTop: 'auto',
-    marginBottom: 60,
-  },
-  legalText: {
-    fontSize: 12,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 18,
-    fontFamily: 'System',
-  },
-  legalLink: {
-    textDecorationLine: 'underline',
-    color: '#007AFF',
   },
 });
 

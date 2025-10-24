@@ -9,12 +9,22 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
+interface UserData {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  type: string;
+  status?: string;
+}
+
 interface DashboardScreenProps {
   onBookWash?: () => void;
   onViewAll?: () => void;
   onActivityPress?: (activity: any) => void;
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
+  userData?: UserData | null;
 }
 
 interface Activity {
@@ -31,7 +41,10 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onActivityPress,
   onNotificationPress,
   onProfilePress,
+  userData,
 }) => {
+  // Get user's first name for welcome message
+  const firstName = userData?.fullName?.split(' ')[0] || 'User';
   const recentActivities: Activity[] = [
     {
       id: '1',
@@ -91,25 +104,27 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Home</Text>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={onNotificationPress}
-            >
-              <Ionicons name="notifications-outline" size={24} color="#000000" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={onProfilePress}
-            >
-              <Ionicons name="person-outline" size={24} color="#000000" />
-            </TouchableOpacity>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.welcomeText}>Welcome back,</Text>
+              <Text style={styles.userNameText}>{firstName}!</Text>
+            </View>
+            <View style={styles.headerIcons}>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={onNotificationPress}
+              >
+                <Ionicons name="notifications-outline" size={24} color="#000000" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={onProfilePress}
+              >
+                <Ionicons name="person-outline" size={24} color="#000000" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-
-        {/* Welcome Message */}
-        <Text style={styles.welcomeText}>Welcome back, John!</Text>
 
         {/* Summary Cards */}
         <View style={styles.summaryCards}>
@@ -161,12 +176,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 28,
@@ -188,8 +205,12 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 16,
     color: '#6B7280',
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 2,
+  },
+  userNameText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
   },
   summaryCards: {
     flexDirection: 'row',
