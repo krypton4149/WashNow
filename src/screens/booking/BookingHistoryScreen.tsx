@@ -46,37 +46,12 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
       
       if (result.success && result.bookings) {
         console.log('Bookings loaded successfully:', result.bookings.length);
+        console.log('First booking in result:', result.bookings[0]);
         setBookings(Array.isArray(result.bookings) ? result.bookings : []);
       } else {
         console.log('Failed to load bookings:', result.error);
-        
-        // For testing - add mock data if API fails
-        if (result.error && result.error.includes('login')) {
-          console.log('Adding mock data for testing...');
-          const mockBookings = [
-            {
-              id: 1,
-              booking_id: "B00001",
-              visitor_id: 5,
-              service_centre_id: 10,
-              service_type: "Basic",
-              vehicle_no: "ABC123",
-              booking_date: "2025-10-29T00:00:00.000000Z",
-              booking_time: "10:00:00",
-              notes: "Payment method: Cash",
-              status: "Pending",
-              cancel_by: null,
-              tenant_id: 1,
-              created_at: "2025-10-28T16:41:24.000000Z",
-              updated_at: "2025-10-28T16:41:24.000000Z"
-            }
-          ];
-          setBookings(mockBookings);
-          setError(null);
-        } else {
-          setError(result.error || 'Failed to load bookings');
-          setBookings([]);
-        }
+        setError(result.error || 'Failed to load bookings');
+        setBookings([]);
       }
     } catch (error) {
       console.error('Error loading bookings:', error);

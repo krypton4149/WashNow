@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import authService from '../../services/authService';
 
 interface UserData {
   id: string;
@@ -35,6 +37,23 @@ interface Activity {
   status: 'In Progress' | 'Completed';
 }
 
+interface Booking {
+  id: number;
+  booking_id: string;
+  visitor_id: number;
+  service_centre_id: number;
+  service_type: string;
+  vehicle_no: string;
+  booking_date: string;
+  booking_time: string;
+  notes: string;
+  status: string;
+  cancel_by: string | null;
+  tenant_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
 const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onBookWash,
   onViewAll,
@@ -45,22 +64,42 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
 }) => {
   // Get user's first name for welcome message
   const firstName = userData?.fullName?.split(' ')[0] || 'User';
-  const recentActivities: Activity[] = [
-    {
-      id: '1',
-      title: 'Premium Auto Wash',
-      serviceType: 'Exterior Wash',
-      time: 'Today, 2:30 PM',
-      status: 'In Progress',
-    },
-    {
-      id: '2',
-      title: 'Quick Shine Car Care',
-      serviceType: 'Full Detail',
-      time: 'Yesterday',
-      status: 'Completed',
-    },
-  ];
+  
+  // State for bookings data
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 🧩 Helper functions defined BEFORE use
+  const formatBookingTime = (bookingDate: string, createdAt: string) => {
+    try {
+      const createdDate = new Date(createdAt);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        return 'Today';
+      } else if (diffDays === 2) {
+        return 'Yesterday';
+      } else if (diffDays <= 7) {
+        return `${diffDays - 1} days ago`;
+      } else {
+        return createdDate.toLocaleDateString();
+      }
+    } catch (error) {
+      return 'Recently';
+    }
+  };
+
+  const mapBookingStatus = (apiStatus: string): 'In Progress' | 'Completed' => {
+    const status = apiStatus.toLowerCase();
+    if (status.includes('completed') || status.includes('done')) {
+      return 'Completed';
+    } else {
+      return 'In Progress';
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -72,6 +111,59 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         return '#6B7280';
     }
   };
+
+  // Load bookings data
+  useEffect(() => {
+    loadBookings();
+  }, []);
+
+  const loadBookings = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log('Loading bookings for dashboard...');
+      const result = await authService.getBookingList();
+      console.log('Dashboard booking list result:', JSON.stringify(result, null, 2));
+      
+      if (result.success && result.bookings) {
+        console.log('Bookings loaded successfully for dashboard:', result.bookings.length);
+        setBookings(Array.isArray(result.bookings) ? result.bookings : []);
+      } else {
+        console.log('Failed to load bookings for dashboard:', result.error);
+        setError(result.error || 'Failed to load bookings');
+        setBookings([]);
+      }
+    } catch (error) {
+      console.error('Error loading bookings for dashboard:', error);
+      setError('Failed to load bookings');
+      setBookings([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Calculate stats from bookings
+  const totalBookings = bookings.length;
+  const currentRequests = bookings.filter(booking => 
+    booking.status.toLowerCase().includes('pending') || 
+    booking.status.toLowerCase().includes('confirmed')
+  ).length;
+  const completedBookings = bookings.filter(booking => 
+    booking.status.toLowerCase().includes('completed')
+  ).length;
+
+  // Convert bookings to activities for recent activity section
+  const recentActivities: Activity[] = bookings
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 3)
+    .map(booking => ({
+      id: booking.booking_id,
+      title: `Service Center ${booking.service_centre_id}`,
+      serviceType: booking.service_type,
+      time: formatBookingTime(booking.booking_date, booking.created_at),
+      status: mapBookingStatus(booking.status),
+    }));
 
   const renderActivityItem = (activity: Activity) => (
     <TouchableOpacity
@@ -129,17 +221,23 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         {/* Summary Cards */}
         <View style={styles.summaryCards}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryNumber}>12</Text>
+            <Text style={styles.summaryNumber}>
+              {isLoading ? <ActivityIndicator size="small" color="#000000" /> : totalBookings}
+            </Text>
             <Text style={styles.summaryLabel}>Total Bookings</Text>
           </View>
           
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryNumber}>1</Text>
+            <Text style={styles.summaryNumber}>
+              {isLoading ? <ActivityIndicator size="small" color="#000000" /> : currentRequests}
+            </Text>
             <Text style={styles.summaryLabel}>Current Request</Text>
           </View>
           
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryNumber}>8</Text>
+            <Text style={styles.summaryNumber}>
+              {isLoading ? <ActivityIndicator size="small" color="#000000" /> : completedBookings}
+            </Text>
             <Text style={styles.summaryLabel}>Completed</Text>
           </View>
         </View>
@@ -159,7 +257,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
           
           <View style={styles.activityList}>
-            {recentActivities.map(renderActivityItem)}
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#000000" />
+                <Text style={styles.loadingText}>Loading recent activity...</Text>
+              </View>
+            ) : recentActivities.length > 0 ? (
+              recentActivities.map(renderActivityItem)
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No recent activity</Text>
+                <Text style={styles.emptySubtext}>Book your first car wash to see activity here</Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -168,32 +278,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  scrollView: { flex: 1 },
+  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerIcons: { flexDirection: 'row', gap: 12 },
   iconButton: {
     width: 40,
     height: 40,
@@ -202,16 +291,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
   },
-  welcomeText: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 2,
-  },
-  userNameText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
+  welcomeText: { fontSize: 16, color: '#6B7280', marginBottom: 2 },
+  userNameText: { fontSize: 24, fontWeight: 'bold', color: '#000000' },
   summaryCards: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -225,26 +306,13 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  summaryNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
+  summaryNumber: { fontSize: 24, fontWeight: 'bold', color: '#000000', marginVertical: 8 },
+  summaryLabel: { fontSize: 12, color: '#6B7280', textAlign: 'center' },
   bookButton: {
     backgroundColor: '#000000',
     marginHorizontal: 20,
@@ -253,89 +321,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  bookButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  activitySection: {
-    paddingHorizontal: 20,
-  },
+  bookButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  activitySection: { paddingHorizontal: 20 },
   activityHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  activitySectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  seeAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  seeAllText: {
-    fontSize: 14,
-    color: '#000000',
-    fontWeight: '500',
-  },
-  activityList: {
-    gap: 12,
-    paddingBottom: 20,
-  },
+  activitySectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#000000' },
+  seeAllButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  seeAllText: { fontSize: 14, color: '#000000', fontWeight: '500' },
+  activityList: { gap: 12, paddingBottom: 20 },
   activityItem: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  activityContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  activityInfo: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  activityService: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  activityTimeText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  activityRight: {
-    alignItems: 'center',
-  },
-  statusTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
+  activityContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  activityInfo: { flex: 1 },
+  activityTitle: { fontSize: 16, fontWeight: '600', color: '#000000', marginBottom: 4 },
+  activityService: { fontSize: 14, color: '#6B7280', marginBottom: 8 },
+  activityTimeText: { fontSize: 12, color: '#6B7280' },
+  activityRight: { alignItems: 'center' },
+  statusTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  statusText: { fontSize: 12, color: '#FFFFFF', fontWeight: '500' },
+  loadingContainer: { alignItems: 'center', paddingVertical: 40 },
+  loadingText: { fontSize: 14, color: '#6B7280', marginTop: 12 },
+  emptyContainer: { alignItems: 'center', paddingVertical: 40 },
+  emptyText: { fontSize: 16, color: '#6B7280', fontWeight: '500', marginBottom: 8 },
+  emptySubtext: { fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
 });
 
 export default DashboardScreen;
-

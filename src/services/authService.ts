@@ -588,9 +588,15 @@ class AuthService {
       console.log('Booking list API response:', JSON.stringify(data, null, 2));
 
       if (response.ok && data.success) {
-        // Handle the nested structure: data.bookings.bookinglist
-        const bookings = data.bookings?.bookinglist || data.data?.bookings || data.data || [];
+        // Handle the correct structure: data.data.bookinglist
+        console.log('Raw data structure:', JSON.stringify(data, null, 2));
+        console.log('data.data:', data.data);
+        console.log('data.data.bookinglist:', data.data?.bookinglist);
+        
+        const bookings = data.data?.bookinglist || [];
         console.log('Extracted bookings:', bookings.length, 'items');
+        console.log('First booking:', bookings[0]);
+        
         return { 
           success: true, 
           bookings: bookings
