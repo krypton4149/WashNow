@@ -389,14 +389,31 @@ class AuthService {
         return { success: false, error: 'Please login to book a service' };
       }
 
+      // Create FormData for the API
+      const formData = new FormData();
+      formData.append('service_centre_id', bookingData.service_centre_id);
+      formData.append('booking_date', bookingData.booking_date);
+      formData.append('booking_time', bookingData.booking_time);
+      formData.append('vehicle_no', bookingData.vehicle_no);
+      if (bookingData.notes) {
+        formData.append('notes', bookingData.notes);
+      }
+
+      console.log('Sending form data:', {
+        service_centre_id: bookingData.service_centre_id,
+        booking_date: bookingData.booking_date,
+        booking_time: bookingData.booking_time,
+        vehicle_no: bookingData.vehicle_no,
+        notes: bookingData.notes
+      });
+
       const response = await fetch(`${BASE_URL}/api/v1/visitor/booknow`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(bookingData),
+        body: formData,
       });
 
       const data = await response.json();
@@ -404,7 +421,7 @@ class AuthService {
       if (response.ok && data.success) {
         return { 
           success: true, 
-          bookingId: data.data?.booking_id || data.data?.id || 'unknown'
+          bookingId: data.data?.bookingData?.booking_id || data.data?.booking_id || 'unknown'
         };
       } else {
         return {
@@ -549,10 +566,14 @@ class AuthService {
   async getBookingList(): Promise<{ success: boolean; bookings?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
+      console.log('Token for booking list:', token ? 'Present' : 'Missing');
+      
       if (!token) {
         return { success: false, error: 'Please login to view your bookings' };
       }
 
+      console.log('Making API call to:', `${BASE_URL}/api/v1/visitor/bookinglist`);
+      
       const response = await fetch(`${BASE_URL}/api/v1/visitor/bookinglist`, {
         method: 'GET',
         headers: {
@@ -561,14 +582,21 @@ class AuthService {
         },
       });
 
+      console.log('API response status:', response.status);
       const data = await response.json();
 
+      console.log('Booking list API response:', JSON.stringify(data, null, 2));
+
       if (response.ok && data.success) {
+        // Handle the nested structure: data.bookings.bookinglist
+        const bookings = data.bookings?.bookinglist || data.data?.bookings || data.data || [];
+        console.log('Extracted bookings:', bookings.length, 'items');
         return { 
           success: true, 
-          bookings: data.data?.bookings || data.data || []
+          bookings: bookings
         };
       } else {
+        console.log('API call failed:', data.message || data.error);
         return {
           success: false,
           error: data.message || data.error || 'Failed to fetch bookings. Please try again.'

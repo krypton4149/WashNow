@@ -27,7 +27,10 @@ interface ConfirmBookingScreenProps {
     service: string;
     date: string;
     time: string;
-    vehicle: {
+    vehicleNumber?: string;
+    notes?: string;
+    bookingId?: string;
+    vehicle?: {
       name: string;
       plateNumber: string;
       type: string;
@@ -87,7 +90,32 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
     try {
       // Format the booking data for the API
       const bookingDate = new Date(bookingData.date);
-      const formattedDate = bookingDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const day = bookingDate.getDate().toString().padStart(2, '0');
+      const month = (bookingDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = bookingDate.getFullYear();
+      const formattedDate = `${day}-${month}-${year}`; // DD-MM-YYYY format
+      
+      // Get vehicle number
+      const vehicleNumber = bookingData.vehicleNumber || (bookingData.vehicle?.plateNumber || '');
+      
+      // Validate required fields
+      if (!vehicleNumber.trim()) {
+        Alert.alert('Validation Error', 'Vehicle number is required');
+        setIsBooking(false);
+        return;
+      }
+      
+      if (!bookingData.time) {
+        Alert.alert('Validation Error', 'Booking time is required');
+        setIsBooking(false);
+        return;
+      }
+      
+      if (!bookingData.center?.id) {
+        Alert.alert('Validation Error', 'Service center is required');
+        setIsBooking(false);
+        return;
+      }
       
       // Try different service center IDs if the first one fails
       const serviceCenterIds = [
@@ -106,7 +134,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
           service_centre_id: serviceCenterId,
           booking_date: formattedDate,
           booking_time: bookingData.time,
-          vehicle_no: bookingData.vehicle.plateNumber,
+          vehicle_no: vehicleNumber.trim(),
           notes: `Payment method: ${paymentMethods.find(p => p.id === selectedPaymentMethod)?.name || 'Unknown'}`,
         };
 
@@ -120,12 +148,13 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
 
         if (result.success) {
           Alert.alert(
-            'Booking Confirmed!',
-            `Your car wash booking has been successfully confirmed.\n\nBooking ID: ${result.bookingId}\n\nService Center: ${bookingData.center.name}\n\nYou will receive a confirmation email shortly.`,
+            'Payment Successful!',
+            `Your payment has been processed and booking confirmed.\n\nBooking ID: ${result.bookingId}\n\nService Center: ${bookingData.center?.name || 'Service Center'}\n\nYou will receive a confirmation email shortly.`,
             [
               {
                 text: 'OK',
                 onPress: () => {
+                  // Navigate directly to dashboard
                   onConfirmBooking();
                 }
               }
@@ -146,15 +175,15 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
 
       // If we get here, all attempts failed
       Alert.alert(
-        'Booking Failed',
-        `All attempts failed. Last error: ${lastError}\n\nService Centre: ${bookingData.center.name}\n\nPlease try again later or contact support.`,
+        'Payment Failed',
+        `All payment attempts failed. Last error: ${lastError}\n\nService Centre: ${bookingData.center?.name || 'Service Center'}\n\nPlease try again later or contact support.`,
         [{ text: 'OK' }]
       );
       
     } catch (error) {
-      console.error('Booking error:', error);
+      console.error('Payment error:', error);
       Alert.alert(
-        'Booking Error',
+        'Payment Error',
         `An unexpected error occurred: ${error}\n\nPlease try again.`,
         [{ text: 'OK' }]
       );
@@ -173,31 +202,37 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
     });
   };
 
-  const renderPaymentMethod = (method: PaymentMethod) => (
-    <TouchableOpacity
-      key={method.id}
-      style={styles.paymentMethodItem}
-      onPress={() => handlePaymentMethodSelect(method.id)}
-    >
-      <View style={styles.paymentMethodLeft}>
-        <View style={styles.radioButton}>
-          {selectedPaymentMethod === method.id && (
-            <View style={styles.radioButtonSelected} />
-          )}
+  const renderPaymentMethod = (method: PaymentMethod) => {
+    if (!method) {
+      return null;
+    }
+    
+    return (
+      <TouchableOpacity
+        key={method.id}
+        style={styles.paymentMethodItem}
+        onPress={() => handlePaymentMethodSelect(method.id)}
+      >
+        <View style={styles.paymentMethodLeft}>
+          <View style={styles.radioButton}>
+            {selectedPaymentMethod === method.id && (
+              <View style={styles.radioButtonSelected} />
+            )}
+          </View>
+          <Text style={styles.paymentMethodIcon}>{method.icon}</Text>
+          <View style={styles.paymentMethodInfo}>
+            <Text style={[
+              styles.paymentMethodName,
+              selectedPaymentMethod === method.id && styles.paymentMethodNameSelected,
+            ]}>
+              {method.name}
+            </Text>
+            <Text style={styles.paymentMethodDescription}>{method.description}</Text>
+          </View>
         </View>
-        <Text style={styles.paymentMethodIcon}>{method.icon}</Text>
-        <View style={styles.paymentMethodInfo}>
-          <Text style={[
-            styles.paymentMethodName,
-            selectedPaymentMethod === method.id && styles.paymentMethodNameSelected,
-          ]}>
-            {method.name}
-          </Text>
-          <Text style={styles.paymentMethodDescription}>{method.description}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -205,17 +240,17 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <BackButton onPress={onBack} />
-          <Text style={styles.title}>Confirm Booking</Text>
+          <Text style={styles.title}>Payment & Booking</Text>
           <View style={{ width: 40 }} />
         </View>
 
         {/* Booking Details Card */}
         <View style={styles.bookingDetailsCard}>
           <View style={styles.centerInfo}>
-            <Text style={styles.centerName}>{bookingData.center.name}</Text>
+            <Text style={styles.centerName}>{bookingData.center?.name || 'Service Center'}</Text>
             <View style={styles.centerLocation}>
               <Text style={styles.locationIcon}>📍</Text>
-              <Text style={styles.centerDistance}>{bookingData.center.distance} away</Text>
+              <Text style={styles.centerDistance}>{bookingData.center?.distance || 'Unknown'} away</Text>
             </View>
           </View>
 
@@ -253,7 +288,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
               <View style={styles.serviceDetailInfo}>
                 <Text style={styles.serviceDetailLabel}>Vehicle</Text>
                 <Text style={styles.serviceDetailValue}>
-                  {bookingData.vehicle.name} - {bookingData.vehicle.plateNumber}
+                  {bookingData.vehicleNumber || (bookingData.vehicle ? `${bookingData.vehicle.name} - ${bookingData.vehicle.plateNumber}` : 'Not specified')}
                 </Text>
               </View>
             </View>
@@ -264,12 +299,12 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
         <View style={styles.paymentMethodCard}>
           <Text style={styles.paymentMethodTitle}>Payment Method</Text>
           <View style={styles.paymentMethodsList}>
-            {paymentMethods.map(renderPaymentMethod)}
+            {paymentMethods.filter(method => method).map(renderPaymentMethod)}
           </View>
         </View>
       </ScrollView>
 
-      {/* Confirm Booking Button */}
+      {/* Pay Now Button */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={[styles.confirmButton, isBooking && styles.confirmButtonDisabled]} 
@@ -277,7 +312,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
           disabled={isBooking}
         >
           <Text style={styles.confirmButtonText}>
-            {isBooking ? 'Confirming...' : 'Confirm Booking'}
+            {isBooking ? 'Processing Payment...' : 'Pay Now'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,27 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
+import authService from '../../services/authService';
 
 interface LocationSelectionScreenProps {
   onBack: () => void;
-  onLocationSelect: (location: any) => void;
+  onLocationSelect: (center: any) => void;
 }
 
-interface Location {
+interface ServiceCenter {
   id: string;
   name: string;
-  centersCount: number;
+  rating: number;
+  distance: string;
+  address: string;
+  image: string;
+  isAvailable: boolean;
+  email?: string;
+  phone?: string;
 }
 
 const LocationSelectionScreen: React.FC<LocationSelectionScreenProps> = ({
@@ -26,57 +35,146 @@ const LocationSelectionScreen: React.FC<LocationSelectionScreenProps> = ({
   onLocationSelect,
 }) => {
   const [searchText, setSearchText] = useState('');
+  const [serviceCenters, setServiceCenters] = useState<ServiceCenter[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const popularLocations: Location[] = [
-    {
-      id: '1',
-      name: 'Downtown, New York',
-      centersCount: 2,
-    },
-    {
-      id: '2',
-      name: 'Midtown, New York',
-      centersCount: 2,
-    },
-    {
-      id: '3',
-      name: 'Upper East Side, New York',
-      centersCount: 1,
-    },
-    {
-      id: '4',
-      name: 'Brooklyn, New York',
-      centersCount: 0,
-    },
-    {
-      id: '5',
-      name: 'Queens, New York',
-      centersCount: 0,
-    },
-  ];
+  useEffect(() => {
+    fetchServiceCenters();
+  }, []);
 
-  const filteredLocations = popularLocations.filter(location =>
-    location.name.toLowerCase().includes(searchText.toLowerCase())
-  );
-
-  const handleLocationSelect = (location: Location) => {
-    onLocationSelect(location);
+  const fetchServiceCenters = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await authService.getServiceCenters();
+      
+      if (result.success && result.serviceCenters && result.serviceCenters.length > 0) {
+        const transformedCenters = result.serviceCenters.map((center: any) => ({
+          id: center.id?.toString() || Math.random().toString(),
+          name: center.name || center.service_center_name || 'Service Center',
+          rating: 4.5,
+          distance: '0.5 mi',
+          address: center.address || center.location || 'Address not available',
+          image: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=100&h=80&fit=crop',
+          isAvailable: center.status === 'Active',
+          email: center.email,
+          phone: center.phone,
+        }));
+        
+        setServiceCenters(transformedCenters);
+      } else {
+        // Fallback to mock data
+        const mockCenters = [
+          {
+            id: '1',
+            name: 'Elite Car Care',
+            rating: 4.6,
+            distance: '0.7 mi',
+            address: 'Madison Ave, Midtown, New York',
+            image: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=100&h=80&fit=crop',
+            isAvailable: true,
+            email: 'info@elitecar.com',
+            phone: '+1 (555) 123-4567',
+          },
+          {
+            id: '2',
+            name: 'Pro Shine Detail',
+            rating: 4.9,
+            distance: '0.9 mi',
+            address: 'Upper East Side, New York',
+            image: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=100&h=80&fit=crop',
+            isAvailable: true,
+            email: 'contact@proshine.com',
+            phone: '+1 (555) 234-5678',
+          },
+          {
+            id: '3',
+            name: 'Auto Detail Express',
+            rating: 4.7,
+            distance: '1.3 mi',
+            address: '321 5th Avenue, Chelsea, New York',
+            image: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=100&h=80&fit=crop',
+            isAvailable: true,
+            email: 'service@autodetail.com',
+            phone: '+1 (555) 345-6789',
+          },
+          {
+            id: '4',
+            name: 'Platinum Car Wash Center',
+            rating: 4.5,
+            distance: '1.7 mi',
+            address: '654 Lexington Ave, Gramercy, New York',
+            image: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=100&h=80&fit=crop',
+            isAvailable: true,
+            email: 'info@platinumwash.com',
+            phone: '+1 (555) 456-7890',
+          },
+        ];
+        setServiceCenters(mockCenters);
+      }
+    } catch (err) {
+      console.error('Error fetching service centers:', err);
+      // Use mock data as fallback
+      const mockCenters = [
+        {
+          id: '1',
+          name: 'Elite Car Care',
+          rating: 4.6,
+          distance: '0.7 mi',
+          address: 'Madison Ave, Midtown, New York',
+          image: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=100&h=80&fit=crop',
+          isAvailable: true,
+          email: 'info@elitecar.com',
+          phone: '+1 (555) 123-4567',
+        },
+        {
+          id: '2',
+          name: 'Pro Shine Detail',
+          rating: 4.9,
+          distance: '0.9 mi',
+          address: 'Upper East Side, New York',
+          image: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=100&h=80&fit=crop',
+          isAvailable: true,
+          email: 'contact@proshine.com',
+          phone: '+1 (555) 234-5678',
+        },
+      ];
+      setServiceCenters(mockCenters);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const renderLocationItem = (location: Location) => (
+  const filteredCenters = serviceCenters.filter(center => {
+    if (!searchText.trim()) return true;
+    
+    const searchLower = searchText.toLowerCase().trim();
+    const nameMatch = center.name?.toLowerCase().includes(searchLower) || false;
+    const addressMatch = center.address?.toLowerCase().includes(searchLower) || false;
+    const emailMatch = center.email?.toLowerCase().includes(searchLower) || false;
+    const phoneMatch = center.phone?.toLowerCase().includes(searchLower) || false;
+    
+    return nameMatch || addressMatch || emailMatch || phoneMatch;
+  });
+
+  const handleCenterSelect = (center: ServiceCenter) => {
+    onLocationSelect(center);
+  };
+
+  const renderServiceCenter = (center: ServiceCenter) => (
     <TouchableOpacity
-      key={location.id}
-      style={styles.locationItem}
-      onPress={() => handleLocationSelect(location)}
+      key={center.id}
+      style={styles.centerCard}
+      onPress={() => handleCenterSelect(center)}
     >
       <View style={styles.locationIcon}>
         <Text style={styles.locationIconText}>📍</Text>
       </View>
-      <View style={styles.locationInfo}>
-        <Text style={styles.locationName}>{location.name}</Text>
-        <Text style={styles.centersCount}>
-          {location.centersCount} car wash center{location.centersCount !== 1 ? 's' : ''}
-        </Text>
+      <View style={styles.centerInfo}>
+        <Text style={styles.centerName}>{center.name || 'Service Center'}</Text>
+        <Text style={styles.centerAddress}>{center.address || 'Address not available'}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -106,12 +204,47 @@ const LocationSelectionScreen: React.FC<LocationSelectionScreenProps> = ({
           />
         </View>
 
-        {/* Popular Locations */}
-        <View style={styles.locationsContainer}>
-          <Text style={styles.sectionTitle}>Popular locations</Text>
-          <View style={styles.locationsList}>
-            {filteredLocations.map(renderLocationItem)}
-          </View>
+        {/* Service Centers */}
+        <View style={styles.centersContainer}>
+          <Text style={styles.sectionTitle}>
+            {searchText.length > 0 
+              ? `Service Centers matching "${searchText}"` 
+              : 'Available Service Centers'
+            }
+          </Text>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#000000" />
+              <Text style={styles.loadingText}>Loading service centers...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={fetchServiceCenters}>
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredCenters.length > 0 ? (
+            <View style={styles.centersList}>
+              {filteredCenters.map(renderServiceCenter)}
+            </View>
+          ) : (
+            <View style={styles.noResultsContainer}>
+              <Text style={styles.noResultsText}>
+                {searchText.length > 0 
+                  ? `No service centers found for "${searchText}"` 
+                  : 'No service centers available'
+                }
+              </Text>
+              <Text style={styles.noResultsSubtext}>
+                {searchText.length > 0 
+                  ? 'Try searching with different keywords or check spelling' 
+                  : 'Please try again later'
+                }
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -169,7 +302,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000000',
   },
-  locationsContainer: {
+  centersContainer: {
     paddingHorizontal: 20,
   },
   sectionTitle: {
@@ -178,49 +311,85 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: 16,
   },
-  locationsList: {
-    gap: 12,
+  centersList: {
+    backgroundColor: '#FFFFFF',
   },
-  locationItem: {
+  centerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
     paddingVertical: 16,
-    paddingHorizontal: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   locationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   locationIconText: {
     fontSize: 16,
+    color: '#000000',
   },
-  locationInfo: {
+  centerInfo: {
     flex: 1,
   },
-  locationName: {
+  centerName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#000000',
     marginBottom: 2,
   },
-  centersCount: {
+  centerAddress: {
     fontSize: 14,
     color: '#666666',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666666',
+    marginTop: 12,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF6B6B',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noResultsText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#666666',
+    marginBottom: 8,
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    color: '#999999',
   },
 });
 

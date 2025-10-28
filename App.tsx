@@ -150,7 +150,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleConfirmBooking = () => {
-    setCurrentScreen('finding-car-wash');
+    setCurrentScreen('customer'); // Navigate directly to dashboard
   };
 
   const handleBookingConfirmed = (center: any) => {

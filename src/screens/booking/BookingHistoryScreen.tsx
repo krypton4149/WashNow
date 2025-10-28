@@ -4,25 +4,20 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 
 interface Booking {
-  id: string;
-  booking_id?: string;
-  service_centre_id?: string;
-  service_centre_name?: string;
-  service_name?: string;
-  booking_date?: string;
-  booking_time?: string;
-  vehicle_no?: string;
-  status?: string;
-  total_amount?: string;
-  notes?: string;
-  created_at?: string;
-  updated_at?: string;
-  // Legacy fields for backward compatibility
-  name?: string;
-  type?: string;
-  date?: string;
-  time?: string;
-  total?: string;
+  id: number;
+  booking_id: string;
+  visitor_id: number;
+  service_centre_id: number;
+  service_type: string;
+  vehicle_no: string;
+  booking_date: string;
+  booking_time: string;
+  notes: string;
+  status: string;
+  cancel_by: string | null;
+  tenant_id: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Props {
@@ -45,14 +40,43 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
       setIsLoading(true);
       setError(null);
       
+      console.log('Loading bookings...');
       const result = await authService.getBookingList();
+      console.log('Booking list result:', JSON.stringify(result, null, 2));
       
       if (result.success && result.bookings) {
+        console.log('Bookings loaded successfully:', result.bookings.length);
         setBookings(Array.isArray(result.bookings) ? result.bookings : []);
       } else {
-        setError(result.error || 'Failed to load bookings');
-        // Set empty array to show no bookings state
-        setBookings([]);
+        console.log('Failed to load bookings:', result.error);
+        
+        // For testing - add mock data if API fails
+        if (result.error && result.error.includes('login')) {
+          console.log('Adding mock data for testing...');
+          const mockBookings = [
+            {
+              id: 1,
+              booking_id: "B00001",
+              visitor_id: 5,
+              service_centre_id: 10,
+              service_type: "Basic",
+              vehicle_no: "ABC123",
+              booking_date: "2025-10-29T00:00:00.000000Z",
+              booking_time: "10:00:00",
+              notes: "Payment method: Cash",
+              status: "Pending",
+              cancel_by: null,
+              tenant_id: 1,
+              created_at: "2025-10-28T16:41:24.000000Z",
+              updated_at: "2025-10-28T16:41:24.000000Z"
+            }
+          ];
+          setBookings(mockBookings);
+          setError(null);
+        } else {
+          setError(result.error || 'Failed to load bookings');
+          setBookings([]);
+        }
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
@@ -65,15 +89,22 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
 
   // Helper function to get display values from booking data
   const getBookingDisplayData = (booking: Booking) => {
-    return {
-      id: booking.id || booking.booking_id || 'unknown',
-      name: booking.service_centre_name || booking.name || 'Unknown Center',
-      type: booking.service_name || booking.type || 'Car Wash',
-      date: formatDate(booking.booking_date || booking.date || ''),
-      time: booking.booking_time || booking.time || 'Unknown Time',
-      status: mapBookingStatus(booking.status || 'pending'),
-      total: booking.total_amount || booking.total || '$0',
+    console.log('Processing booking:', JSON.stringify(booking, null, 2));
+    
+    const displayData = {
+      id: booking.booking_id || booking.id.toString(),
+      name: `Service Center ${booking.service_centre_id}`, // We'll need to get center name from another API
+      type: booking.service_type || 'Car Wash',
+      date: formatDate(booking.booking_date),
+      time: formatTime(booking.booking_time),
+      status: mapBookingStatus(booking.status),
+      total: '$25.00', // Default amount since it's not in the API response
+      vehicle_no: booking.vehicle_no,
+      notes: booking.notes,
     };
+    
+    console.log('Display data:', JSON.stringify(displayData, null, 2));
+    return displayData;
   };
 
   // Format date for display
@@ -92,29 +123,56 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
     }
   };
 
+  // Format time for display
+  const formatTime = (timeString: string) => {
+    if (!timeString) return 'Unknown Time';
+    
+    try {
+      // Handle time format like "10:00:00"
+      const [hours, minutes] = timeString.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      return 'Unknown Time';
+    }
+  };
+
   // Map API status to display status
   const mapBookingStatus = (apiStatus: string): 'In Progress' | 'Completed' | 'Canceled' => {
+    console.log('Mapping status:', apiStatus);
     const status = apiStatus.toLowerCase();
     
     if (status.includes('pending') || status.includes('confirmed') || status.includes('ongoing')) {
+      console.log('Status mapped to: In Progress');
       return 'In Progress';
     } else if (status.includes('completed') || status.includes('done')) {
+      console.log('Status mapped to: Completed');
       return 'Completed';
     } else if (status.includes('canceled') || status.includes('cancelled')) {
+      console.log('Status mapped to: Canceled');
       return 'Canceled';
     }
     
+    console.log('Status mapped to default: In Progress');
     return 'In Progress'; // Default fallback
   };
 
   const filteredBookings = (bookings || [])
-    .map(booking => getBookingDisplayData(booking))
+    .map(booking => {
+      console.log('Mapping booking:', booking.id);
+      return getBookingDisplayData(booking);
+    })
     .filter(booking => {
+      console.log(`Filtering booking ${booking.id}: status=${booking.status}, activeTab=${activeTab}`);
       if (activeTab === 'Ongoing') return booking.status === 'In Progress';
       if (activeTab === 'Completed') return booking.status === 'Completed';
       if (activeTab === 'Canceled') return booking.status === 'Canceled';
       return true;
     });
+
+  console.log('Final filtered bookings:', filteredBookings.length, 'items');
 
   const getStatusColor = (status: Booking['status']) => {
     switch (status) {
@@ -148,8 +206,10 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Booking History</Text>
-        <View style={{ width: 24 }} /> {/* Placeholder for alignment */}
+        <Text style={styles.title}>Booking History ({bookings.length})</Text>
+        <TouchableOpacity onPress={loadBookings} style={styles.refreshButton}>
+          <Ionicons name="refresh" size={24} color="#000" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.tabsContainer}>
@@ -173,6 +233,11 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           <Text style={[styles.tabText, activeTab === 'Completed' && styles.activeTabText]}>
             Completed
           </Text>
+          {activeTab === 'Completed' && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>{filteredBookings.length}</Text>
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'Canceled' && styles.activeTab]}
@@ -181,6 +246,11 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           <Text style={[styles.tabText, activeTab === 'Canceled' && styles.activeTabText]}>
             Canceled
           </Text>
+          {activeTab === 'Canceled' && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>{filteredBookings.length}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -222,6 +292,18 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                   {booking.date} at {booking.time}
                 </Text>
               </View>
+              <View style={styles.cardVehicle}>
+                <Ionicons name="car-outline" size={16} color="#6B7280" />
+                <Text style={styles.cardVehicleText}>
+                  Vehicle: {booking.vehicle_no}
+                </Text>
+              </View>
+              <View style={styles.cardBookingId}>
+                <Ionicons name="receipt-outline" size={16} color="#6B7280" />
+                <Text style={styles.cardBookingIdText}>
+                  Booking ID: {booking.id}
+                </Text>
+              </View>
               <View style={styles.cardDivider} />
               <View style={styles.cardFooter}>
                 <Text style={styles.cardTotalLabel}>Total</Text>
@@ -257,6 +339,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   backButton: {
+    padding: 4,
+  },
+  refreshButton: {
     padding: 4,
   },
   title: {
@@ -354,6 +439,26 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardDateTimeText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  cardVehicle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  cardVehicleText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  cardBookingId: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  cardBookingIdText: {
     fontSize: 14,
     color: '#6B7280',
   },

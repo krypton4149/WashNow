@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  TextInput,
+  Alert,
 } from 'react-native';
 
 interface ScheduleBookingScreenProps {
@@ -36,13 +38,6 @@ interface TimeSlot {
   isAvailable: boolean;
 }
 
-interface Vehicle {
-  id: string;
-  name: string;
-  plateNumber: string;
-  type: string;
-  isSelected: boolean;
-}
 
 const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   onBack,
@@ -50,11 +45,18 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   selectedCenter,
 }) => {
   const [selectedService, setSelectedService] = useState<string>('car-wash');
-  const [selectedDate, setSelectedDate] = useState<string>('22');
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [selectedVehicle, setSelectedVehicle] = useState<string>('toyota-camry');
+  const [vehicleNumber, setVehicleNumber] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
   const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
+
+  // Initialize with today's date
+  React.useEffect(() => {
+    const today = new Date().getDate();
+    setSelectedDate(today.toString());
+  }, []);
 
   const services: Service[] = [
     {
@@ -81,41 +83,28 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     { id: '19:00', time: '07:00 PM', isAvailable: true },
   ];
 
-  const vehicles: Vehicle[] = [
-    {
-      id: 'toyota-camry',
-      name: 'Toyota Camry',
-      plateNumber: 'ABC 1234',
-      type: 'Sedan',
-      isSelected: true,
-    },
-    {
-      id: 'honda-crv',
-      name: 'Honda CR-V',
-      plateNumber: 'XYZ 5678',
-      type: 'SUV',
-      isSelected: false,
-    },
-  ];
 
   const generateCalendarDays = () => {
     const days = [];
-    
-    // Get first day of current month
-    const firstDay = new Date(currentYear, currentMonth, 1);
+    const today = new Date();
+    const currentDate = new Date(currentYear, currentMonth, 1);
     const lastDay = new Date(currentYear, currentMonth + 1, 0);
     
     // Add empty cells for days before month starts
-    for (let i = 0; i < firstDay.getDay(); i++) {
-      days.push({ day: '', isCurrentMonth: false, isSelected: false });
+    for (let i = 0; i < currentDate.getDay(); i++) {
+      days.push({ day: '', isCurrentMonth: false, isSelected: false, isPast: false });
     }
     
     // Add days of the month
     for (let day = 1; day <= lastDay.getDate(); day++) {
+      const dayDate = new Date(currentYear, currentMonth, day);
+      const isPast = dayDate < today.setHours(0, 0, 0, 0);
+      
       days.push({
         day: day.toString(),
         isCurrentMonth: true,
         isSelected: day.toString() === selectedDate,
+        isPast: isPast,
       });
     }
     
@@ -152,8 +141,8 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     setSelectedService(serviceId);
   };
 
-  const handleDateSelect = (day: string) => {
-    if (day && day !== '') {
+  const handleDateSelect = (day: string, isPast: boolean) => {
+    if (day && day !== '' && !isPast) {
       setSelectedDate(day);
     }
   };
@@ -162,8 +151,42 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     setSelectedTime(timeId);
   };
 
-  const handleVehicleSelect = (vehicleId: string) => {
-    setSelectedVehicle(vehicleId);
+  const validateBooking = () => {
+    if (!selectedDate) {
+      Alert.alert('Error', 'Please select a date');
+      return false;
+    }
+    if (!selectedTime) {
+      Alert.alert('Error', 'Please select a time');
+      return false;
+    }
+    if (!vehicleNumber.trim()) {
+      Alert.alert('Error', 'Please enter vehicle number');
+      return false;
+    }
+    return true;
+  };
+
+  const handleBooking = () => {
+    if (!validateBooking()) {
+      return;
+    }
+
+    // Format time as HH:MM AM/PM
+    const selectedTimeSlot = timeSlots.find(slot => slot.id === selectedTime);
+    const formattedTime = selectedTimeSlot?.time || '';
+
+    // Pass booking data to parent component for payment screen
+    const bookingInfo = {
+      center: selectedCenter,
+      service: 'Car Wash',
+      date: new Date(currentYear, currentMonth, parseInt(selectedDate)).toISOString(),
+      time: formattedTime,
+      vehicleNumber: vehicleNumber.trim(),
+      notes: notes.trim(),
+    };
+    
+    onContinue(bookingInfo);
   };
 
   const renderServiceItem = (service: Service) => (
@@ -202,14 +225,16 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
         styles.calendarDay,
         dayData.isSelected && styles.calendarDaySelected,
         !dayData.isCurrentMonth && styles.calendarDayInactive,
+        dayData.isPast && styles.calendarDayPast,
       ]}
-      onPress={() => handleDateSelect(dayData.day)}
-      disabled={!dayData.isCurrentMonth}
+      onPress={() => handleDateSelect(dayData.day, dayData.isPast)}
+      disabled={!dayData.isCurrentMonth || dayData.isPast}
     >
       <Text style={[
         styles.calendarDayText,
         dayData.isSelected && styles.calendarDayTextSelected,
         !dayData.isCurrentMonth && styles.calendarDayTextInactive,
+        dayData.isPast && styles.calendarDayTextPast,
       ]}>
         {dayData.day}
       </Text>
@@ -235,42 +260,6 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     </TouchableOpacity>
   );
 
-  const renderVehicle = (vehicle: Vehicle) => (
-    <TouchableOpacity
-      key={vehicle.id}
-      style={[
-        styles.vehicleCard,
-        selectedVehicle === vehicle.id && styles.vehicleCardSelected,
-      ]}
-      onPress={() => handleVehicleSelect(vehicle.id)}
-    >
-      <View style={[
-        styles.vehicleIcon,
-        selectedVehicle === vehicle.id && styles.vehicleIconSelected,
-      ]}>
-        <Text style={[
-          styles.vehicleIconText,
-          selectedVehicle === vehicle.id && styles.vehicleIconTextSelected,
-        ]}>🚗</Text>
-      </View>
-      <View style={styles.vehicleInfo}>
-        <Text style={[
-          styles.vehicleName,
-          selectedVehicle === vehicle.id && styles.vehicleNameSelected,
-        ]}>
-          {vehicle.name}
-        </Text>
-        <Text style={styles.vehicleDetails}>
-          {vehicle.plateNumber} • {vehicle.type}
-        </Text>
-      </View>
-      {selectedVehicle === vehicle.id && (
-        <View style={styles.vehicleCheckmark}>
-          <Text style={styles.vehicleCheckmarkText}>✓</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -373,11 +362,34 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
           </View>
         </View>
 
-        {/* Vehicle Selection */}
+        {/* Vehicle Number */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Vehicle</Text>
-          <View style={styles.vehiclesList}>
-            {vehicles.map(renderVehicle)}
+          <Text style={styles.sectionTitle}>Vehicle Number</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Enter vehicle number (e.g., ABC 1234)"
+              placeholderTextColor="#9CA3AF"
+              value={vehicleNumber}
+              onChangeText={setVehicleNumber}
+              autoCapitalize="characters"
+            />
+          </View>
+        </View>
+
+        {/* Notes */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notes (Optional)</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={[styles.textInput, styles.notesInput]}
+              placeholder="Any special instructions or notes..."
+              placeholderTextColor="#9CA3AF"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+            />
           </View>
         </View>
 
@@ -392,21 +404,12 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
           </View>
         </View>
 
-        {/* Continue Button */}
+        {/* Book Now Button */}
         <TouchableOpacity 
           style={styles.continueButton} 
-          onPress={() => {
-            const bookingInfo = {
-              center: selectedCenter,
-              service: 'Car Wash',
-              date: new Date(currentYear, currentMonth, parseInt(selectedDate)).toISOString(),
-              time: timeSlots.find(slot => slot.id === selectedTime)?.time || '',
-              vehicle: vehicles.find(v => v.id === selectedVehicle) || vehicles[0],
-            };
-            onContinue(bookingInfo);
-          }}
+          onPress={handleBooking}
         >
-          <Text style={styles.continueButtonText}>Continue to Confirmation</Text>
+          <Text style={styles.continueButtonText}>Book Now</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -653,8 +656,28 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  calendarDayTextInactive: {
+  calendarDayPast: {
+    opacity: 0.3,
+  },
+  calendarDayTextPast: {
     color: '#9CA3AF',
+  },
+  inputContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  textInput: {
+    fontSize: 16,
+    color: '#000000',
+    paddingVertical: 8,
+  },
+  notesInput: {
+    height: 80,
+    textAlignVertical: 'top',
   },
   selectedDateContainer: {
     marginTop: 16,
@@ -707,69 +730,6 @@ const styles = StyleSheet.create({
   },
   timeSlotTextSelected: {
     color: '#FFFFFF',
-  },
-  vehiclesList: {
-    gap: 12,
-  },
-  vehicleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  vehicleCardSelected: {
-    borderColor: '#000000',
-  },
-  vehicleIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  vehicleIconSelected: {
-    backgroundColor: '#000000',
-  },
-  vehicleIconText: {
-    fontSize: 20,
-    color: '#000000',
-  },
-  vehicleIconTextSelected: {
-    color: '#FFFFFF',
-  },
-  vehicleInfo: {
-    flex: 1,
-  },
-  vehicleName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 2,
-  },
-  vehicleNameSelected: {
-    color: '#000000',
-  },
-  vehicleDetails: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  vehicleCheckmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  vehicleCheckmarkText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
   },
   scheduleInfo: {
     flexDirection: 'row',
