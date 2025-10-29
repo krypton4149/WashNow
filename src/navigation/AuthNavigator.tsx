@@ -30,19 +30,8 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess }) => {
       const result = await authService.login(emailOrPhone, password);
       
       if (result.success) {
-        // Show success message
-        Alert.alert(
-          'Login Successful!',
-          'Welcome back! You have been signed in successfully.',
-          [
-            {
-              text: 'Continue',
-              onPress: () => {
-                onAuthSuccess();
-              }
-            }
-          ]
-        );
+        // Directly proceed with authentication without showing success message
+        onAuthSuccess();
       } else {
         Alert.alert(
           'Login Failed',

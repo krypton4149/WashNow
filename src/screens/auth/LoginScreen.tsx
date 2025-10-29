@@ -37,20 +37,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = () => {
-    if (loginType === 'phone') {
-      // For phone login, only check phone number
-      if (phone.trim()) {
-        onSendOTP(phone.trim());
-      } else {
-        Alert.alert('Error', 'Please enter your phone number');
-      }
+    // For email login, check both email and password
+    if (email.trim() && password.trim()) {
+      onLogin(email.trim(), password.trim(), 'email');
     } else {
-      // For email login, check both email and password
-      if (email.trim() && password.trim()) {
-        onLogin(email.trim(), password.trim(), loginType);
-      } else {
-        Alert.alert('Error', 'Please fill in all fields');
-      }
+      Alert.alert('Error', 'Please fill in all fields');
     }
   };
 
@@ -58,9 +49,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     Keyboard.dismiss();
   };
 
-  const isFormValid = 
-    (loginType === 'email' ? email.trim().length > 0 : phone.trim().length > 0) && 
-    (loginType === 'email' ? password.trim().length > 0 : true);
+  const isFormValid = email.trim().length > 0 && password.trim().length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -87,8 +76,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 </Text>
               </View>
 
-              {/* Login Type Selector */}
-              <View style={styles.loginTypeContainer}>
+              {/* Login Type Selector - Hidden */}
+              {/* <View style={styles.loginTypeContainer}>
                 <TouchableOpacity
                   style={[
                     styles.loginTypeButton,
@@ -103,75 +92,55 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                     Email
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.loginTypeButton,
-                    loginType === 'phone' && styles.loginTypeButtonActive
-                  ]}
-                  onPress={() => setLoginType('phone')}
-                >
-                  <Text style={[
-                    styles.loginTypeText,
-                    loginType === 'phone' && styles.loginTypeTextActive
-                  ]}>
-                    Phone
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              </View> */}
 
               {/* Form Fields */}
               <View style={styles.formContainer}>
-                {/* Email/Phone Field */}
+                {/* Email Field */}
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>
-                    {loginType === 'email' ? 'Email Address' : 'Phone Number'}
-                  </Text>
+                  <Text style={styles.label}>Email Address</Text>
                   <View style={styles.inputField}>
                     <TextInput
                       style={styles.textInput}
-                      placeholder={loginType === 'email' ? 'Enter your email' : 'Enter your phone number'}
+                      placeholder="Enter your email"
                       placeholderTextColor="#999999"
-                      value={loginType === 'email' ? email : phone}
-                      onChangeText={loginType === 'email' ? setEmail : setPhone}
-                      keyboardType={loginType === 'email' ? 'email-address' : 'phone-pad'}
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
                     />
                   </View>
                 </View>
 
-                {/* Password Field - Only show for email login */}
-                {loginType === 'email' && (
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.label}>Password</Text>
-                    <View style={styles.inputField}>
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="Enter your password"
-                        placeholderTextColor="#999999"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                      <TouchableOpacity
-                        style={styles.eyeButton}
-                        onPress={() => setShowPassword(!showPassword)}
-                      >
-                        <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
-                      </TouchableOpacity>
-                    </View>
+                {/* Password Field */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={styles.inputField}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#999999"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
+                </View>
               </View>
 
-              {/* Forgot Password Link - Only show for email login */}
-              {loginType === 'email' && (
-                <TouchableOpacity style={styles.forgotPasswordContainer} onPress={onForgotPassword}>
-                  <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                </TouchableOpacity>
-              )}
+              {/* Forgot Password Link */}
+              <TouchableOpacity style={styles.forgotPasswordContainer} onPress={onForgotPassword}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
 
               {/* Login Button */}
               <TouchableOpacity
@@ -179,9 +148,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 onPress={handleLogin}
                 disabled={!isFormValid}
               >
-                <Text style={styles.loginButtonText}>
-                  {loginType === 'phone' ? 'Send OTP' : 'Sign In'}
-                </Text>
+                <Text style={styles.loginButtonText}>Sign In</Text>
               </TouchableOpacity>
 
               {/* Register Link */}
