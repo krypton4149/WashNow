@@ -302,6 +302,7 @@ const AppContent: React.FC = () => {
           <FindingCarWashScreen 
             onBack={() => setCurrentScreen('book-wash')}
             onBookingConfirmed={handleBookingConfirmed}
+            selectedLocation={selectedLocation}
           />
         );
       case 'booking-confirmed':

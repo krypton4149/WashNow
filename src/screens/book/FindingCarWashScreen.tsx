@@ -10,10 +10,12 @@ import {
   Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import authService from '../../services/authService';
 
 interface Props {
   onBack?: () => void;
   onBookingConfirmed?: (center: any) => void;
+  selectedLocation?: { id: string; name: string } | null;
 }
 
 interface ServiceCenter {
@@ -25,52 +27,40 @@ interface ServiceCenter {
   status: 'waiting' | 'not-available' | 'accepted';
 }
 
-const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed }) => {
+const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, selectedLocation }) => {
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [centers, setCenters] = useState<ServiceCenter[]>([
-    {
-      id: '1',
-      name: 'Premium Auto Wash',
-      rating: 4.8,
-      distance: '0.5 mi',
-      address: 'Downtown, New York - 123 Main Street',
-      status: 'waiting',
-    },
-    {
-      id: '2',
-      name: 'Elite Car Care',
-      rating: 4.6,
-      distance: '0.7 mi',
-      address: 'Madison, Midtown, New York',
-      status: 'waiting',
-    },
-    {
-      id: '3',
-      name: 'Pro Shine Detail',
-      rating: 4.9,
-      distance: '0.9 mi',
-      address: 'Upper East Side, New York',
-      status: 'not-available',
-    },
-    {
-      id: '4',
-      name: 'Auto Detail Express',
-      rating: 4.7,
-      distance: '1.3 mi',
-      address: '321 5th Avenue, Chelsea, New York',
-      status: 'not-available',
-    },
-    {
-      id: '5',
-      name: 'Platinum Car Wash Center',
-      rating: 4.5,
-      distance: '1.7 mi',
-      address: '654 Lexington Ave, Gramercy, New York',
-      status: 'waiting',
-    },
-  ]);
+  const [centers, setCenters] = useState<ServiceCenter[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    // Load centers from API on mount
+    const loadCenters = async () => {
+      try {
+        setIsLoading(true);
+        const resp = await authService.getServiceCenters();
+        if (resp.success) {
+          const mapped: ServiceCenter[] = (resp.serviceCenters || []).map((c: any, index: number) => ({
+            id: (c.id ?? index + 1).toString(),
+            name: c.name || c.service_centre_name || 'Car Wash Center',
+            rating: Number(c.rating || 4.5),
+            distance: c.distance ? `${c.distance}` : (index + 1) * 0.5 + ' mi',
+            address: c.address || c.location || 'Address not available',
+            status: 'waiting',
+          }));
+          setCenters(mapped);
+        } else {
+          // Fallback: keep empty and let UI show none
+          console.log('Failed to fetch centers:', resp.error);
+        }
+      } catch (e) {
+        console.log('Error fetching service centers:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCenters();
+
     const timer = setInterval(() => {
       setTimeElapsed(prev => prev + 1);
     }, 1000);
@@ -78,8 +68,8 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed }) =
     // Simulate a center accepting the request after 7 seconds
     const acceptTimer = setTimeout(() => {
       setCenters(prev => 
-        prev.map(center => 
-          center.id === '1' 
+        prev.map((center, idx) => 
+          idx === 0 
             ? { ...center, status: 'accepted' as const }
             : center.status === 'waiting' 
             ? { ...center, status: 'not-available' as const }
@@ -89,7 +79,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed }) =
       
       // Navigate to booking confirmed screen after 2 seconds
       setTimeout(() => {
-        const acceptedCenter = centers.find(c => c.id === '1');
+        const acceptedCenter = (prevCenters => prevCenters.find((_, idx) => idx === 0))(centers);
         onBookingConfirmed?.(acceptedCenter);
       }, 2000);
     }, 7000);
@@ -98,7 +88,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed }) =
       clearInterval(timer);
       clearTimeout(acceptTimer);
     };
-  }, [onBookingConfirmed, centers]);
+  }, [onBookingConfirmed]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -199,7 +189,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed }) =
               <Ionicons name="location-outline" size={16} color="#666666" />
               <Text style={styles.requestLabel}>Your location</Text>
             </View>
-            <Text style={styles.requestAddress}>Downtown, New York - 123 Main Street</Text>
+            <Text style={styles.requestAddress}>{selectedLocation?.name || 'Current location'}</Text>
           </View>
         </View>
 
@@ -207,7 +197,13 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed }) =
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Broadcasting to All Centers ({centers.length})</Text>
           <View style={styles.centersList}>
-            {centers.map(renderCenter)}
+            {isLoading ? (
+              <Text style={{ color: '#666666' }}>Loading centers...</Text>
+            ) : centers.length === 0 ? (
+              <Text style={{ color: '#666666' }}>No centers available nearby.</Text>
+            ) : (
+              centers.map(renderCenter)
+            )}
           </View>
         </View>
       </ScrollView>
