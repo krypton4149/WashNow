@@ -112,6 +112,27 @@ const PaymentScreen: React.FC<Props> = ({
               )}
             </View>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[
+              styles.paymentMethod,
+              selectedPaymentMethod === 'cash' && styles.paymentMethodSelected
+            ]}
+            onPress={() => setSelectedPaymentMethod('cash')}
+          >
+            <View style={styles.paymentMethodLeft}>
+              <Ionicons name="cash" size={24} color="#000" />
+              <Text style={styles.paymentMethodText}>Cash</Text>
+            </View>
+            <View style={[
+              styles.radioButton,
+              selectedPaymentMethod === 'cash' && styles.radioButtonSelected
+            ]}>
+              {selectedPaymentMethod === 'cash' && (
+                <View style={styles.radioButtonInner} />
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Payment Summary */}
@@ -147,7 +168,9 @@ const PaymentScreen: React.FC<Props> = ({
           {isProcessing ? (
             <Text style={styles.payButtonText}>Processing...</Text>
           ) : (
-            <Text style={styles.payButtonText}>Pay $27.50</Text>
+            <Text style={styles.payButtonText}>
+              {selectedPaymentMethod === 'cash' ? 'Confirm Cash Payment' : 'Pay $27.50'}
+            </Text>
           )}
         </TouchableOpacity>
       </View>

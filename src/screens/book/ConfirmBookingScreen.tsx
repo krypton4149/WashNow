@@ -15,6 +15,7 @@ import authService from '../../services/authService';
 interface ConfirmBookingScreenProps {
   onBack: () => void;
   onConfirmBooking: () => void;
+  onSendRequestToCenters: () => void;
   bookingData: {
     center: {
       id: string;
@@ -49,6 +50,7 @@ interface PaymentMethod {
 const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
   onBack,
   onConfirmBooking,
+  onSendRequestToCenters,
   bookingData,
 }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('credit-card');
@@ -131,7 +133,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
         const serviceCenterId = serviceCenterIds[i];
         
         const apiBookingData = {
-          service_centre_id: serviceCenterId,
+          service_centre_id: serviceCenterId.toString(),
           booking_date: formattedDate,
           booking_time: bookingData.time,
           vehicle_no: vehicleNumber.trim(),
@@ -154,7 +156,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
               {
                 text: 'OK',
                 onPress: () => {
-                  // Navigate directly to dashboard
+                  // Navigate to booking confirmation screen
                   onConfirmBooking();
                 }
               }
@@ -312,7 +314,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
           disabled={isBooking}
         >
           <Text style={styles.confirmButtonText}>
-            {isBooking ? 'Processing Payment...' : 'Pay Now'}
+            {isBooking ? 'Sending Request...' : 'Pay Now'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -150,7 +150,15 @@ const AppContent: React.FC = () => {
   };
 
   const handleConfirmBooking = () => {
-    setCurrentScreen('customer'); // Navigate directly to dashboard
+    setCurrentScreen('customer'); // Navigate directly to dashboard after successful payment
+  };
+
+  const handleInstantBooking = () => {
+    setCurrentScreen('finding-car-wash'); // Navigate to finding car wash screen for instant booking
+  };
+
+  const handleSendRequestToCenters = () => {
+    setCurrentScreen('finding-car-wash');
   };
 
   const handleBookingConfirmed = (center: any) => {
@@ -286,7 +294,7 @@ const AppContent: React.FC = () => {
             onBack={() => setCurrentScreen('customer')}
             onNavigateToAvailableNow={() => setCurrentScreen('available-now')}
             onNavigateToScheduleForLater={handleNavigateToScheduleForLater}
-            onConfirmBooking={handleConfirmBooking}
+            onConfirmBooking={handleInstantBooking}
           />
         );
       case 'finding-car-wash':
@@ -349,6 +357,7 @@ const AppContent: React.FC = () => {
           <ConfirmBookingScreen 
             onBack={() => setCurrentScreen('schedule-booking')}
             onConfirmBooking={handleConfirmBooking}
+            onSendRequestToCenters={handleSendRequestToCenters}
             bookingData={bookingData || {
               center: {
                 id: '1',
