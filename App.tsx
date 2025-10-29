@@ -171,7 +171,8 @@ const AppContent: React.FC = () => {
   };
 
   const handlePaymentSuccess = () => {
-    setCurrentScreen('payment-confirmed');
+    // After confirming payment (e.g., Cash booking), go to dashboard
+    setCurrentScreen('customer');
   };
 
   const handleViewBookingStatus = () => {

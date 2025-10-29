@@ -6,8 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import authService from '../../services/authService';
 
 interface Props {
   onBack?: () => void;
@@ -28,15 +30,69 @@ const PaymentScreen: React.FC<Props> = ({
 }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [notes, setNotes] = useState('');
 
-  const handlePayment = () => {
+  const formatDate = (d: Date) => {
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`; // DD-MM-YYYY
+  };
+
+  const getCurrentTime = (d: Date) => {
+    const hh = d.getHours().toString().padStart(2, '0');
+    const mm = d.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+
+  const handlePayment = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
-    
-    // Simulate payment processing
-    setTimeout(() => {
+
+    try {
+      if (selectedPaymentMethod === 'cash') {
+        // Validate required inputs
+        if (!acceptedCenter?.id) {
+          Alert.alert('Error', 'Service center is missing.');
+          setIsProcessing(false);
+          return;
+        }
+        if (!vehicleNumber.trim()) {
+          Alert.alert('Validation', 'Please enter your vehicle number.');
+          setIsProcessing(false);
+          return;
+        }
+
+        // Prepare instant booking payload
+        const now = new Date();
+        const payload = {
+          service_centre_id: String(acceptedCenter.id),
+          booking_date: formatDate(now),
+          booking_time: getCurrentTime(now),
+          vehicle_no: vehicleNumber.trim(),
+          notes: notes?.trim() ? notes.trim() : 'Payment method: Cash',
+        };
+
+        const result = await authService.bookNow(payload);
+        if (result.success) {
+          Alert.alert('Booking Confirmed', `Booking ID: ${result.bookingId || 'N/A'}`, [
+            { text: 'OK', onPress: () => onPaymentSuccess?.() },
+          ]);
+        } else {
+          Alert.alert('Booking Failed', result.error || 'Please try again later.');
+        }
+      } else {
+        // Simulate card / wallet payment then navigate
+        setTimeout(() => {
+          onPaymentSuccess?.();
+        }, 1200);
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Unable to process payment.');
+    } finally {
       setIsProcessing(false);
-      onPaymentSuccess?.();
-    }, 2000);
+    }
   };
 
   return (
@@ -134,6 +190,28 @@ const PaymentScreen: React.FC<Props> = ({
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* Vehicle details for Cash */}
+        {selectedPaymentMethod === 'cash' && (
+          <View style={styles.serviceCard}>
+            <Text style={styles.serviceTitle}>Vehicle Details</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Vehicle number (e.g., UP68 AB1234)"
+              placeholderTextColor="#9CA3AF"
+              value={vehicleNumber}
+              onChangeText={setVehicleNumber}
+              autoCapitalize="characters"
+            />
+            <TextInput
+              style={[styles.input, { marginTop: 12 }]}
+              placeholder="Notes (optional)"
+              placeholderTextColor="#9CA3AF"
+              value={notes}
+              onChangeText={setNotes}
+            />
+          </View>
+        )}
 
         {/* Payment Summary */}
         <View style={styles.summaryCard}>
@@ -281,6 +359,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     padding: 16,
     borderRadius: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: '#000',
   },
   summaryTitle: {
     fontSize: 16,
