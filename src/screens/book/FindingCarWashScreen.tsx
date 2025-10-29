@@ -31,29 +31,98 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [centers, setCenters] = useState<ServiceCenter[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [acceptedCenter, setAcceptedCenter] = useState<ServiceCenter | null>(null);
+
+  // Calculate distance from coordinates (simplified Haversine formula)
+  const calculateDistance = (lat: string, lng: string): string => {
+    try {
+      const centerLat = parseFloat(lat);
+      const centerLng = parseFloat(lng);
+      
+      // Mock user location (you can replace with actual user location)
+      const userLat = 51.557253; // Example: Harrow area
+      const userLng = -0.362310;
+      
+      // Simple distance calculation (not precise but good enough for demo)
+      const latDiff = Math.abs(centerLat - userLat);
+      const lngDiff = Math.abs(centerLng - userLng);
+      const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 69; // Rough miles conversion
+      
+      return `${distance.toFixed(1)} mi`;
+    } catch (error) {
+      return '0.5 mi'; // Default fallback
+    }
+  };
 
   useEffect(() => {
     // Load centers from API on mount
     const loadCenters = async () => {
       try {
         setIsLoading(true);
+        console.log('Loading service centers for broadcasting...');
         const resp = await authService.getServiceCenters();
-        if (resp.success) {
-          const mapped: ServiceCenter[] = (resp.serviceCenters || []).map((c: any, index: number) => ({
-            id: (c.id ?? index + 1).toString(),
-            name: c.name || c.service_centre_name || 'Car Wash Center',
-            rating: Number(c.rating || 4.5),
-            distance: c.distance ? `${c.distance}` : (index + 1) * 0.5 + ' mi',
-            address: c.address || c.location || 'Address not available',
-            status: 'waiting',
-          }));
+        console.log('Service centers API response:', JSON.stringify(resp, null, 2));
+        
+        if (resp.success && resp.serviceCenters) {
+          console.log('Successfully loaded centers:', resp.serviceCenters.length);
+          const mapped: ServiceCenter[] = (resp.serviceCenters || []).map((c: any, index: number) => {
+            // Calculate distance based on coordinates (simplified calculation)
+            const distance = calculateDistance(c.clat, c.clong);
+            
+            return {
+              id: c.id?.toString() || (index + 1).toString(),
+              name: c.name || 'Car Wash Center',
+              rating: 4.5 + (index * 0.1), // Generate rating since not in API
+              distance: distance,
+              address: c.address || 'Address not available',
+              status: 'waiting',
+            };
+          });
+          
+          console.log('Mapped centers:', mapped);
           setCenters(mapped);
         } else {
-          // Fallback: keep empty and let UI show none
           console.log('Failed to fetch centers:', resp.error);
+          // Fallback: show some mock centers for testing
+          const mockCenters: ServiceCenter[] = [
+            {
+              id: '1',
+              name: 'Harrow Hand Car Wash',
+              rating: 4.6,
+              distance: '0.5 mi',
+              address: 'Northolt Road, South Harrow, HA2 6AF',
+              status: 'waiting',
+            },
+            {
+              id: '2',
+              name: 'Pro Hand Car Wash',
+              rating: 4.7,
+              distance: '0.8 mi',
+              address: 'Rayners Lane, Harrow, HA2 9SX',
+              status: 'waiting',
+            },
+            {
+              id: '3',
+              name: 'Medusa Auto Detailing',
+              rating: 4.8,
+              distance: '1.2 mi',
+              address: 'Alveston Ave, Harrow HA3 8TG, United Kingdom',
+              status: 'waiting',
+            },
+            {
+              id: '4',
+              name: 'South Harrow Hand Car Wash',
+              rating: 4.5,
+              distance: '0.6 mi',
+              address: '290 Northolt Road, South Harrow, HA2 8EB',
+              status: 'waiting',
+            }
+          ];
+          setCenters(mockCenters);
         }
       } catch (e) {
         console.log('Error fetching service centers:', e);
+        setCenters([]);
       } finally {
         setIsLoading(false);
       }
@@ -61,27 +130,22 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
 
     loadCenters();
 
+    // Timer for searching card
     const timer = setInterval(() => {
       setTimeElapsed(prev => prev + 1);
     }, 1000);
 
-    // Simulate a center accepting the request after 7 seconds
+    // Simulate broadcast results: first becomes accepted, others become not available
     const acceptTimer = setTimeout(() => {
-      setCenters(prev => 
-        prev.map((center, idx) => 
-          idx === 0 
-            ? { ...center, status: 'accepted' as const }
-            : center.status === 'waiting' 
-            ? { ...center, status: 'not-available' as const }
-            : center
-        )
-      );
-      
-      // Navigate to booking confirmed screen after 2 seconds
-      setTimeout(() => {
-        const acceptedCenter = (prevCenters => prevCenters.find((_, idx) => idx === 0))(centers);
-        onBookingConfirmed?.(acceptedCenter);
-      }, 2000);
+      setCenters(prev => {
+        const updated = prev.map((c, idx) => (
+          idx === 0 ? { ...c, status: 'accepted' as const } : { ...c, status: 'not-available' as const }
+        ));
+        // Save accepted center locally; navigate in a separate effect to avoid setState during render
+        const accepted = updated[0] || null;
+        setAcceptedCenter(accepted);
+        return updated;
+      });
     }, 7000);
 
     return () => {
@@ -89,6 +153,16 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       clearTimeout(acceptTimer);
     };
   }, [onBookingConfirmed]);
+
+  // Navigate to match found screen after a center is accepted
+  useEffect(() => {
+    if (acceptedCenter) {
+      const navTimer = setTimeout(() => {
+        onBookingConfirmed?.(acceptedCenter);
+      }, 0);
+      return () => clearTimeout(navTimer);
+    }
+  }, [acceptedCenter, onBookingConfirmed]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -166,9 +240,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
             </View>
           </View>
           <View style={styles.searchingBody}>
-            <Text style={styles.searchingText}>
-              {hasAcceptedCenter ? 'Match found!' : 'Searching for available centers...'}
-            </Text>
+            <Text style={styles.searchingText}>Searching for available centers...</Text>
             <Text style={styles.timeText}>Time elapsed: {formatTime(timeElapsed)}</Text>
           </View>
         </View>
@@ -189,7 +261,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               <Ionicons name="location-outline" size={16} color="#666666" />
               <Text style={styles.requestLabel}>Your location</Text>
             </View>
-            <Text style={styles.requestAddress}>{selectedLocation?.name || 'Current location'}</Text>
+            <Text style={styles.requestAddress}>{selectedLocation?.name || 'Downtown, New York - 123 Main Street'}</Text>
           </View>
         </View>
 
@@ -416,6 +488,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+  },
+  centerSimpleCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  centerSimpleIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  centerSimpleName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 4,
+  },
+  centerSimpleAddress: {
+    fontSize: 14,
+    color: '#666666',
   },
   cancelButton: {
     backgroundColor: '#F3F4F6',
