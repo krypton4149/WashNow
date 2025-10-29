@@ -135,14 +135,18 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       setTimeElapsed(prev => prev + 1);
     }, 1000);
 
-    // Simulate broadcast results: first becomes accepted, others become not available
+    // Simulate broadcast results: random center becomes accepted, others become not available
     const acceptTimer = setTimeout(() => {
       setCenters(prev => {
+        // Randomly select which center accepts the request
+        const randomIndex = prev.length > 0 ? Math.floor(Math.random() * prev.length) : 0;
+        
         const updated = prev.map((c, idx) => (
-          idx === 0 ? { ...c, status: 'accepted' as const } : { ...c, status: 'not-available' as const }
+          idx === randomIndex ? { ...c, status: 'accepted' as const } : { ...c, status: 'not-available' as const }
         ));
+        
         // Save accepted center locally; navigate in a separate effect to avoid setState during render
-        const accepted = updated[0] || null;
+        const accepted = updated[randomIndex] || null;
         setAcceptedCenter(accepted);
         return updated;
       });
