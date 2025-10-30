@@ -35,6 +35,11 @@ interface Activity {
   serviceType: string;
   time: string;
   status: 'In Progress' | 'Completed';
+  bookingDate?: string;
+  bookingTime?: string;
+  vehicleNo?: string;
+  bookingCode?: string;
+  paymentMethod?: string;
 }
 
 interface Booking {
@@ -112,6 +117,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
+  const getStatusStyles = (status: string) => {
+    const color = getStatusColor(status);
+    // Light tint background for pill; readable text color equals main color
+    const background = status === 'In Progress'
+      ? 'rgba(59, 130, 246, 0.15)'
+      : status === 'Completed'
+      ? 'rgba(16, 185, 129, 0.15)'
+      : 'rgba(107, 114, 128, 0.15)';
+    return { backgroundColor: background, color };
+  };
+
   // Load bookings data
   useEffect(() => {
     loadBookings();
@@ -163,6 +179,11 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       serviceType: booking.service_type,
       time: formatBookingTime(booking.booking_date, booking.created_at),
       status: mapBookingStatus(booking.status),
+      bookingDate: booking.booking_date,
+      bookingTime: booking.booking_time,
+      vehicleNo: booking.vehicle_no,
+      bookingCode: booking.booking_id,
+      paymentMethod: booking.notes || undefined,
     }));
 
   const renderActivityItem = (activity: Activity) => (
@@ -175,17 +196,18 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={styles.activityInfo}>
           <Text style={styles.activityTitle}>{activity.title}</Text>
           <Text style={styles.activityService}>{activity.serviceType}</Text>
-          <Text style={styles.activityTimeText}>{activity.time}</Text>
+          <View style={styles.timeRow}>
+            <Ionicons name="time-outline" size={14} color="#6B7280" style={styles.timeIcon} />
+            <Text style={styles.activityTimeText}>{activity.time}</Text>
+          </View>
         </View>
         <View style={styles.activityRight}>
-          <View
-            style={[
-              styles.statusTag,
-              { backgroundColor: getStatusColor(activity.status) },
-            ]}
-          >
-            <Text style={styles.statusText}>{activity.status}</Text>
+          <View style={[styles.statusTag, { backgroundColor: getStatusStyles(activity.status).backgroundColor }]}>
+            <Text style={[styles.statusText, { color: getStatusStyles(activity.status).color }]}>
+              {activity.status}
+            </Text>
           </View>
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" style={styles.chevron} />
         </View>
       </View>
     </TouchableOpacity>
@@ -199,21 +221,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.welcomeText}>Welcome back,</Text>
-              <Text style={styles.userNameText}>{firstName}!</Text>
-            </View>
-            <View style={styles.headerIcons}>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={onNotificationPress}
-              >
-                <Ionicons name="notifications-outline" size={24} color="#000000" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={onProfilePress}
-              >
-                <Ionicons name="person-outline" size={24} color="#000000" />
-              </TouchableOpacity>
+              <Text style={styles.userNameText}>{firstName}</Text>
             </View>
           </View>
         </View>
@@ -221,6 +229,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         {/* Summary Cards */}
         <View style={styles.summaryCards}>
           <View style={styles.summaryCard}>
+            <View style={styles.summaryIconWrap}>
+              <Ionicons name="calendar-outline" size={20} color="#6B7280" />
+            </View>
             <Text style={styles.summaryNumber}>
               {isLoading ? <ActivityIndicator size="small" color="#000000" /> : totalBookings}
             </Text>
@@ -228,6 +239,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
           
           <View style={styles.summaryCard}>
+            <View style={styles.summaryIconWrap}>
+              <Ionicons name="time-outline" size={20} color="#6B7280" />
+            </View>
             <Text style={styles.summaryNumber}>
               {isLoading ? <ActivityIndicator size="small" color="#000000" /> : currentRequests}
             </Text>
@@ -235,6 +249,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
           
           <View style={styles.summaryCard}>
+            <View style={styles.summaryIconWrap}>
+              <Ionicons name="checkmark-done-outline" size={20} color="#6B7280" />
+            </View>
             <Text style={styles.summaryNumber}>
               {isLoading ? <ActivityIndicator size="small" color="#000000" /> : completedBookings}
             </Text>
@@ -301,15 +318,18 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 16,
+    padding: 14,
     alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  },
+  summaryIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   summaryNumber: { fontSize: 24, fontWeight: 'bold', color: '#000000', marginVertical: 8 },
   summaryLabel: { fontSize: 12, color: '#6B7280', textAlign: 'center' },
@@ -347,10 +367,13 @@ const styles = StyleSheet.create({
   activityInfo: { flex: 1 },
   activityTitle: { fontSize: 16, fontWeight: '600', color: '#000000', marginBottom: 4 },
   activityService: { fontSize: 14, color: '#6B7280', marginBottom: 8 },
+  timeRow: { flexDirection: 'row', alignItems: 'center' },
+  timeIcon: { marginRight: 6 },
   activityTimeText: { fontSize: 12, color: '#6B7280' },
-  activityRight: { alignItems: 'center' },
-  statusTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  statusText: { fontSize: 12, color: '#FFFFFF', fontWeight: '500' },
+  activityRight: { alignItems: 'center', flexDirection: 'row' },
+  statusTag: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 },
+  statusText: { fontSize: 12, fontWeight: '600' },
+  chevron: { marginLeft: 10 },
   loadingContainer: { alignItems: 'center', paddingVertical: 40 },
   loadingText: { fontSize: 14, color: '#6B7280', marginTop: 12 },
   emptyContainer: { alignItems: 'center', paddingVertical: 40 },

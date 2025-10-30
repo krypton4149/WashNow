@@ -30,6 +30,7 @@ import SettingsScreen from './src/screens/settings/SettingsScreen';
 import NotificationsScreen from './src/screens/notifications/NotificationsScreen';
 import authService from './src/services/authService';
 import { ScreenType } from './src/types';
+import MainTabs from './src/navigation/MainTabs';
 
 const AppContent: React.FC = () => {
   const { isDarkMode, colors } = useTheme();
@@ -171,8 +172,7 @@ const AppContent: React.FC = () => {
   };
 
   const handlePaymentSuccess = () => {
-    // After confirming payment (e.g., Cash booking), go to dashboard
-    setCurrentScreen('customer');
+    setCurrentScreen('payment-confirmed');
   };
 
   const handleViewBookingStatus = () => {
@@ -280,13 +280,13 @@ const AppContent: React.FC = () => {
         );
       case 'customer':
         return (
-          <DashboardScreen
-            onBookWash={handleBookWash}
-            onViewAll={handleViewAll}
-            onActivityPress={handleActivityPress}
-            onNotificationPress={handleNotificationPress}
-            onProfilePress={handleProfilePress}
+          <MainTabs
             userData={userData}
+            onBookWash={handleBookWash}
+            onViewAllBookings={() => setCurrentScreen('booking-history')}
+            onOpenSettings={() => setCurrentScreen('settings')}
+            onEditProfile={() => setCurrentScreen('edit-profile')}
+            navigateTo={(screen) => setCurrentScreen(screen as ScreenType)}
           />
         );
       case 'book-wash':

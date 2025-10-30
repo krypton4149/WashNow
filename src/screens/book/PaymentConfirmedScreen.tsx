@@ -1,11 +1,7 @@
 import React from 'react';
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { moderateScale, platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface Props {
@@ -28,7 +24,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
   }
 }) => {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <View style={styles.content}>
         {/* Confirmation Icon */}
         <View style={styles.confirmationIcon}>
@@ -119,35 +115,35 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 60,
+    paddingHorizontal: moderateScale(16),
+    paddingTop: moderateScale(60),
     alignItems: 'center',
   },
   confirmationIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: moderateScale(120),
+    height: moderateScale(120),
+    borderRadius: moderateScale(60),
     backgroundColor: '#D1FAE5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: moderateScale(24),
   },
   confirmationTitle: {
-    fontSize: 24,
+    fontSize: moderateScale(24),
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 8,
+    marginBottom: moderateScale(8),
   },
   confirmationSubtitle: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: '#666666',
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: moderateScale(40),
   },
   bookingCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 20,
+    padding: moderateScale(20),
     width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -157,99 +153,99 @@ const styles = StyleSheet.create({
   },
   bookingHeader: {
     alignItems: 'flex-end',
-    marginBottom: 20,
+    marginBottom: moderateScale(20),
   },
   bookingId: {
-    fontSize: 12,
+    fontSize: moderateScale(12),
     color: '#666666',
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: moderateScale(4),
+    borderRadius: moderateScale(12),
   },
   bookingDetails: {
-    marginBottom: 20,
+    marginBottom: moderateScale(20),
   },
   bookingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: moderateScale(16),
   },
   bookingIcon: {
-    width: 24,
+    width: moderateScale(24),
     alignItems: 'center',
     marginTop: 2,
   },
   bookingContent: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: moderateScale(12),
   },
   bookingLabel: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#666666',
-    marginBottom: 4,
+    marginBottom: moderateScale(4),
   },
   bookingValue: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#000',
   },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: moderateScale(8),
   },
   previewTag: {
     backgroundColor: '#374151',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingHorizontal: moderateScale(6),
+    paddingVertical: moderateScale(2),
+    borderRadius: moderateScale(8),
   },
   previewText: {
-    fontSize: 10,
+    fontSize: moderateScale(10),
     color: '#FFFFFF',
     fontWeight: '500',
   },
   paymentSummary: {
     backgroundColor: '#F9FAFB',
-    padding: 16,
-    borderRadius: 8,
+    padding: moderateScale(16),
+    borderRadius: moderateScale(8),
   },
   paymentRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: moderateScale(8),
   },
   paymentLabel: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#666666',
   },
   paymentStatus: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#059669',
     fontWeight: '500',
   },
   paymentAmount: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#000',
   },
   bottomContainer: {
-    padding: 16,
+    padding: moderateScale(16),
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
   viewStatusButton: {
     backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: moderateScale(12),
+    paddingVertical: moderateScale(16),
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: moderateScale(12),
   },
   viewStatusButtonText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -257,12 +253,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#000000',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: moderateScale(12),
+    paddingVertical: moderateScale(16),
     alignItems: 'center',
   },
   backToHomeButtonText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontWeight: '600',
     color: '#000000',
   },
