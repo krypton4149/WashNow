@@ -492,23 +492,29 @@ class AuthService {
         },
       });
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        // no-op: some backends return empty body
+      }
 
-      if (response.ok && data.message) {
-        // Clear local storage after successful logout
+      const backendIndicatesSuccess = data?.success === true || typeof data?.message === 'string';
+
+      if (response.ok || response.status === 401 || backendIndicatesSuccess) {
+        // Treat 2xx and 401 (already invalid/expired) as success locally
         await this.removeToken();
         await AsyncStorage.removeItem(USER_KEY);
-        
-        return { 
-          success: true, 
-          message: data.message || 'Logged out successfully'
-        };
-      } else {
         return {
-          success: false,
-          error: data.message || data.error || 'Failed to logout. Please try again.'
+          success: true,
+          message: (data && data.message) || 'Logged out successfully'
         };
       }
+
+      return {
+        success: false,
+        error: (data && (data.message || data.error)) || 'Failed to logout. Please try again.'
+      };
     } catch (error) {
       console.error('Logout error:', error);
       return {
