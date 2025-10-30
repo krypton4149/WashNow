@@ -117,6 +117,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     agreeToTerms;
 
   return (
+    <>
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
@@ -299,6 +300,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         </View>
       </View>
     )}
+    </>
   );
 };
 
