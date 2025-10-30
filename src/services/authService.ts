@@ -481,7 +481,10 @@ class AuthService {
     try {
       const token = await this.getToken();
       if (!token) {
-        return { success: false, error: 'No token found' };
+        // Treat as already logged out locally
+        await this.removeToken();
+        await AsyncStorage.removeItem(USER_KEY);
+        return { success: true, message: 'Logged out' };
       }
 
       const response = await fetch(`${BASE_URL}/api/v1/visitor/logout`, {

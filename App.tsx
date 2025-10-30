@@ -119,21 +119,22 @@ const AppContent: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      // Call logout API
-      const result = await authService.logout();
-      
-      if (result && result.success) {
-        // Clear local state after successful API logout
-        setIsAuthenticated(false);
-        setUserData(null);
-        setCurrentScreen('user-choice');
-        Alert.alert('Success', result.message || 'Logged out successfully');
-      } else {
-        Alert.alert('Error', (result && result.error) || 'Failed to logout. Please try again.');
-      }
+      // Optimistic local logout: clear local auth and navigate immediately
+      await authService.clearAuth();
+      setIsAuthenticated(false);
+      setUserData(null);
+      setCurrentScreen('user-choice');
+
+      // Fire-and-forget server logout; do not block UI
+      authService.logout().catch(err => {
+        console.warn('Background logout failed:', err);
+      });
     } catch (error) {
       console.error('Logout error:', error);
-      Alert.alert('Error', 'Failed to logout. Please try again.');
+      // Even if clearing fails, ensure user is taken out of the session
+      setIsAuthenticated(false);
+      setUserData(null);
+      setCurrentScreen('user-choice');
     }
   };
 
