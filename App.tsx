@@ -295,6 +295,7 @@ const AppContent: React.FC = () => {
             onOpenSettings={() => setCurrentScreen('settings')}
             onEditProfile={() => setCurrentScreen('edit-profile')}
             navigateTo={(screen) => setCurrentScreen(screen as ScreenType)}
+            onLogout={handleLogout}
           />
         );
       case 'book-wash':
