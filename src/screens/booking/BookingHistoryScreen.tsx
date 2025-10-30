@@ -152,7 +152,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   const getStatusColor = (status: Booking['status']) => {
     switch (status) {
       case 'In Progress':
-        return '#DBEAFE'; // Light blue
+        return '#111827'; // Dark for high contrast
       case 'Completed':
         return '#D1FAE5'; // Light green
       case 'Canceled':
@@ -165,7 +165,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   const getStatusTextColor = (status: Booking['status']) => {
     switch (status) {
       case 'In Progress':
-        return '#2563EB'; // Blue
+        return '#FFFFFF'; // White on dark bg
       case 'Completed':
         return '#059669'; // Green
       case 'Canceled':
@@ -173,6 +173,25 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
       default:
         return '#4B5563';
     }
+  };
+
+  const handleCancelBooking = (bookingId: string) => {
+    Alert.alert(
+      'Cancel Booking',
+      'Are you sure you want to cancel this booking?',
+      [
+        { text: 'No', style: 'cancel' },
+        { text: 'Yes, Cancel', style: 'destructive', onPress: () => {
+            // Optimistically update UI; integrate real API when available
+            setBookings(prev => prev.map(b =>
+              (b.booking_id === bookingId || String(b.id) === bookingId)
+                ? { ...b, status: 'Canceled' as any }
+                : b
+            ));
+          }
+        },
+      ]
+    );
   };
 
   return (
@@ -260,7 +279,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                   </Text>
                 </View>
               </View>
-              <Text style={styles.cardSubtitle}>{booking.type}</Text>
+              {/* Removed service type subtitle as requested */}
               <View style={styles.cardDateTime}>
                 <Ionicons name="calendar-outline" size={16} color="#6B7280" />
                 <Text style={styles.cardDateTimeText}>
@@ -275,7 +294,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
               </View>
               <View style={styles.cardBookingId}>
                 <Ionicons name="receipt-outline" size={16} color="#6B7280" />
-                <Text style={styles.cardBookingIdText}>
+                <Text style={styles.cardBookingIdTextBold}>
                   Booking ID: {booking.id}
                 </Text>
               </View>
@@ -284,6 +303,14 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                 <Text style={styles.cardTotalLabel}>Total</Text>
                 <Text style={styles.cardTotalPrice}>{booking.total}</Text>
               </View>
+              {booking.status === 'In Progress' && (
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => handleCancelBooking(booking.id)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel Booking</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ))
         ) : (
@@ -437,6 +464,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  cardBookingIdTextBold: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '700',
+  },
   cardDivider: {
     height: 1,
     backgroundColor: '#F3F4F6',
@@ -455,6 +487,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
+  },
+  cancelButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: '#DC2626',
+    fontWeight: '700',
+    fontSize: 13,
   },
   noBookingsContainer: {
     alignItems: 'center',

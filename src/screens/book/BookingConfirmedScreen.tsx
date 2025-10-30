@@ -1,11 +1,6 @@
 import React from 'react';
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface Props {
@@ -25,8 +20,10 @@ const BookingConfirmedScreen: React.FC<Props> = ({
     address: 'Downtown, New York - 123 Main Street',
   }
 }) => {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(12, Math.min(insets.bottom || 0, 20));
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="close" size={24} color="#000" />
@@ -98,7 +95,7 @@ const BookingConfirmedScreen: React.FC<Props> = ({
       </View>
 
       {/* Proceed to Payment Button */}
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding }]}>
         <TouchableOpacity style={styles.paymentButton} onPress={onProceedToPayment}>
           <Text style={styles.paymentButtonText}>Proceed to Payment</Text>
         </TouchableOpacity>

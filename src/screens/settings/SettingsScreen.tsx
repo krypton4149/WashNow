@@ -117,19 +117,6 @@ const SettingsScreen: React.FC<Props> = ({
                 thumbColor={pushNotifications ? '#FFFFFF' : '#FFFFFF'}
               />
             )}
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            {renderSettingItem(
-              'megaphone-outline',
-              'Promotional Alerts',
-              'Special offers and discounts',
-              undefined,
-              <Switch
-                value={promotionalAlerts}
-                onValueChange={setPromotionalAlerts}
-                trackColor={{ false: '#E5E7EB', true: '#1F2937' }}
-                thumbColor={promotionalAlerts ? '#FFFFFF' : '#FFFFFF'}
-              />
-            )}
           </View>
         </View>
 
@@ -137,13 +124,6 @@ const SettingsScreen: React.FC<Props> = ({
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            {renderSettingItem(
-              'globe-outline',
-              'Language',
-              selectedLanguage,
-              handleLanguageChange
-            )}
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             {renderSettingItem(
               'moon-outline',
               'Dark Mode',

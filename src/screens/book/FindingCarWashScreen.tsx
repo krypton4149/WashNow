@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  SafeAreaView,
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 
@@ -223,8 +215,11 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
 
   const hasAcceptedCenter = centers.some(c => c.status === 'accepted');
 
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(12, Math.min(insets.bottom || 0, 20));
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="close" size={24} color="#000" />
@@ -236,15 +231,27 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Searching Status */}
-        <View style={styles.searchingCard}>
+        {/* Searching/Matched Status */}
+        <View style={[
+          styles.searchingCard,
+          hasAcceptedCenter && { backgroundColor: '#ECFDF5' }
+        ]}>
           <View style={styles.searchingLeft}>
-            <View style={styles.searchingIcon}>
-              <Ionicons name="refresh" size={20} color="#FFFFFF" />
+            <View style={[
+              styles.searchingIcon,
+              hasAcceptedCenter && { backgroundColor: '#059669' }
+            ]}>
+              {hasAcceptedCenter ? (
+                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+              ) : (
+                <Ionicons name="refresh" size={20} color="#FFFFFF" />
+              )}
             </View>
           </View>
           <View style={styles.searchingBody}>
-            <Text style={styles.searchingText}>Searching for available centers...</Text>
+            <Text style={[styles.searchingText, hasAcceptedCenter && { color: '#111827' }]}>
+              {hasAcceptedCenter ? 'Match found!' : 'Searching for available centers...'}
+            </Text>
             <Text style={styles.timeText}>Time elapsed: {formatTime(timeElapsed)}</Text>
           </View>
         </View>
@@ -285,7 +292,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       </ScrollView>
 
       {/* Cancel Button */}
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding }]}>
         <TouchableOpacity style={styles.cancelButton} onPress={onBack}>
           <Text style={styles.cancelButtonText}>Cancel Request</Text>
         </TouchableOpacity>

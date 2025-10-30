@@ -114,10 +114,12 @@ const MainTabs: React.FC<MainTabsProps> = ({
     );
   };
 
+  const bottomPadding = Math.max(8, Math.min(insets.bottom || 0, 18));
+
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <View style={styles.content}>{renderContent()}</View>
-      <View style={[styles.tabBar, { paddingBottom: Math.max(8, insets.bottom || 0) }]}>
+      <View style={[styles.tabBar, { paddingBottom: bottomPadding }]}>
         <TabButton keyId="home" icon="home-outline" label="Home" />
         <TabButton keyId="bookings" icon="calendar-outline" label="Bookings" />
         <TabButton keyId="activity" icon="notifications-outline" label="Activity" />

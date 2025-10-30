@@ -80,7 +80,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
               {/* Header */}
               <View style={styles.header}>
-                <Text style={styles.title}>Welcome Back</Text>
+                <Text style={styles.title}>Welcome to Car Wash </Text>
                 <Text style={styles.subtitle}>
                   Sign in to your account to continue
                 </Text>

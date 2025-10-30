@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Image,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackButton from '../../components/ui/BackButton';
 import authService from '../../services/authService';
 
@@ -39,7 +29,8 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
   onCenterSelect,
   selectedLocation,
 }) => {
-  const [searchText, setSearchText] = useState(selectedLocation.name);
+  // Start with empty search so ALL centers are visible by default
+  const [searchText, setSearchText] = useState('');
   const [serviceCenters, setServiceCenters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,6 +161,8 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
     return nameMatch || addressMatch || emailMatch || phoneMatch;
   });
 
+  const centersCount = filteredCenters.length;
+
   // Remove this line since we're not using popularLocations anymore
   // const filteredLocations = popularLocations.filter(location =>
   //   location.name.toLowerCase().includes(searchText.toLowerCase())
@@ -192,9 +185,11 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
     </TouchableOpacity>
   );
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(12, Math.min(insets.bottom || 0, 20)) }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <BackButton onPress={onBack} />
@@ -222,8 +217,8 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
             <View style={styles.centersContainer}>
               <Text style={styles.sectionTitle}>
                 {searchText.length > 0 
-                  ? `Service Centers matching "${searchText}"` 
-                  : 'Available Service Centers'
+                  ? `Service Centers matching "${searchText}" (${centersCount})` 
+                  : `Available Service Centers (${centersCount})`
                 }
               </Text>
               

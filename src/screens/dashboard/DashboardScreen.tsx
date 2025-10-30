@@ -35,7 +35,7 @@ interface Activity {
   title: string;
   serviceType: string;
   time: string;
-  status: 'In Progress' | 'Completed';
+  status: 'In Progress' | 'Completed' | 'Canceled';
   bookingDate?: string;
   bookingTime?: string;
   vehicleNo?: string;
@@ -98,10 +98,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
   };
 
-  const mapBookingStatus = (apiStatus: string): 'In Progress' | 'Completed' => {
+  const mapBookingStatus = (apiStatus: string): 'In Progress' | 'Completed' | 'Canceled' => {
     const status = apiStatus.toLowerCase();
     if (status.includes('completed') || status.includes('done')) {
       return 'Completed';
+    } else if (status.includes('canceled') || status.includes('cancelled')) {
+      return 'Canceled';
     } else {
       return 'In Progress';
     }
@@ -110,23 +112,28 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'In Progress':
-        return '#3B82F6';
+        return '#111827';
       case 'Completed':
         return '#10B981';
+      case 'Canceled':
+        return '#DC2626';
       default:
         return '#6B7280';
     }
   };
 
   const getStatusStyles = (status: string) => {
-    const color = getStatusColor(status);
-    // Light tint background for pill; readable text color equals main color
-    const background = status === 'In Progress'
-      ? 'rgba(59, 130, 246, 0.15)'
-      : status === 'Completed'
-      ? 'rgba(16, 185, 129, 0.15)'
-      : 'rgba(107, 114, 128, 0.15)';
-    return { backgroundColor: background, color };
+    // High-contrast pill for In Progress to match theme (black bg, white text)
+    if (status === 'In Progress') {
+      return { backgroundColor: '#111827', color: '#FFFFFF' };
+    }
+    if (status === 'Completed') {
+      return { backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10B981' };
+    }
+    if (status === 'Canceled') {
+      return { backgroundColor: 'rgba(220, 38, 38, 0.15)', color: '#DC2626' };
+    }
+    return { backgroundColor: 'rgba(107, 114, 128, 0.15)', color: '#6B7280' };
   };
 
   // Load bookings data
@@ -196,11 +203,31 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <View style={styles.activityContent}>
         <View style={styles.activityInfo}>
           <Text style={styles.activityTitle}>{activity.title}</Text>
-          <Text style={styles.activityService}>{activity.serviceType}</Text>
           <View style={styles.timeRow}>
-            <Ionicons name="time-outline" size={14} color="#6B7280" style={styles.timeIcon} />
+            <Ionicons name="time-outline" size={16} color="#6B7280" style={styles.timeIcon} />
             <Text style={styles.activityTimeText}>{activity.time}</Text>
           </View>
+          {activity.vehicleNo ? (
+            <View style={styles.recentRow}>
+              <Ionicons name="car-outline" size={16} color="#6B7280" style={styles.recentIcon} />
+              <Text style={styles.recentText}>Vehicle: {activity.vehicleNo}</Text>
+            </View>
+          ) : null}
+          {activity.bookingCode ? (
+            <View style={styles.recentRow}>
+              <Ionicons name="receipt-outline" size={16} color="#6B7280" style={styles.recentIcon} />
+              <Text style={styles.recentBookingId}>Booking ID: {activity.bookingCode}</Text>
+            </View>
+          ) : null}
+          <View style={styles.activityDivider} />
+          {activity.status === 'In Progress' && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => handleCancel(activity.id)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel Booking</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.activityRight}>
           <View style={[styles.statusTag, { backgroundColor: getStatusStyles(activity.status).backgroundColor }]}>
@@ -214,6 +241,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     </TouchableOpacity>
   );
 
+  const handleCancel = (bookingId: string) => {
+    // Optimistic cancel for dashboard list
+    setBookings(prev => prev.map(b =>
+      (b.booking_id === bookingId ? { ...b, status: 'Canceled' as any } : b)
+    ));
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -221,7 +255,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.welcomeText}>Welcome back,</Text>
+              <Text style={styles.welcomeText}>Welcome to Car Wash,</Text>
               <Text style={styles.userNameText}>{firstName}</Text>
             </View>
           </View>
@@ -268,7 +302,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         {/* Recent Activity Section */}
         <View style={styles.activitySection}>
           <View style={styles.activityHeader}>
-            <Text style={styles.activitySectionTitle}>Recent Activity</Text>
+            <Text style={styles.activitySectionTitle}>Recent Bookings</Text>
             <TouchableOpacity onPress={onViewAll} style={styles.seeAllButton}>
               <Text style={styles.seeAllText}>See all</Text>
             </TouchableOpacity>
@@ -371,10 +405,17 @@ const styles = StyleSheet.create({
   timeRow: { flexDirection: 'row', alignItems: 'center' },
   timeIcon: { marginRight: 6 },
   activityTimeText: { fontSize: 12, color: '#6B7280' },
+  recentRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  recentIcon: { marginRight: 6 },
+  recentText: { fontSize: 13, color: '#6B7280' },
+  recentBookingId: { fontSize: 13, color: '#111827', fontWeight: '700' },
+  activityDivider: { height: 1, backgroundColor: '#F3F4F6', marginTop: 12 },
   activityRight: { alignItems: 'center', flexDirection: 'row' },
   statusTag: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 },
   statusText: { fontSize: 12, fontWeight: '600' },
   chevron: { marginLeft: 10 },
+  cancelButton: { marginTop: 10, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#FCA5A5', backgroundColor: '#FEE2E2', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  cancelButtonText: { color: '#DC2626', fontWeight: '700', fontSize: 12 },
   loadingContainer: { alignItems: 'center', paddingVertical: 40 },
   loadingText: { fontSize: 14, color: '#6B7280', marginTop: 12 },
   emptyContainer: { alignItems: 'center', paddingVertical: 40 },

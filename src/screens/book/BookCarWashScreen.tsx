@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Geolocation from '@react-native-community/geolocation';
 import authService from '../../services/authService';
@@ -131,8 +132,11 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     onConfirmBooking?.();
   };
 
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(12, Math.min(insets.bottom || 0, 20));
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#000" />
@@ -230,7 +234,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
       </ScrollView>
 
       {/* Confirm Booking Button */}
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding }]}>
         <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmBooking}>
           <Text style={styles.confirmButtonText}>Confirm Booking</Text>
         </TouchableOpacity>

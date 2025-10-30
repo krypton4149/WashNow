@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  TextInput,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, Alert } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ScheduleBookingScreenProps {
   onBack: () => void;
@@ -261,9 +252,11 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   );
 
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(16, Math.min(insets.bottom || 0, 24)) }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.closeButton} onPress={onBack}>
