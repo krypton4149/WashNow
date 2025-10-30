@@ -5,8 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface UserData {
@@ -55,7 +56,7 @@ const ProfileScreen: React.FC<Props> = ({
   const initials = getInitials(displayName);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       {/* Header Section */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
