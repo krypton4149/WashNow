@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, ViewProps, Platform } from 'react-native';
+import { StyleSheet, ViewProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface GlobalSafeAreaProps extends ViewProps {
@@ -7,7 +7,7 @@ interface GlobalSafeAreaProps extends ViewProps {
 }
 
 const GlobalSafeArea: React.FC<GlobalSafeAreaProps> = ({ children, style, backgroundColor }) => {
-  const edges = Platform.OS === 'ios' ? ['top', 'bottom'] : ['bottom'];
+  const edges = ['top', 'bottom'] as const;
   return (
     <SafeAreaView
       edges={edges}

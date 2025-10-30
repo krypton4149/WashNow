@@ -11,6 +11,9 @@ export const verticalScale = (size: number) => (height / guidelineBaseHeight) * 
 export const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 export const isSmallDevice = width < 360;
-export const platformEdges = Platform.OS === 'ios' ? ['top', 'bottom'] : ['bottom'];
+// Always respect both top and bottom insets on all platforms. On Android,
+// react-native-safe-area-context correctly reports status bar insets on
+// modern devices (hole-punch, notches), so include 'top' as well.
+export const platformEdges = ['top', 'bottom'] as const;
 
 
