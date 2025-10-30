@@ -12,6 +12,7 @@ import {
   TextInput,
   Keyboard,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
 
@@ -35,11 +36,20 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = () => {
     // For email login, check both email and password
     if (email.trim() && password.trim()) {
-      onLogin(email.trim(), password.trim(), 'email');
+      setIsLoading(true);
+      // Support both sync and async handlers
+      const maybePromise = onLogin(email.trim(), password.trim(), 'email');
+      Promise.resolve(maybePromise)
+        .catch(() => {})
+        .finally(() => {
+          // Safety net: if screen doesn't unmount (e.g., failed login), hide loader
+          setIsLoading(false);
+        });
     } else {
       Alert.alert('Error', 'Please fill in all fields');
     }
@@ -144,11 +154,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
               {/* Login Button */}
               <TouchableOpacity
-                style={[styles.loginButton, !isFormValid && styles.loginButtonDisabled]}
+                style={[styles.loginButton, (!isFormValid || isLoading) && styles.loginButtonDisabled]}
                 onPress={handleLogin}
-                disabled={!isFormValid}
+                disabled={!isFormValid || isLoading}
               >
-                <Text style={styles.loginButtonText}>Sign In</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.loginButtonText}>Sign In</Text>
+                )}
               </TouchableOpacity>
 
               {/* Register Link */}
@@ -162,6 +176,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           </KeyboardAvoidingView>
         </View>
       </TouchableWithoutFeedback>
+      {/* Overlay loader */}
+      {isLoading && (
+        <View style={styles.overlay} pointerEvents="none">
+          <View style={styles.overlayBox}>
+            <ActivityIndicator size="large" color="#000" />
+            <Text style={styles.overlayText}>Please wait…</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -313,6 +336,33 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
     fontFamily: 'System',
+  },
+  overlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlayBox: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  overlayText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#111827',
   },
 });
 

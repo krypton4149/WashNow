@@ -289,6 +289,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    
+    {/* Overlay loader while creating account */}
+    {isLoading && (
+      <View style={styles.overlay} pointerEvents="none">
+        <View style={styles.overlayBox}>
+          <ActivityIndicator size="large" color="#000" />
+          <Text style={styles.overlayText}>Please wait…</Text>
+        </View>
+      </View>
+    )}
   );
 };
 
@@ -456,6 +466,33 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
     fontFamily: 'System',
+  },
+  overlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlayBox: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  overlayText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#111827',
   },
 });
 
