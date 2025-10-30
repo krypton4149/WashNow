@@ -126,9 +126,13 @@ const AppContent: React.FC = () => {
       setCurrentScreen('user-choice');
 
       // Fire-and-forget server logout; do not block UI
-      authService.logout().catch(err => {
-        console.warn('Background logout failed:', err);
-      });
+      authService.logout()
+        .then(res => {
+          console.log('Logout API response:', res);
+        })
+        .catch(err => {
+          console.warn('Background logout failed:', err);
+        });
     } catch (error) {
       console.error('Logout error:', error);
       // Even if clearing fails, ensure user is taken out of the session
