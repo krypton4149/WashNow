@@ -36,12 +36,13 @@ const SettingsScreen: React.FC<Props> = ({
   const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
 
   const handleLogout = () => {
+    console.log('SettingsScreen: logout pressed');
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: onLogout },
+        { text: 'Logout', style: 'destructive', onPress: () => { console.log('SettingsScreen: logout confirmed'); onLogout?.(); } },
       ]
     );
   };

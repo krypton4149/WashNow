@@ -118,12 +118,14 @@ const AppContent: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    console.log('App: handleLogout invoked');
     try {
       // Optimistic local logout: clear local auth and navigate immediately
       await authService.clearAuth();
       setIsAuthenticated(false);
       setUserData(null);
       setCurrentScreen('user-choice');
+      console.log('App: navigated to user-choice after clearing auth');
 
       // Fire-and-forget server logout; do not block UI
       authService.logout()
@@ -139,6 +141,7 @@ const AppContent: React.FC = () => {
       setIsAuthenticated(false);
       setUserData(null);
       setCurrentScreen('user-choice');
+      console.log('App: forced navigation to user-choice due to error');
     }
   };
 
