@@ -221,16 +221,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
           )}
         </View>
 
-        {/* Instant Booking Info */}
-        <View style={styles.instantBookingContainer}>
-          <View style={styles.instantBookingHeader}>
-            <Ionicons name="flash" size={20} color="#3B82F6" />
-            <Text style={styles.instantBookingTitle}>Instant Booking</Text>
-          </View>
-          <Text style={styles.instantBookingDescription}>
-            Click 'Confirm Booking' to send your request to all nearby car wash centers. The first available center will accept your booking.
-          </Text>
-        </View>
+        {/* Instant Booking info removed as requested */}
       </ScrollView>
 
       {/* Confirm Booking Button */}

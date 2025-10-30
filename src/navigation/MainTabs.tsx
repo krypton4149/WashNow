@@ -53,6 +53,7 @@ const MainTabs: React.FC<MainTabsProps> = ({
             onActivityPress={(activity) => onOpenActivityDetail?.(activity)}
             onNotificationPress={() => setActiveTab('activity')}
             onProfilePress={() => setActiveTab('account')}
+            onLogout={onLogout}
             userData={userData}
           />
         );

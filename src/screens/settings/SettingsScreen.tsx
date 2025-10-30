@@ -35,17 +35,7 @@ const SettingsScreen: React.FC<Props> = ({
   const [promotionalAlerts, setPromotionalAlerts] = useState(true);
   const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
 
-  const handleLogout = () => {
-    console.log('SettingsScreen: logout pressed');
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: () => { console.log('SettingsScreen: logout confirmed'); onLogout?.(); } },
-      ]
-    );
-  };
+  // Logout removed from Settings
 
 
   const handleDarkModeChange = (value: boolean) => {
@@ -165,13 +155,7 @@ const SettingsScreen: React.FC<Props> = ({
           </View>
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={[styles.logoutButton, { borderColor: colors.error }]} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color={colors.error} />
-            <Text style={[styles.logoutButtonText, { color: colors.error }]}>Logout</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Logout removed from Settings */}
 
         {/* Version Info */}
         <View style={styles.versionContainer}>

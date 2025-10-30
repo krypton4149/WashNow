@@ -27,6 +27,7 @@ interface DashboardScreenProps {
   onActivityPress?: (activity: any) => void;
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
+  onLogout?: () => void;
   userData?: UserData | null;
 }
 
@@ -66,6 +67,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onActivityPress,
   onNotificationPress,
   onProfilePress,
+  onLogout,
   userData,
 }) => {
   // Get user's first name for welcome message
@@ -258,6 +260,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <Text style={styles.welcomeText}>Welcome to Car Wash,</Text>
               <Text style={styles.userNameText}>{firstName}</Text>
             </View>
+            <TouchableOpacity style={styles.iconButton} onPress={onLogout}>
+              <Ionicons name="log-out-outline" size={22} color="#000000" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -338,10 +343,9 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'transparent',
   },
   welcomeText: { fontSize: 16, color: '#6B7280', marginBottom: 2 },
   userNameText: { fontSize: 24, fontWeight: 'bold', color: '#000000' },
