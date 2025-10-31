@@ -11,7 +11,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface Props {
   onBack?: () => void;
-  onProceedToPayment?: () => void;
+  onProceedToPayment?: (bookingData?: { date: string; time: string }) => void;
   acceptedCenter?: any;
 }
 
@@ -36,13 +36,28 @@ const BookingConfirmedScreen: React.FC<Props> = ({
     surface: isDark ? '#111111' : '#FFFFFF',
     accent: isDark ? '#FFFFFF' : '#000000',
   };
-  const dateString = new Date().toLocaleString(undefined, {
+  // Get current date and time for instant booking
+  const now = new Date();
+  const dateString = now.toLocaleString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   });
+  
+  // Format time for API (24-hour format)
+  const getCurrentTime = (d: Date) => {
+    const hh = d.getHours().toString().padStart(2, '0');
+    const mm = d.getMinutes().toString().padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+  
+  // Prepare booking data with current date/time for instant booking
+  const instantBookingData = {
+    date: now.toISOString(),
+    time: getCurrentTime(now),
+  };
   return (
     <SafeAreaView style={[styles.container,{ backgroundColor: theme.background }]}>
       <View style={styles.header}>
@@ -105,7 +120,7 @@ const BookingConfirmedScreen: React.FC<Props> = ({
 
       {/* Proceed to Payment Button */}
       <View style={[styles.bottomContainer,{ backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-        <TouchableOpacity style={styles.paymentButton} onPress={onProceedToPayment}>
+        <TouchableOpacity style={styles.paymentButton} onPress={() => onProceedToPayment?.(instantBookingData)}>
           <Text style={styles.paymentButtonText}>Proceed to Payment</Text>
         </TouchableOpacity>
       </View>
