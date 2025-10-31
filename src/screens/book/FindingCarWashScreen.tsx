@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, useColorScheme } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -9,6 +9,7 @@ interface Props {
   onBack?: () => void;
   onBookingConfirmed?: (center: any) => void;
   selectedLocation?: { id: string; name: string } | null;
+  filteredCenters?: any[] | null; // Centers from search filter
 }
 
 interface ServiceCenter {
@@ -20,7 +21,12 @@ interface ServiceCenter {
   status: 'waiting' | 'not-available' | 'accepted';
 }
 
-const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, selectedLocation }) => {
+const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, selectedLocation, filteredCenters }) => {
+  console.log('=== FindingCarWashScreen: Component rendered ===');
+  console.log('filteredCenters prop on render:', filteredCenters);
+  console.log('filteredCenters is array?', Array.isArray(filteredCenters));
+  console.log('filteredCenters length?', filteredCenters?.length);
+  
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [centers, setCenters] = useState<ServiceCenter[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -122,15 +128,69 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
     }
   };
 
+  // Use useLayoutEffect to check filteredCenters synchronously before paint
+  useLayoutEffect(() => {
+    console.log('=== FindingCarWashScreen: useLayoutEffect (sync check) ===');
+    console.log('filteredCenters prop:', filteredCenters);
+    console.log('filteredCenters type:', typeof filteredCenters);
+    console.log('filteredCenters is array:', Array.isArray(filteredCenters));
+    console.log('filteredCenters length:', filteredCenters?.length);
+  }, [filteredCenters]);
+
   useEffect(() => {
+    console.log('=== FindingCarWashScreen: useEffect triggered ===');
+    console.log('filteredCenters prop:', filteredCenters);
+    console.log('filteredCenters type:', typeof filteredCenters);
+    console.log('filteredCenters is array:', Array.isArray(filteredCenters));
+    console.log('filteredCenters length:', filteredCenters?.length);
+    
     // Get current location on mount
     getCurrentLocation();
     
-    // Load centers from API on mount
+    // Load centers: use filteredCenters if provided, otherwise load all from API
     const loadCenters = async () => {
       try {
         setIsLoading(true);
-        console.log('Loading service centers for broadcasting...');
+        
+        // CRITICAL: If filteredCenters are provided (even empty array), use them
+        // Only load all centers if filteredCenters is explicitly null/undefined
+        if (filteredCenters !== null && filteredCenters !== undefined) {
+          if (Array.isArray(filteredCenters) && filteredCenters.length > 0) {
+          console.log('=== Using filtered centers for broadcasting ===');
+          console.log('Filtered centers count:', filteredCenters.length);
+          console.log('Filtered centers data:', JSON.stringify(filteredCenters, null, 2));
+          const mapped: ServiceCenter[] = filteredCenters.map((c: any, index: number) => {
+            // Calculate distance based on coordinates (simplified calculation)
+            const distance = c.clat && c.clong 
+              ? calculateDistance(c.clat, c.clong)
+              : c.distance || '0.5 mi';
+            
+            return {
+              id: c.id?.toString() || (index + 1).toString(),
+              name: c.name || c.service_center_name || 'Car Wash Center',
+              rating: c.rating || 4.5 + (index * 0.1),
+              distance: distance,
+              address: c.address || c.location || 'Address not available',
+              status: 'waiting',
+            };
+          });
+          
+            console.log('Mapped filtered centers:', mapped);
+            setCenters(mapped);
+            setIsLoading(false);
+            return;
+          } else {
+            // filteredCenters is an empty array - show empty state
+            console.log('=== Filtered centers is empty array - showing no centers ===');
+            setCenters([]);
+            setIsLoading(false);
+            return;
+          }
+        }
+        
+        // Otherwise (filteredCenters is null/undefined), load all centers from API
+        console.log('=== Loading ALL service centers from API ===');
+        console.log('Reason: filteredCenters is null/undefined - no filter applied');
         const resp = await authService.getServiceCenters();
         console.log('Service centers API response:', JSON.stringify(resp, null, 2));
         
@@ -227,7 +287,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       clearInterval(timer);
       clearTimeout(acceptTimer);
     };
-  }, [onBookingConfirmed]);
+  }, [onBookingConfirmed, filteredCenters]);
 
   // Navigate to match found screen after a center is accepted
   useEffect(() => {
@@ -355,7 +415,12 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
 
         {/* Broadcasting to Centers */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>Broadcasting to All Centers ({centers.length})</Text>
+          <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>
+            {filteredCenters && filteredCenters.length > 0 
+              ? `Broadcasting to Selected Centers (${centers.length})`
+              : `Broadcasting to All Centers (${centers.length})`
+            }
+          </Text>
           <View style={styles.centersList}>
             {isLoading ? (
               <Text style={{ color: theme.textSecondary }}>Loading centers...</Text>

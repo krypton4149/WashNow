@@ -9,7 +9,7 @@ interface Props {
   onBack?: () => void;
   onNavigateToAvailableNow?: () => void;
   onNavigateToScheduleForLater?: () => void;
-  onConfirmBooking?: () => void;
+  onConfirmBooking?: (filteredCenters: any[]) => void;
 }
 
 const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, onNavigateToScheduleForLater, onConfirmBooking }) => {
@@ -153,8 +153,23 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   };
 
   const handleConfirmBooking = () => {
-    console.log('Confirm booking pressed');
-    onConfirmBooking?.();
+    console.log('=== Confirm booking pressed ===');
+    console.log('Search text:', searchText);
+    console.log('Filtered centers count:', filteredCenters.length);
+    console.log('All service centers count:', serviceCenters.length);
+    console.log('Filtered centers:', JSON.stringify(filteredCenters, null, 2));
+    
+    // Use filteredCenters if search is active, otherwise use all centers
+    const centersToSend = searchText.trim() ? filteredCenters : serviceCenters;
+    console.log(`=== Sending request to ${centersToSend.length} center(s) ===`);
+    console.log('Centers to send:', JSON.stringify(centersToSend, null, 2));
+    
+    if (centersToSend.length === 0) {
+      Alert.alert('No Centers', 'Please select or search for service centers before confirming.');
+      return;
+    }
+    
+    onConfirmBooking?.(centersToSend);
   };
 
   const insets = useSafeAreaInsets();
@@ -279,7 +294,10 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
           <Text style={[styles.confirmButtonText,{color: isDark ? '#000000' : '#FFFFFF'}]}>Confirm Booking</Text>
         </TouchableOpacity>
         <Text style={[styles.bottomText,{color: theme.textSecondary}]}>
-          Request will be sent to all {filteredCenters.length} available car wash centers.
+          {searchText.trim() 
+            ? `Request will be sent to ${filteredCenters.length} matching center${filteredCenters.length !== 1 ? 's' : ''}.`
+            : `Request will be sent to all ${serviceCenters.length} available car wash centers.`
+          }
         </Text>
       </View>
 

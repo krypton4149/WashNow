@@ -44,6 +44,7 @@ const AppContent: React.FC = () => {
   const [selectedCenter, setSelectedCenter] = useState<any>(null);
   const [bookingData, setBookingData] = useState<any>(null);
   const [lastBookingId, setLastBookingId] = useState<string | undefined>(undefined);
+  const [filteredCenters, setFilteredCenters] = useState<any[] | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
 
   // Check authentication status on app start
@@ -193,8 +194,28 @@ const AppContent: React.FC = () => {
     setCurrentScreen('schedule-booking-payment-confirmed');
   };
 
-  const handleInstantBooking = () => {
-    setCurrentScreen('finding-car-wash'); // Navigate to finding car wash screen for instant booking
+  const handleInstantBooking = (centersToBroadcast: any[] = []) => {
+    console.log('=== App: handleInstantBooking called ===');
+    console.log('Centers to broadcast count:', centersToBroadcast.length);
+    console.log('Centers to broadcast:', JSON.stringify(centersToBroadcast, null, 2));
+    
+    // Store the filtered centers that should receive the request
+    // IMPORTANT: Set filteredCenters BEFORE navigating to ensure it's available on first render
+    // Use empty array as a marker for "use filtered" vs null for "load all"
+    if (centersToBroadcast.length > 0) {
+      setFilteredCenters([...centersToBroadcast]); // Create new array to ensure reference changes
+      console.log('Set filteredCenters with', centersToBroadcast.length, 'centers');
+      
+      // Use setTimeout to ensure state is set before navigation
+      // React batches state updates, so we need to ensure filteredCenters is set
+      setTimeout(() => {
+        setCurrentScreen('finding-car-wash'); // Navigate after state update
+      }, 0);
+    } else {
+      setFilteredCenters(null);
+      console.log('Set filteredCenters to null (no centers provided)');
+      setCurrentScreen('finding-car-wash'); // Navigate to finding car wash screen for instant booking
+    }
   };
 
   const handleSendRequestToCenters = () => {
@@ -352,9 +373,13 @@ const AppContent: React.FC = () => {
       case 'finding-car-wash':
         return (
           <FindingCarWashScreen 
-            onBack={() => setCurrentScreen('book-wash')}
+            onBack={() => {
+              setFilteredCenters(null); // Clear filtered centers when going back
+              setCurrentScreen('book-wash');
+            }}
             onBookingConfirmed={handleBookingConfirmed}
             selectedLocation={selectedLocation}
+            filteredCenters={filteredCenters}
           />
         );
       case 'booking-confirmed':
