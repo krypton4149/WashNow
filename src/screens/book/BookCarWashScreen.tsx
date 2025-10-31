@@ -74,6 +74,21 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     fetchServiceCenters();
   }, []);
 
+  // Filter service centers based on search text
+  const filteredCenters = React.useMemo(() => {
+    if (!searchText.trim()) {
+      return serviceCenters;
+    }
+    
+    const searchLower = searchText.toLowerCase().trim();
+    return serviceCenters.filter((center) => {
+      const name = (center.name || center.service_center_name || '').toLowerCase();
+      const address = (center.address || center.location || '').toLowerCase();
+      
+      return name.includes(searchLower) || address.includes(searchLower);
+    });
+  }, [serviceCenters, searchText]);
+
   const fetchServiceCenters = async () => {
     try {
       setLoadingCenters(true);
@@ -180,22 +195,36 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
             <Text style={[styles.locationText,{color: theme.textPrimary}]}>{currentLocation}</Text>
           </View>
           
-          <TouchableOpacity 
-            style={styles.whereToWashRow}
-            onPress={() => setWhereToWash(!whereToWash)}
-          >
+          <View style={styles.whereToWashRow}>
             <View style={styles.checkboxContainer}>
               <View style={[styles.checkbox,{borderColor: theme.textPrimary}, whereToWash && {backgroundColor: theme.textPrimary}]}> 
                 {whereToWash && <Ionicons name="checkmark" size={12} color={isDark ? '#000000' : '#FFFFFF'} />}
               </View>
-              <Text style={[styles.whereToWashText,{color: theme.textSecondary}]}>Where to?</Text>
             </View>
-          </TouchableOpacity>
+            <TextInput
+              style={[styles.searchInput, { color: theme.textPrimary }]}
+              placeholder="Where to?"
+              placeholderTextColor={theme.textSecondary}
+              value={searchText}
+              onChangeText={(text) => {
+                setSearchText(text);
+                if (text.length > 0) {
+                  setWhereToWash(true);
+                }
+              }}
+              onFocus={() => setWhereToWash(true)}
+            />
+          </View>
         </View>
 
         {/* Service Centers List */}
         <View style={styles.centersList}>
-          <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>Nearby car wash centers</Text>
+          <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>
+            {searchText.length > 0 
+              ? `Service centers for "${searchText}" (${filteredCenters.length})`
+              : `Nearby car wash centers (${serviceCenters.length})`
+            }
+          </Text>
           
           {loadingCenters ? (
             <View style={styles.loadingContainer}>
@@ -209,15 +238,25 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
             </View>
-          ) : serviceCenters.length === 0 ? (
+          ) : filteredCenters.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText,{color: theme.textSecondary}]}>No service centers available</Text>
+              <Text style={[styles.emptyText,{color: theme.textSecondary}]}>
+                {searchText.length > 0 
+                  ? `No service centers found for "${searchText}"`
+                  : 'No service centers available'
+                }
+              </Text>
+              {searchText.length > 0 && (
+                <Text style={[styles.emptySubtext,{color: theme.textSecondary}]}>
+                  Try searching with different keywords or check spelling
+                </Text>
+              )}
             </View>
           ) : (
-            serviceCenters.map((center, index) => (
+            filteredCenters.map((center, index) => (
               <View 
                 key={center.id || index} 
-                style={[styles.centerRow,{borderBottomColor: theme.border}, index === serviceCenters.length - 1 && styles.lastCenterRow]}
+                style={[styles.centerRow,{borderBottomColor: theme.border}, index === filteredCenters.length - 1 && styles.lastCenterRow]}
               >
                 <View style={styles.centerLeft}>
                   <Ionicons name="location-outline" size={20} color={theme.textPrimary} />
@@ -239,7 +278,9 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         <TouchableOpacity style={[styles.confirmButton,{backgroundColor: theme.accent}]} onPress={handleConfirmBooking}>
           <Text style={[styles.confirmButtonText,{color: isDark ? '#000000' : '#FFFFFF'}]}>Confirm Booking</Text>
         </TouchableOpacity>
-        <Text style={[styles.bottomText,{color: theme.textSecondary}]}>Request will be sent to all {serviceCenters.length} available car wash centers.</Text>
+        <Text style={[styles.bottomText,{color: theme.textSecondary}]}>
+          Request will be sent to all {filteredCenters.length} available car wash centers.
+        </Text>
       </View>
 
       {/* Time Selection Modal */}
@@ -378,11 +419,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   whereToWashRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 8,
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   checkbox: {
     width: 20,
@@ -600,6 +649,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666666',
     textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
 
