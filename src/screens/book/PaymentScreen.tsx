@@ -6,7 +6,7 @@ import authService from '../../services/authService';
 
 interface Props {
   onBack?: () => void;
-  onPaymentSuccess?: (bookingId?: string) => void;
+  onPaymentSuccess?: (bookingId?: string, bookingData?: { date: string; time: string }) => void;
   acceptedCenter?: any;
 }
 
@@ -70,16 +70,27 @@ const PaymentScreen: React.FC<Props> = ({
         const result = await authService.bookNow(payload);
         if (result.success) {
           const bookingId = result.bookingId || 'N/A';
-          onPaymentSuccess?.(bookingId);
+          // Pass today's date and current time for instant booking
+          const bookingData = {
+            date: now.toISOString(),
+            time: getCurrentTime(now),
+          };
+          onPaymentSuccess?.(bookingId, bookingData);
         } else {
           Alert.alert('Booking Failed', result.error || 'Please try again later.');
           setIsProcessing(false);
         }
       } else {
-        // Simulate card / wallet payment
+        // Simulate card / wallet payment (instant booking)
+        const now = new Date();
         const randomId = Math.floor(10000 + Math.random() * 90000);
         const bookingId = `B${randomId.toString().padStart(5, '0')}`;
-        onPaymentSuccess?.(bookingId);
+        // Pass today's date and current time for instant booking
+        const bookingData = {
+          date: now.toISOString(),
+          time: getCurrentTime(now),
+        };
+        onPaymentSuccess?.(bookingId, bookingData);
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to process payment.');

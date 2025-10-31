@@ -203,8 +203,16 @@ const AppContent: React.FC = () => {
     setCurrentScreen('payment');
   };
 
-  const handlePaymentSuccess = (bookingId?: string) => {
+  const handlePaymentSuccess = (bookingId?: string, instantBookingData?: { date: string; time: string }) => {
     setLastBookingId(bookingId);
+    // For instant booking, set bookingData with today's date and current time if not already set (scheduled booking)
+    if (instantBookingData && !bookingData) {
+      setBookingData({
+        date: instantBookingData.date,
+        time: instantBookingData.time,
+        center: selectedCenter,
+      });
+    }
     setCurrentScreen('payment-confirmed');
   };
 

@@ -46,8 +46,20 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
     year: 'numeric'
   });
   
-  // Display time: use bookingData time if available (scheduled), otherwise "Now" (instant)
-  const displayTime = bookingData?.time || 'Now';
+  // Display time: use bookingData time if available (scheduled), otherwise format current time (instant)
+  const formatTimeForDisplay = (timeStr: string): string => {
+    // If time is in 24-hour format (HH:MM), convert to 12-hour format (HH:MM AM/PM)
+    if (timeStr.match(/^\d{2}:\d{2}$/)) {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    }
+    // If already in AM/PM format or "Now", return as is
+    return timeStr || 'Now';
+  };
+  
+  const displayTime = bookingData?.time ? formatTimeForDisplay(bookingData.time) : 'Now';
 
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
