@@ -1,12 +1,13 @@
 import React from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface Props {
@@ -59,7 +60,7 @@ const BookingConfirmedScreen: React.FC<Props> = ({
     time: getCurrentTime(now),
   };
   return (
-    <SafeAreaView style={[styles.container,{ backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.container,{ backgroundColor: theme.background }]} edges={platformEdges as any}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="close" size={24} color={theme.textPrimary} />
