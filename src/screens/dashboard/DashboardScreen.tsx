@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
@@ -243,11 +244,35 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     </TouchableOpacity>
   );
 
-  const handleCancel = (bookingId: string) => {
-    // Optimistic cancel for dashboard list
-    setBookings(prev => prev.map(b =>
-      (b.booking_id === bookingId ? { ...b, status: 'Canceled' as any } : b)
-    ));
+  const handleCancel = async (bookingId: string) => {
+    Alert.alert(
+      'Cancel Booking',
+      'Are you sure you want to cancel this booking?',
+      [
+        { text: 'No', style: 'cancel' },
+        { 
+          text: 'Yes, Cancel', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              console.log('Cancelling booking from dashboard:', bookingId);
+              const result = await authService.cancelBooking(bookingId);
+              
+              if (result.success) {
+                Alert.alert('Success', result.message || 'Booking cancelled successfully');
+                // Reload bookings to show updated status
+                await loadBookings();
+              } else {
+                Alert.alert('Error', result.error || 'Failed to cancel booking. Please try again.');
+              }
+            } catch (error) {
+              console.error('Cancel booking error:', error);
+              Alert.alert('Error', 'Failed to cancel booking. Please try again.');
+            }
+          }
+        },
+      ]
+    );
   };
 
   return (
