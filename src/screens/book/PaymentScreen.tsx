@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
@@ -178,7 +178,7 @@ const PaymentScreen: React.FC<Props> = ({
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Service Details */}
         <View style={styles.serviceCard}>
           <Text style={styles.serviceTitle}>Service Details</Text>
@@ -312,7 +312,7 @@ const PaymentScreen: React.FC<Props> = ({
             </View>
           </View>
         )}
-      </View>
+      </ScrollView>
 
       {/* Pay Button */}
       <View style={[styles.bottomContainer, { paddingBottom: bottomPadding }]}>
@@ -357,8 +357,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: 16,
     paddingTop: 20,
+    paddingBottom: 20,
   },
   serviceCard: {
     backgroundColor: '#F9FAFB',

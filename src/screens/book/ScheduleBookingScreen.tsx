@@ -532,26 +532,30 @@ const styles = StyleSheet.create({
   },
   calendarDaysHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginBottom: 8,
+    width: '100%',
   },
   calendarDayHeaderText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#6B7280',
-    width: 32,
+    width: '14.28%', // Match calendar day width for alignment
     textAlign: 'center',
   },
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    width: '100%',
   },
   calendarDay: {
-    width: 32,
-    height: 32,
+    width: '14.28%', // 100% / 7 = 14.28% for exactly 7 items per row
+    aspectRatio: 1,
+    minHeight: 32,
+    maxHeight: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 2,
+    padding: 2,
   },
   calendarDaySelected: {
     backgroundColor: '#000000',
