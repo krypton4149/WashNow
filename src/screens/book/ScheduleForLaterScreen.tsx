@@ -175,8 +175,8 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
       style={styles.centerCard}
       onPress={() => onCenterSelect(center)}
     >
-      <View style={styles.locationIcon}>
-        <Text style={styles.locationIconText}>📍</Text>
+      <View style={styles.centerLocationIcon}>
+        <Text style={styles.centerLocationIconText}>📍</Text>
       </View>
       <View style={styles.centerInfo}>
         <Text style={styles.centerName}>{center.name || 'Service Center'}</Text>
@@ -255,16 +255,7 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
                 </View>
               )}
               
-              {/* Schedule Ahead Info */}
-              <View style={styles.scheduleInfo}>
-                <Text style={styles.scheduleIcon}>🕐</Text>
-                <View style={styles.scheduleTextContainer}>
-                  <Text style={styles.scheduleTitle}>Schedule Ahead</Text>
-                  <Text style={styles.scheduleDescription}>
-                    After selecting a center, you'll choose your preferred date and time.
-                  </Text>
-                </View>
-              </View>
+              {/* Schedule Ahead Info removed as requested */}
             </View>
       </ScrollView>
     </SafeAreaView>
@@ -395,14 +386,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  locationIcon: {
+  centerLocationIcon: {
     width: 24,
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
-  locationIconText: {
+  centerLocationIconText: {
     fontSize: 16,
     color: '#000000',
   },

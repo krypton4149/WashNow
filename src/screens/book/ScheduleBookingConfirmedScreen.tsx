@@ -8,46 +8,48 @@ interface Props {
   onBack?: () => void;
   onViewBookingStatus?: () => void;
   onBackToHome?: () => void;
-  acceptedCenter?: any;
-  bookingId?: string;
   bookingData?: {
+    center?: {
+      id: string;
+      name: string;
+      address: string;
+    };
     date?: string;
     time?: string;
+    bookingId?: string;
   };
 }
 
-const PaymentConfirmedScreen: React.FC<Props> = ({ 
+const ScheduleBookingConfirmedScreen: React.FC<Props> = ({ 
   onBack, 
   onViewBookingStatus,
   onBackToHome,
-  bookingId,
-  bookingData,
-  acceptedCenter = {
-    id: '1',
-    name: 'Premium Auto Wash',
-    rating: 4.8,
-    distance: '0.5 mi',
-    address: 'Downtown, New York - 123 Main Street',
+  bookingData = {
+    center: {
+      id: '1',
+      name: 'Harrow Hand Car Wash',
+      address: 'Northolt Road, South Harrow, HA2 6AF',
+    },
+    date: new Date().toISOString(),
+    time: '10:00 AM',
+    bookingId: 'BK6305',
   }
 }) => {
-  // Derive booking date: use bookingData date if available (scheduled booking), otherwise use current date (instant booking)
-  const bookingDate = bookingData?.date ? new Date(bookingData.date) : new Date();
+  // Format date
+  const bookingDate = bookingData.date ? new Date(bookingData.date) : new Date();
   const today = new Date();
-  today.setHours(0,0,0,0);
+  today.setHours(0, 0, 0, 0);
   const booked = new Date(bookingDate);
-  booked.setHours(0,0,0,0);
+  booked.setHours(0, 0, 0, 0);
   const diffDays = Math.round((booked.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   const chipLabel = diffDays === 0 ? 'Today' : diffDays === 1 ? 'Next Day' : '';
   
-  // Format date display - use bookingData date format or default
+  // Format date display
   const displayDate = bookingDate.toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
   });
-  
-  // Display time: use bookingData time if available (scheduled), otherwise "Now" (instant)
-  const displayTime = bookingData?.time || 'Now';
 
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
@@ -63,7 +65,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
         {/* Booking Details Card */}
         <View style={styles.bookingCard}>
           <View style={styles.bookingHeader}>
-            <Text style={styles.bookingId}>Booking ID: #{bookingId || 'N/A'}</Text>
+            <Text style={styles.bookingId}>Booking ID: #{bookingData.bookingId || 'BK6305'}</Text>
           </View>
           
           <View style={styles.bookingDetails}>
@@ -74,7 +76,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
               </View>
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Location</Text>
-                <Text style={styles.bookingValue}>{acceptedCenter.name}</Text>
+                <Text style={styles.bookingValue}>{bookingData.center?.name || 'Car Wash Center'}</Text>
               </View>
             </View>
 
@@ -103,7 +105,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
               </View>
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Time</Text>
-                <Text style={styles.bookingValue}>{displayTime}</Text>
+                <Text style={styles.bookingValue}>{bookingData.time || 'Now'}</Text>
               </View>
             </View>
           </View>
@@ -128,7 +130,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
           style={styles.viewStatusButton}
           onPress={() => {
             try {
-              const destination = encodeURIComponent(acceptedCenter?.address || acceptedCenter?.name || 'Car Wash Center');
+              const destination = encodeURIComponent(bookingData.center?.address || bookingData.center?.name || 'Car Wash Center');
               const appleUrl = `http://maps.apple.com/?daddr=${destination}&dirflg=d`;
               const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
               const schemeUrl = Platform.select({
@@ -310,4 +312,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PaymentConfirmedScreen;
+export default ScheduleBookingConfirmedScreen;
+

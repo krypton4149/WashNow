@@ -134,7 +134,41 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
     return 'In Progress'; // Default fallback
   };
 
-  const filteredBookings = (bookings || [])
+  // Attempt to build a comparable timestamp from booking fields; fallback to created_at/updated_at
+  const getBookingTimestamp = (b: Booking): number => {
+    try {
+      // Normalize booking_date
+      let datePart = (b.booking_date || '').trim();
+      let timePart = (b.booking_time || '00:00:00').trim();
+
+      // Handle common non-ISO formats
+      // If format is DD-MM-YYYY or DD/MM/YYYY, convert to YYYY-MM-DD
+      const dmYMatch = datePart.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (dmYMatch) {
+        const d = dmYMatch[1].padStart(2, '0');
+        const m = dmYMatch[2].padStart(2, '0');
+        const y = dmYMatch[3];
+        datePart = `${y}-${m}-${d}`;
+      }
+
+      // If time is HH:MM, add :00 seconds
+      if (/^\d{1,2}:\d{2}$/.test(timePart)) {
+        timePart = `${timePart}:00`;
+      }
+
+      const ts = Date.parse(`${datePart}T${timePart}`);
+      if (!Number.isNaN(ts)) return ts;
+    } catch (e) {
+      // ignore, fallback below
+    }
+    const createdTs = Date.parse(b.created_at || '');
+    const updatedTs = Date.parse(b.updated_at || '');
+    return Math.max(isNaN(createdTs) ? 0 : createdTs, isNaN(updatedTs) ? 0 : updatedTs);
+  };
+
+  // Sort bookings by most recent first (by booking_date and booking_time)
+  const filteredBookings = ([...(bookings || [])]
+    .sort((a, b) => getBookingTimestamp(b) - getBookingTimestamp(a)))
     .map(booking => {
       console.log('Mapping booking:', booking.id);
       return getBookingDisplayData(booking);

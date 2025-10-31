@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ScheduleBookingScreenProps {
@@ -38,8 +38,6 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   const [selectedService, setSelectedService] = useState<string>('car-wash');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
-  const [vehicleNumber, setVehicleNumber] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
   const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
 
@@ -89,7 +87,9 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     // Add days of the month
     for (let day = 1; day <= lastDay.getDate(); day++) {
       const dayDate = new Date(currentYear, currentMonth, day);
-      const isPast = dayDate < today.setHours(0, 0, 0, 0);
+      const startOfToday = new Date(today);
+      startOfToday.setHours(0, 0, 0, 0);
+      const isPast = dayDate.getTime() < startOfToday.getTime();
       
       days.push({
         day: day.toString(),
@@ -151,10 +151,6 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       Alert.alert('Error', 'Please select a time');
       return false;
     }
-    if (!vehicleNumber.trim()) {
-      Alert.alert('Error', 'Please enter vehicle number');
-      return false;
-    }
     return true;
   };
 
@@ -173,8 +169,6 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       service: 'Car Wash',
       date: new Date(currentYear, currentMonth, parseInt(selectedDate)).toISOString(),
       time: formattedTime,
-      vehicleNumber: vehicleNumber.trim(),
-      notes: notes.trim(),
     };
     
     onContinue(bookingInfo);
@@ -273,33 +267,10 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
             <Image source={{ uri: selectedCenter.image }} style={styles.centerImage} />
             <View style={styles.centerInfo}>
               <Text style={styles.centerName}>{selectedCenter.name}</Text>
-              <View style={styles.centerRatingContainer}>
-                <Text style={styles.centerRating}>⭐ {selectedCenter.rating}</Text>
-                <Text style={styles.centerDistance}>• {selectedCenter.distance}</Text>
-              </View>
               <View style={styles.centerAddressContainer}>
                 <Text style={styles.centerAddressIcon}>📍</Text>
                 <Text style={styles.centerAddress}>{selectedCenter.address}</Text>
               </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Service Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Service</Text>
-          <View style={[styles.serviceCard, styles.serviceCardSelected]}>
-            <View style={styles.serviceIcon}>
-              <Text style={styles.serviceIconText}>🚗✨</Text>
-            </View>
-            <View style={styles.serviceInfo}>
-              <Text style={[styles.serviceName, styles.serviceNameSelected]}>
-                Car Wash
-              </Text>
-              <Text style={styles.serviceDescription}>Standard wash service</Text>
-            </View>
-            <View style={styles.checkmark}>
-              <Text style={styles.checkmarkText}>✓</Text>
             </View>
           </View>
         </View>
@@ -355,47 +326,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
           </View>
         </View>
 
-        {/* Vehicle Number */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vehicle Number</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Enter vehicle number (e.g., ABC 1234)"
-              placeholderTextColor="#9CA3AF"
-              value={vehicleNumber}
-              onChangeText={setVehicleNumber}
-              autoCapitalize="characters"
-            />
-          </View>
-        </View>
-
-        {/* Notes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notes (Optional)</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={[styles.textInput, styles.notesInput]}
-              placeholder="Any special instructions or notes..."
-              placeholderTextColor="#9CA3AF"
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-            />
-          </View>
-        </View>
-
-        {/* Schedule Ahead Info */}
-        <View style={styles.scheduleInfo}>
-          <Text style={styles.scheduleIcon}>📅</Text>
-          <View style={styles.scheduleTextContainer}>
-            <Text style={styles.scheduleTitle}>Schedule Ahead</Text>
-            <Text style={styles.scheduleDescription}>
-              Your booking will be confirmed once you complete payment.
-            </Text>
-          </View>
-        </View>
+        {/* Vehicle Number and Notes removed as requested */}
 
         {/* Book Now Button */}
         <TouchableOpacity 
@@ -482,24 +413,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000000',
-    marginBottom: 4,
-  },
-  centerRatingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  centerRating: {
-    fontSize: 14,
-    color: '#F59E0B',
-  },
-  centerDistance: {
-    fontSize: 14,
-    color: '#666666',
+    marginBottom: 8,
   },
   centerAddressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
   },
   centerAddressIcon: {
     fontSize: 12,
@@ -653,6 +572,9 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   calendarDayTextPast: {
+    color: '#9CA3AF',
+  },
+  calendarDayTextInactive: {
     color: '#9CA3AF',
   },
   inputContainer: {

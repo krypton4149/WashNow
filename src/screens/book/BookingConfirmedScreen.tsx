@@ -1,6 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface Props {
@@ -20,82 +26,85 @@ const BookingConfirmedScreen: React.FC<Props> = ({
     address: 'Downtown, New York - 123 Main Street',
   }
 }) => {
-  const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(12, Math.min(insets.bottom || 0, 20));
+  const isDark = useColorScheme() === 'dark';
+  const theme = {
+    background: isDark ? '#000000' : '#FFFFFF',
+    textPrimary: isDark ? '#FFFFFF' : '#000000',
+    textSecondary: isDark ? '#A3A3A3' : '#666666',
+    border: isDark ? '#333333' : '#E5E7EB',
+    card: isDark ? '#0B0B0B' : '#F9FAFB',
+    surface: isDark ? '#111111' : '#FFFFFF',
+    accent: isDark ? '#FFFFFF' : '#000000',
+  };
+  const dateString = new Date().toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   return (
-    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
+    <SafeAreaView style={[styles.container,{ backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="close" size={24} color="#000" />
+          <Ionicons name="close" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Finding your car wash</Text>
-          <Text style={styles.subtitle}>Broadcasting to all nearby centers</Text>
+          <Text style={[styles.title,{color: theme.textPrimary}]}>Finding your car wash</Text>
+          <Text style={[styles.subtitle,{color: theme.textSecondary}]}>Broadcasting to all nearby centers</Text>
         </View>
       </View>
 
       <View style={styles.content}>
         {/* Match Found Banner */}
-        <View style={styles.matchFoundBanner}>
+        <View style={[styles.matchFoundBanner,{ backgroundColor: theme.card }]}>
           <View style={styles.matchIcon}>
-            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+            <Ionicons name="checkmark" size={16} color={isDark ? '#000000' : '#FFFFFF'} />
             <View style={styles.clockIcon}>
-              <Ionicons name="time" size={8} color="#FFFFFF" />
+              <Ionicons name="time" size={8} color={isDark ? '#000000' : '#FFFFFF'} />
             </View>
           </View>
           <View style={styles.matchContent}>
-            <Text style={styles.matchText}>Match found!</Text>
-            <Text style={styles.matchTime}>Time elapsed: 0:07</Text>
+            <Text style={[styles.matchText,{color: theme.textPrimary}]}>Match found!</Text>
+            <Text style={[styles.matchTime,{color: theme.textSecondary}]}>Time elapsed: 0:07</Text>
           </View>
         </View>
 
         {/* Booking Confirmed */}
         <View style={styles.confirmationSection}>
-          <View style={styles.confirmationIcon}>
-            <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+          <View style={[styles.confirmationIcon,{ backgroundColor: theme.accent }]}>
+            <Ionicons name="checkmark" size={48} color={isDark ? '#000000' : '#FFFFFF'} />
           </View>
-          <Text style={styles.confirmationTitle}>Booking Confirmed!</Text>
-          <Text style={styles.confirmationSubtitle}>
+          <Text style={[styles.confirmationTitle,{color: theme.textPrimary}]}>Booking Confirmed!</Text>
+          <Text style={[styles.confirmationSubtitle,{color: theme.textSecondary}] }>
             {acceptedCenter.name} accepted your request
           </Text>
         </View>
 
         {/* Car Wash Details */}
         <View style={styles.detailsSection}>
-          <Text style={styles.detailsTitle}>Your Car Wash Details</Text>
-          <View style={styles.detailsCard}>
+          <Text style={[styles.detailsTitle,{color: theme.textPrimary}]}>Your Car Wash Details</Text>
+          <View style={[styles.detailsCard,{ backgroundColor: theme.card }]}>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Center:</Text>
-              <Text style={styles.detailValue}>{acceptedCenter.name}</Text>
+              <Text style={[styles.detailLabel,{color: theme.textSecondary}]}>Center:</Text>
+              <Text style={[styles.detailValue,{color: theme.textPrimary}]}>{acceptedCenter.name}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Rating:</Text>
-              <View style={styles.ratingContainer}>
-                <Ionicons name="star" size={16} color="#F59E0B" />
-                <Text style={styles.detailValue}>{acceptedCenter.rating}</Text>
-              </View>
+              <Text style={[styles.detailLabel,{color: theme.textSecondary}]}>Date:</Text>
+              <Text style={[styles.detailValue,{color: theme.textPrimary}]}>{dateString}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Distance:</Text>
-              <Text style={styles.detailValue}>{acceptedCenter.distance}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Ready In:</Text>
-              <Text style={styles.detailValue}>15-20 min</Text>
+              <Text style={[styles.detailLabel,{color: theme.textSecondary}]}>Distance:</Text>
+              <Text style={[styles.detailValue,{color: theme.textPrimary}]}>{acceptedCenter.distance}</Text>
             </View>
           </View>
         </View>
 
-        {/* Next Step Instructions */}
-        <View style={styles.instructionsSection}>
-          <Text style={styles.instructionsText}>
-            Next step: Proceed to payment to complete your booking. You can cancel anytime before the service starts.
-          </Text>
-        </View>
+        {/* Next Step Instructions removed as requested */}
       </View>
 
       {/* Proceed to Payment Button */}
-      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding }]}>
+      <View style={[styles.bottomContainer,{ backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity style={styles.paymentButton} onPress={onProceedToPayment}>
           <Text style={styles.paymentButtonText}>Proceed to Payment</Text>
         </TouchableOpacity>

@@ -17,7 +17,7 @@ import FindingCarWashScreen from './src/screens/book/FindingCarWashScreen';
 import BookingConfirmedScreen from './src/screens/book/BookingConfirmedScreen';
 import PaymentScreen from './src/screens/book/PaymentScreen';
 import PaymentConfirmedScreen from './src/screens/book/PaymentConfirmedScreen';
-import LocationSelectionScreen from './src/screens/book/LocationSelectionScreen';
+import ScheduleBookingConfirmedScreen from './src/screens/book/ScheduleBookingConfirmedScreen';
 import ScheduleForLaterScreen from './src/screens/book/ScheduleForLaterScreen';
 import ScheduleBookingScreen from './src/screens/book/ScheduleBookingScreen';
 import ConfirmBookingScreen from './src/screens/book/ConfirmBookingScreen';
@@ -43,6 +43,7 @@ const AppContent: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [selectedCenter, setSelectedCenter] = useState<any>(null);
   const [bookingData, setBookingData] = useState<any>(null);
+  const [lastBookingId, setLastBookingId] = useState<string | undefined>(undefined);
   const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
 
   // Check authentication status on app start
@@ -119,30 +120,42 @@ const AppContent: React.FC = () => {
 
   const handleLogout = async () => {
     console.log('App: handleLogout invoked');
-    try {
-      // Optimistic local logout: clear local auth and navigate immediately
-      await authService.clearAuth();
-      setIsAuthenticated(false);
-      setUserData(null);
-      setCurrentScreen('user-choice');
-      console.log('App: navigated to user-choice after clearing auth');
+    const doLogout = async () => {
+      try {
+        // Optimistic local logout: clear local auth and navigate immediately
+        await authService.clearAuth();
+        setIsAuthenticated(false);
+        setUserData(null);
+        setCurrentScreen('user-choice');
+        console.log('App: navigated to user-choice after clearing auth');
 
-      // Fire-and-forget server logout; do not block UI
-      authService.logout()
-        .then(res => {
-          console.log('Logout API response:', res);
-        })
-        .catch(err => {
-          console.warn('Background logout failed:', err);
-        });
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Even if clearing fails, ensure user is taken out of the session
-      setIsAuthenticated(false);
-      setUserData(null);
-      setCurrentScreen('user-choice');
-      console.log('App: forced navigation to user-choice due to error');
-    }
+        // Fire-and-forget server logout; do not block UI
+        authService.logout()
+          .then(res => {
+            console.log('Logout API response:', res);
+          })
+          .catch(err => {
+            console.warn('Background logout failed:', err);
+          });
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Even if clearing fails, ensure user is taken out of the session
+        setIsAuthenticated(false);
+        setUserData(null);
+        setCurrentScreen('user-choice');
+        console.log('App: forced navigation to user-choice due to error');
+      }
+    };
+
+    // Ask for confirmation first
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to log out?',
+      [
+        { text: 'No', style: 'cancel' },
+        { text: 'Yes', style: 'destructive', onPress: () => { doLogout(); } },
+      ]
+    );
   };
 
   const handleBookWash = () => {
@@ -155,11 +168,22 @@ const AppContent: React.FC = () => {
   };
 
   const handleNavigateToScheduleForLater = () => {
-    setCurrentScreen('location-selection');
+    setCurrentScreen('schedule-for-later');
   };
 
   const handleConfirmBooking = () => {
-    setCurrentScreen('customer'); // Navigate directly to dashboard after successful payment
+    // If bookingData exists, it's a scheduled booking - go to payment
+    if (bookingData) {
+      setCurrentScreen('schedule-payment');
+    } else {
+      setCurrentScreen('customer'); // Instant booking - navigate directly to dashboard
+    }
+  };
+
+  const handleSchedulePaymentSuccess = (bookingId?: string) => {
+    setBookingData((prev: any) => ({ ...(prev || {}), bookingId }));
+    setLastBookingId(bookingId);
+    setCurrentScreen('payment-confirmed');
   };
 
   const handleInstantBooking = () => {
@@ -179,7 +203,8 @@ const AppContent: React.FC = () => {
     setCurrentScreen('payment');
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (bookingId?: string) => {
+    setLastBookingId(bookingId);
     setCurrentScreen('payment-confirmed');
   };
 
@@ -220,12 +245,6 @@ const AppContent: React.FC = () => {
     setCurrentScreen('change-password');
   };
 
-  const handleLocationSelect = (location: any) => {
-    console.log('Location selected:', location);
-    setSelectedLocation(location);
-    setCurrentScreen('schedule-for-later');
-  };
-
   const handleCenterSelect = (center: any) => {
     console.log('Center selected:', center);
     setSelectedCenter(center);
@@ -234,9 +253,9 @@ const AppContent: React.FC = () => {
 
 
   const handleScheduleBookingContinue = (bookingInfo: any) => {
-    console.log('Continue to confirmation with booking data:', bookingInfo);
+    console.log('Continue to payment with booking data:', bookingInfo);
     setBookingData(bookingInfo);
-    setCurrentScreen('confirm-booking');
+    setCurrentScreen('schedule-payment');
   };
 
 
@@ -337,20 +356,18 @@ const AppContent: React.FC = () => {
             onBack={() => setCurrentScreen('payment')}
             onViewBookingStatus={handleViewBookingStatus}
             onBackToHome={handleBackToHome}
-            acceptedCenter={selectedCenter}
-          />
-        );
-      case 'location-selection':
-        return (
-          <LocationSelectionScreen 
-            onBack={() => setCurrentScreen('book-wash')}
-            onLocationSelect={handleLocationSelect}
+            acceptedCenter={bookingData?.center || selectedCenter}
+            bookingId={lastBookingId}
+            bookingData={bookingData ? {
+              date: bookingData.date,
+              time: bookingData.time,
+            } : undefined}
           />
         );
       case 'schedule-for-later':
         return (
           <ScheduleForLaterScreen 
-            onBack={() => setCurrentScreen('location-selection')}
+            onBack={() => setCurrentScreen('book-wash')}
             onCenterSelect={handleCenterSelect}
             selectedLocation={selectedLocation || { id: '1', name: 'Downtown, New York', centersCount: 2 }}
           />
@@ -387,6 +404,28 @@ const AppContent: React.FC = () => {
                 type: 'SUV'
               }
             }}
+          />
+        );
+      case 'schedule-payment':
+        return (
+          <PaymentScreen 
+            onBack={() => setCurrentScreen('schedule-booking')}
+            onPaymentSuccess={handleSchedulePaymentSuccess}
+            acceptedCenter={bookingData?.center || selectedCenter}
+          />
+        );
+      case 'schedule-booking-payment-confirmed':
+        return (
+          <ScheduleBookingConfirmedScreen 
+            onBack={() => setCurrentScreen('schedule-payment')}
+            onViewBookingStatus={handleViewBookingStatus}
+            onBackToHome={handleBackToHome}
+            bookingData={bookingData ? {
+              center: bookingData.center,
+              date: bookingData.date,
+              time: bookingData.time,
+              bookingId: bookingData.bookingId,
+            } : undefined}
           />
         );
       case 'booking-history':

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, useColorScheme } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
@@ -24,6 +24,16 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   const [centers, setCenters] = useState<ServiceCenter[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [acceptedCenter, setAcceptedCenter] = useState<ServiceCenter | null>(null);
+  const isDark = useColorScheme() === 'dark';
+  const theme = {
+    background: isDark ? '#000000' : '#FFFFFF',
+    textPrimary: isDark ? '#FFFFFF' : '#000000',
+    textSecondary: isDark ? '#A3A3A3' : '#666666',
+    border: isDark ? '#333333' : '#E5E7EB',
+    card: isDark ? '#0B0B0B' : '#F9FAFB',
+    surface: isDark ? '#111111' : '#FFFFFF',
+    accent: isDark ? '#FFFFFF' : '#000000',
+  };
 
   // Calculate distance from coordinates (simplified Haversine formula)
   const calculateDistance = (lat: string, lng: string): string => {
@@ -189,13 +199,9 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       
       <View style={styles.centerBody}>
         <View style={styles.centerHeader}>
-          <Text style={styles.centerName}>{center.name}</Text>
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={16} color="#000" />
-            <Text style={styles.centerRating}>{center.rating}</Text>
-          </View>
+          <Text style={[styles.centerName,{color: theme.textPrimary}]}>{center.name}</Text>
         </View>
-        <Text style={styles.centerDistance}>{center.distance}</Text>
+        <Text style={[styles.centerDistance,{color: theme.textSecondary}]}>{center.distance}</Text>
       </View>
       
       <View style={styles.centerRight}>
@@ -219,14 +225,14 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   const bottomPadding = Math.max(12, Math.min(insets.bottom || 0, 20));
 
   return (
-    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
+    <SafeAreaView style={[styles.container,{backgroundColor: theme.background}]} edges={["top","bottom"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="close" size={24} color="#000" />
+          <Ionicons name="close" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Finding your car wash</Text>
-          <Text style={styles.subtitle}>Broadcasting to all nearby centers.</Text>
+          <Text style={[styles.title,{color: theme.textPrimary}]}>Finding your car wash</Text>
+          <Text style={[styles.subtitle,{color: theme.textSecondary}]}>Broadcasting to all nearby centers.</Text>
         </View>
       </View>
 
@@ -234,56 +240,56 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
         {/* Searching/Matched Status */}
         <View style={[
           styles.searchingCard,
-          hasAcceptedCenter && { backgroundColor: '#ECFDF5' }
+          { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1 }
         ]}>
           <View style={styles.searchingLeft}>
             <View style={[
               styles.searchingIcon,
-              hasAcceptedCenter && { backgroundColor: '#059669' }
+              { backgroundColor: theme.accent }
             ]}>
               {hasAcceptedCenter ? (
-                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                <Ionicons name="checkmark" size={20} color={isDark ? '#000000' : '#FFFFFF'} />
               ) : (
-                <Ionicons name="refresh" size={20} color="#FFFFFF" />
+                <Ionicons name="refresh" size={20} color={isDark ? '#000000' : '#FFFFFF'} />
               )}
             </View>
           </View>
           <View style={styles.searchingBody}>
-            <Text style={[styles.searchingText, hasAcceptedCenter && { color: '#111827' }]}>
+            <Text style={[styles.searchingText,{color: theme.textPrimary}]}>
               {hasAcceptedCenter ? 'Match found!' : 'Searching for available centers...'}
             </Text>
-            <Text style={styles.timeText}>Time elapsed: {formatTime(timeElapsed)}</Text>
+            <Text style={[styles.timeText,{color: theme.textSecondary}]}>Time elapsed: {formatTime(timeElapsed)}</Text>
           </View>
         </View>
 
         {/* Your Request */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Request</Text>
-          <View style={styles.requestCard}>
+          <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>Your Request</Text>
+          <View style={[styles.requestCard,{backgroundColor: theme.card}]}> 
             <View style={styles.requestRow}>
-              <View style={styles.requestIcon}>
-                <Ionicons name="flash" size={16} color="#FFFFFF" />
+              <View style={[styles.requestIcon,{backgroundColor: theme.accent}]}> 
+                <Ionicons name="flash" size={16} color={isDark ? '#000000' : '#FFFFFF'} />
               </View>
-              <Text style={styles.requestText}>Car Wash - Instant Booking</Text>
+              <Text style={[styles.requestText,{color: theme.textPrimary}]}>Car Wash - Instant Booking</Text>
             </View>
-            <Text style={styles.requestSubtext}>Service starts immediately.</Text>
+            <Text style={[styles.requestSubtext,{color: theme.textSecondary}]}>Service starts immediately.</Text>
             
             <View style={styles.requestRow}>
-              <Ionicons name="location-outline" size={16} color="#666666" />
-              <Text style={styles.requestLabel}>Your location</Text>
+              <Ionicons name="location-outline" size={16} color={theme.textSecondary} />
+              <Text style={[styles.requestLabel,{color: theme.textSecondary}]}>Your location</Text>
             </View>
-            <Text style={styles.requestAddress}>{selectedLocation?.name || 'Downtown, New York - 123 Main Street'}</Text>
+            <Text style={[styles.requestAddress,{color: theme.textPrimary}]}>{selectedLocation?.name || 'Downtown, New York - 123 Main Street'}</Text>
           </View>
         </View>
 
         {/* Broadcasting to Centers */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Broadcasting to All Centers ({centers.length})</Text>
+          <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>Broadcasting to All Centers ({centers.length})</Text>
           <View style={styles.centersList}>
             {isLoading ? (
-              <Text style={{ color: '#666666' }}>Loading centers...</Text>
+              <Text style={{ color: theme.textSecondary }}>Loading centers...</Text>
             ) : centers.length === 0 ? (
-              <Text style={{ color: '#666666' }}>No centers available nearby.</Text>
+              <Text style={{ color: theme.textSecondary }}>No centers available nearby.</Text>
             ) : (
               centers.map(renderCenter)
             )}
@@ -292,11 +298,11 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       </ScrollView>
 
       {/* Cancel Button */}
-      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding }]}>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         <TouchableOpacity style={styles.cancelButton} onPress={onBack}>
-          <Text style={styles.cancelButtonText}>Cancel Request</Text>
+          <Text style={[styles.cancelButtonText,{color: theme.textSecondary}]}>Cancel Request</Text>
         </TouchableOpacity>
-        <Text style={styles.cancelNote}>You can cancel anytime before a center accepts.</Text>
+        <Text style={[styles.cancelNote,{color: theme.textSecondary}]}>You can cancel anytime before a center accepts.</Text>
       </View>
     </SafeAreaView>
   );

@@ -14,6 +14,8 @@ export type ScreenType =
   | 'schedule-for-later'
   | 'schedule-booking'
   | 'confirm-booking'
+  | 'schedule-payment'
+  | 'schedule-booking-payment-confirmed'
   | 'booking-history'
   | 'profile'
   | 'edit-profile'

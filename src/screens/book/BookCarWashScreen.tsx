@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator, useColorScheme } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Geolocation from '@react-native-community/geolocation';
@@ -22,6 +22,16 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   const [loadingCenters, setLoadingCenters] = useState(true);
   const [centersError, setCentersError] = useState<string | null>(null);
   const [whereToWash, setWhereToWash] = useState(false);
+  const isDark = useColorScheme() === 'dark';
+  const theme = {
+    background: isDark ? '#000000' : '#FFFFFF',
+    textPrimary: isDark ? '#FFFFFF' : '#000000',
+    textSecondary: isDark ? '#A3A3A3' : '#666666',
+    border: isDark ? '#333333' : '#E5E7EB',
+    card: isDark ? '#111111' : '#FFFFFF',
+    chip: isDark ? '#111111' : '#F5F5F5',
+    accent: isDark ? '#FFFFFF' : '#000000',
+  };
 
   // Mock data for service centers based on the exact image
   const mockServiceCenters = [
@@ -136,12 +146,12 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   const bottomPadding = Math.max(12, Math.min(insets.bottom || 0, 20));
 
   return (
-    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
+    <SafeAreaView style={[styles.container,{backgroundColor: theme.background}]} edges={["top","bottom"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
-                <Text style={styles.title}>Plan your wash</Text>
+                <Text style={[styles.title,{color: theme.textPrimary}]}>Plan your wash</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -149,25 +159,25 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         {/* Selection Buttons */}
         <View style={styles.selectionContainer}>
           <TouchableOpacity 
-            style={styles.selectionButton}
+            style={[styles.selectionButton,{backgroundColor: theme.chip}]}
             onPress={() => setShowTimeModal(true)}
           >
-            <Ionicons name="time-outline" size={16} color="#000" />
-                    <Text style={styles.selectionText}>Wash now</Text>
-            <Ionicons name="chevron-down-outline" size={16} color="#000" />
+            <Ionicons name="time-outline" size={16} color={theme.textPrimary} />
+                    <Text style={[styles.selectionText,{color: theme.textPrimary}]}>Wash now</Text>
+            <Ionicons name="chevron-down-outline" size={16} color={theme.textPrimary} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.selectionButton}>
-            <Text style={styles.selectionText}>For me</Text>
-            <Ionicons name="chevron-down-outline" size={16} color="#000" />
+          <TouchableOpacity style={[styles.selectionButton,{backgroundColor: theme.chip}]}> 
+            <Text style={[styles.selectionText,{color: theme.textPrimary}]}>For me</Text>
+            <Ionicons name="chevron-down-outline" size={16} color={theme.textPrimary} />
           </TouchableOpacity>
         </View>
 
         {/* Location Input */}
-        <View style={styles.locationContainer}>
+        <View style={[styles.locationContainer,{backgroundColor: theme.card,borderColor: theme.textPrimary}]}> 
           <View style={styles.locationRow}>
-            <View style={styles.locationDot} />
-            <Text style={styles.locationText}>{currentLocation}</Text>
+            <View style={[styles.locationDot,{backgroundColor: theme.textPrimary}]} />
+            <Text style={[styles.locationText,{color: theme.textPrimary}]}>{currentLocation}</Text>
           </View>
           
           <TouchableOpacity 
@@ -175,22 +185,22 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
             onPress={() => setWhereToWash(!whereToWash)}
           >
             <View style={styles.checkboxContainer}>
-              <View style={[styles.checkbox, whereToWash && styles.checkboxChecked]}>
-                {whereToWash && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+              <View style={[styles.checkbox,{borderColor: theme.textPrimary}, whereToWash && {backgroundColor: theme.textPrimary}]}> 
+                {whereToWash && <Ionicons name="checkmark" size={12} color={isDark ? '#000000' : '#FFFFFF'} />}
               </View>
-              <Text style={styles.whereToWashText}>Where to?</Text>
+              <Text style={[styles.whereToWashText,{color: theme.textSecondary}]}>Where to?</Text>
             </View>
           </TouchableOpacity>
         </View>
 
         {/* Service Centers List */}
         <View style={styles.centersList}>
-          <Text style={styles.sectionTitle}>Nearby car wash centers</Text>
+          <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>Nearby car wash centers</Text>
           
           {loadingCenters ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#666666" />
-              <Text style={styles.loadingText}>Loading service centers...</Text>
+              <ActivityIndicator size="small" color={theme.textSecondary} />
+              <Text style={[styles.loadingText,{color: theme.textSecondary}]}>Loading service centers...</Text>
             </View>
           ) : centersError ? (
             <View style={styles.errorContainer}>
@@ -201,20 +211,20 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
             </View>
           ) : serviceCenters.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No service centers available</Text>
+              <Text style={[styles.emptyText,{color: theme.textSecondary}]}>No service centers available</Text>
             </View>
           ) : (
             serviceCenters.map((center, index) => (
               <View 
                 key={center.id || index} 
-                style={[styles.centerRow, index === serviceCenters.length - 1 && styles.lastCenterRow]}
+                style={[styles.centerRow,{borderBottomColor: theme.border}, index === serviceCenters.length - 1 && styles.lastCenterRow]}
               >
                 <View style={styles.centerLeft}>
-                  <Ionicons name="location-outline" size={20} color="#000" />
+                  <Ionicons name="location-outline" size={20} color={theme.textPrimary} />
                 </View>
                 <View style={styles.centerBody}>
-                  <Text style={styles.centerName}>{center.name || center.service_center_name || 'Service Center'}</Text>
-                  <Text style={styles.centerAddress}>{center.address || center.location || 'Address not available'}</Text>
+                  <Text style={[styles.centerName,{color: theme.textPrimary}]}>{center.name || center.service_center_name || 'Service Center'}</Text>
+                  <Text style={[styles.centerAddress,{color: theme.textSecondary}]}>{center.address || center.location || 'Address not available'}</Text>
                 </View>
               </View>
             ))
@@ -225,11 +235,11 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
       </ScrollView>
 
       {/* Confirm Booking Button */}
-      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding }]}>
-        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmBooking}>
-          <Text style={styles.confirmButtonText}>Confirm Booking</Text>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.card, borderTopColor: theme.border }]}> 
+        <TouchableOpacity style={[styles.confirmButton,{backgroundColor: theme.accent}]} onPress={handleConfirmBooking}>
+          <Text style={[styles.confirmButtonText,{color: isDark ? '#000000' : '#FFFFFF'}]}>Confirm Booking</Text>
         </TouchableOpacity>
-        <Text style={styles.bottomText}>Request will be sent to all {serviceCenters.length} available car wash centers.</Text>
+        <Text style={[styles.bottomText,{color: theme.textSecondary}]}>Request will be sent to all {serviceCenters.length} available car wash centers.</Text>
       </View>
 
       {/* Time Selection Modal */}
@@ -240,50 +250,50 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         onRequestClose={() => setShowTimeModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent,{backgroundColor: theme.card}]}> 
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>When do you want your car washed?</Text>
+              <Text style={[styles.modalTitle,{color: theme.textPrimary}]}>When do you want your car washed?</Text>
               <TouchableOpacity 
                 style={styles.closeButton}
                 onPress={() => setShowTimeModal(false)}
               >
-                <Ionicons name="close" size={24} color="#000" />
+                <Ionicons name="close" size={24} color={theme.textPrimary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.timeOptions}>
               <TouchableOpacity 
-                style={styles.timeOption}
+                style={[styles.timeOption,{backgroundColor: isDark ? '#0B0B0B' : '#F9FAFB'}]}
                 onPress={() => {
                   setSelectedTimeOption('now');
                   setShowTimeModal(false);
                 }}
               >
-                <View style={styles.timeOptionIcon}>
-                  <Ionicons name="flash" size={24} color="#FFFFFF" />
+                <View style={[styles.timeOptionIcon,{backgroundColor: theme.accent}]}> 
+                  <Ionicons name="flash" size={24} color={isDark ? '#000000' : '#FFFFFF'} />
                 </View>
                 <View style={styles.timeOptionContent}>
-                  <Text style={styles.timeOptionTitle}>Now</Text>
-                  <Text style={styles.timeOptionDescription}>
+                  <Text style={[styles.timeOptionTitle,{color: theme.textPrimary}]}>Now</Text>
+                  <Text style={[styles.timeOptionDescription,{color: theme.textSecondary}]}> 
                     Get matched with nearby car wash centers who can wash your car immediately
                   </Text>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={styles.timeOption}
+                style={[styles.timeOption,{backgroundColor: isDark ? '#0B0B0B' : '#F9FAFB'}]}
                 onPress={() => {
                   setSelectedTimeOption('later');
                   setShowTimeModal(false);
                   onNavigateToScheduleForLater?.();
                 }}
               >
-                <View style={styles.timeOptionIcon}>
-                  <Ionicons name="calendar-outline" size={24} color="#FFFFFF" />
+                <View style={[styles.timeOptionIcon,{backgroundColor: theme.accent}]}> 
+                  <Ionicons name="calendar-outline" size={24} color={isDark ? '#000000' : '#FFFFFF'} />
                 </View>
                 <View style={styles.timeOptionContent}>
-                  <Text style={styles.timeOptionTitle}>Schedule for later</Text>
-                  <Text style={styles.timeOptionDescription}>
+                  <Text style={[styles.timeOptionTitle,{color: theme.textPrimary}]}>Schedule for later</Text>
+                  <Text style={[styles.timeOptionDescription,{color: theme.textSecondary}]}> 
                     Choose a specific date, time, and location for your car wash
                   </Text>
                 </View>
@@ -432,16 +442,6 @@ const styles = StyleSheet.create({
     color: '#000',
     flex: 1,
     marginBottom: 4,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  centerRating: {
-    fontSize: 16,
-    color: '#000',
-    fontWeight: '500',
   },
   centerAddress: {
     fontSize: 14,

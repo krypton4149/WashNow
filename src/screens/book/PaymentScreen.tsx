@@ -6,7 +6,7 @@ import authService from '../../services/authService';
 
 interface Props {
   onBack?: () => void;
-  onPaymentSuccess?: () => void;
+  onPaymentSuccess?: (bookingId?: string) => void;
   acceptedCenter?: any;
 }
 
@@ -69,17 +69,17 @@ const PaymentScreen: React.FC<Props> = ({
 
         const result = await authService.bookNow(payload);
         if (result.success) {
-          Alert.alert('Booking Confirmed', `Booking ID: ${result.bookingId || 'N/A'}`, [
-            { text: 'OK', onPress: () => onPaymentSuccess?.() },
-          ]);
+          const bookingId = result.bookingId || 'N/A';
+          onPaymentSuccess?.(bookingId);
         } else {
           Alert.alert('Booking Failed', result.error || 'Please try again later.');
+          setIsProcessing(false);
         }
       } else {
-        // Simulate card / wallet payment then navigate
-        setTimeout(() => {
-          onPaymentSuccess?.();
-        }, 1200);
+        // Simulate card / wallet payment
+        const randomId = Math.floor(10000 + Math.random() * 90000);
+        const bookingId = `B${randomId.toString().padStart(5, '0')}`;
+        onPaymentSuccess?.(bookingId);
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to process payment.');
@@ -209,27 +209,28 @@ const PaymentScreen: React.FC<Props> = ({
           </View>
         )}
 
-        {/* Payment Summary */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Payment Summary</Text>
-          
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Car Wash Service</Text>
-            <Text style={styles.summaryValue}>$25.00</Text>
+        {/* Payment Summary (hidden for Cash) */}
+        {selectedPaymentMethod !== 'cash' && (
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>Payment Summary</Text>
+            
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Car Wash Service</Text>
+              <Text style={styles.summaryValue}>$25.00</Text>
+            </View>
+            
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Service Fee</Text>
+              <Text style={styles.summaryValue}>$2.50</Text>
+            </View>
+            
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryTotalLabel}>Total Amount</Text>
+              <Text style={styles.summaryTotalValue}>$27.50</Text>
+            </View>
           </View>
-          
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Service Fee</Text>
-            <Text style={styles.summaryValue}>$2.50</Text>
-          </View>
-          
-          <View style={styles.summaryDivider} />
-          
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryTotalLabel}>Total Amount</Text>
-            <Text style={styles.summaryTotalValue}>$27.50</Text>
-          </View>
-        </View>
+        )}
       </View>
 
       {/* Pay Button */}
