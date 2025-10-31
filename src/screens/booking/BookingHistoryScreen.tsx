@@ -167,19 +167,26 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   };
 
   // Sort bookings by most recent first (by booking_date and booking_time)
-  const filteredBookings = ([...(bookings || [])]
+  const allBookingDisplayData = ([...(bookings || [])]
     .sort((a, b) => getBookingTimestamp(b) - getBookingTimestamp(a)))
     .map(booking => {
       console.log('Mapping booking:', booking.id);
       return getBookingDisplayData(booking);
-    })
-    .filter(booking => {
-      console.log(`Filtering booking ${booking.id}: status=${booking.status}, activeTab=${activeTab}`);
-      if (activeTab === 'Ongoing') return booking.status === 'In Progress';
-      if (activeTab === 'Completed') return booking.status === 'Completed';
-      if (activeTab === 'Canceled') return booking.status === 'Canceled';
-      return true;
     });
+
+  // Calculate counts for each tab
+  const ongoingCount = allBookingDisplayData.filter(b => b.status === 'In Progress').length;
+  const completedCount = allBookingDisplayData.filter(b => b.status === 'Completed').length;
+  const canceledCount = allBookingDisplayData.filter(b => b.status === 'Canceled').length;
+
+  // Filter bookings based on active tab
+  const filteredBookings = allBookingDisplayData.filter(booking => {
+    console.log(`Filtering booking ${booking.id}: status=${booking.status}, activeTab=${activeTab}`);
+    if (activeTab === 'Ongoing') return booking.status === 'In Progress';
+    if (activeTab === 'Completed') return booking.status === 'Completed';
+    if (activeTab === 'Canceled') return booking.status === 'Canceled';
+    return true;
+  });
 
   console.log('Final filtered bookings:', filteredBookings.length, 'items');
 
@@ -209,19 +216,31 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
     }
   };
 
-  const handleCancelBooking = (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
     Alert.alert(
       'Cancel Booking',
       'Are you sure you want to cancel this booking?',
       [
         { text: 'No', style: 'cancel' },
-        { text: 'Yes, Cancel', style: 'destructive', onPress: () => {
-            // Optimistically update UI; integrate real API when available
-            setBookings(prev => prev.map(b =>
-              (b.booking_id === bookingId || String(b.id) === bookingId)
-                ? { ...b, status: 'Canceled' as any }
-                : b
-            ));
+        { 
+          text: 'Yes, Cancel', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              console.log('Cancelling booking:', bookingId);
+              const result = await authService.cancelBooking(bookingId);
+              
+              if (result.success) {
+                Alert.alert('Success', result.message || 'Booking cancelled successfully');
+                // Reload bookings to show updated status
+                await loadBookings();
+              } else {
+                Alert.alert('Error', result.error || 'Failed to cancel booking. Please try again.');
+              }
+            } catch (error) {
+              console.error('Cancel booking error:', error);
+              Alert.alert('Error', 'Failed to cancel booking. Please try again.');
+            }
           }
         },
       ]
@@ -248,9 +267,9 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           <Text style={[styles.tabText, activeTab === 'Ongoing' && styles.activeTabText]}>
             Ongoing
           </Text>
-          {activeTab === 'Ongoing' && (
+          {activeTab === 'Ongoing' && ongoingCount > 0 && (
             <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{filteredBookings.length}</Text>
+              <Text style={styles.tabBadgeText}>{ongoingCount}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -261,9 +280,9 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           <Text style={[styles.tabText, activeTab === 'Completed' && styles.activeTabText]}>
             Completed
           </Text>
-          {activeTab === 'Completed' && (
+          {activeTab === 'Completed' && completedCount > 0 && (
             <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{filteredBookings.length}</Text>
+              <Text style={styles.tabBadgeText}>{completedCount}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -274,9 +293,9 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           <Text style={[styles.tabText, activeTab === 'Canceled' && styles.activeTabText]}>
             Canceled
           </Text>
-          {activeTab === 'Canceled' && (
+          {activeTab === 'Canceled' && canceledCount > 0 && (
             <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{filteredBookings.length}</Text>
+              <Text style={styles.tabBadgeText}>{canceledCount}</Text>
             </View>
           )}
         </TouchableOpacity>

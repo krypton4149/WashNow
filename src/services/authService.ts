@@ -626,6 +626,49 @@ class AuthService {
     }
   }
 
+  // Cancel Booking API
+  async cancelBooking(bookingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to cancel a booking' };
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/visitor/cancle-booking`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          booking_id: bookingId,
+          status: 'cancelled',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return {
+          success: true,
+          message: data.message || 'Booking cancelled successfully'
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || data.error || 'Failed to cancel booking. Please try again.'
+        };
+      }
+    } catch (error) {
+      console.error('Cancel booking error:', error);
+      return {
+        success: false,
+        error: 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
 }
 
 const authService = new AuthService();
