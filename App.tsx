@@ -180,10 +180,17 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleSchedulePaymentSuccess = (bookingId?: string) => {
-    setBookingData((prev: any) => ({ ...(prev || {}), bookingId }));
+  const handleSchedulePaymentSuccess = (bookingId?: string, bookingDataResponse?: { date: string; time: string }) => {
+    // Preserve existing bookingData and update with bookingId and any response data
+    setBookingData((prev: any) => ({ 
+      ...(prev || {}), 
+      bookingId,
+      // Use response data if provided, otherwise keep existing date/time
+      date: bookingDataResponse?.date || prev?.date,
+      time: bookingDataResponse?.time || prev?.time,
+    }));
     setLastBookingId(bookingId);
-    setCurrentScreen('payment-confirmed');
+    setCurrentScreen('schedule-booking-payment-confirmed');
   };
 
   const handleInstantBooking = () => {
@@ -421,6 +428,7 @@ const AppContent: React.FC = () => {
             onBack={() => setCurrentScreen('schedule-booking')}
             onPaymentSuccess={handleSchedulePaymentSuccess}
             acceptedCenter={bookingData?.center || selectedCenter}
+            bookingData={bookingData}
           />
         );
       case 'schedule-booking-payment-confirmed':
