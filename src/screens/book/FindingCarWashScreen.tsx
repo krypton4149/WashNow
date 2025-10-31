@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, useColorScheme } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Geolocation from '@react-native-community/geolocation';
 import authService from '../../services/authService';
 
 interface Props {
@@ -24,6 +25,8 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   const [centers, setCenters] = useState<ServiceCenter[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [acceptedCenter, setAcceptedCenter] = useState<ServiceCenter | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<string>('Getting location...');
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
   const isDark = useColorScheme() === 'dark';
   const theme = {
     background: isDark ? '#000000' : '#FFFFFF',
@@ -35,15 +38,78 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
     accent: isDark ? '#FFFFFF' : '#000000',
   };
 
+  // Store user's current coordinates for distance calculation
+  const [userCoordinates, setUserCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Get current GPS location and reverse geocode to address
+  const getCurrentLocation = () => {
+    setIsLoadingLocation(true);
+    Geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          setUserCoordinates({ lat: latitude, lng: longitude });
+          
+          // Reverse geocode using Nominatim (free OpenStreetMap service)
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+              {
+                headers: {
+                  'User-Agent': 'WashNowApp/1.0', // Required by Nominatim
+                },
+              }
+            );
+            
+            const data = await response.json();
+            if (data && data.address) {
+              const addr = data.address;
+              // Build readable address from components
+              const addressParts = [];
+              
+              if (addr.road) addressParts.push(addr.road);
+              if (addr.suburb) addressParts.push(addr.suburb);
+              if (addr.city || addr.town || addr.village) addressParts.push(addr.city || addr.town || addr.village);
+              if (addr.state) addressParts.push(addr.state);
+              
+              const address = addressParts.length > 0 
+                ? addressParts.join(', ')
+                : data.display_name || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+              
+              setCurrentLocation(address);
+            } else {
+              // Fallback to coordinates
+              setCurrentLocation(`Current Location - ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+            }
+          } catch (geoError) {
+            // If reverse geocoding fails, use coordinates with friendly format
+            setCurrentLocation(`Current Location - ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          }
+        } catch (error) {
+          console.log('Location error:', error);
+          setCurrentLocation('Location unavailable');
+        } finally {
+          setIsLoadingLocation(false);
+        }
+      },
+      (error) => {
+        console.log('GPS error:', error);
+        setCurrentLocation('Location unavailable');
+        setIsLoadingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  };
+
   // Calculate distance from coordinates (simplified Haversine formula)
   const calculateDistance = (lat: string, lng: string): string => {
     try {
       const centerLat = parseFloat(lat);
       const centerLng = parseFloat(lng);
       
-      // Mock user location (you can replace with actual user location)
-      const userLat = 51.557253; // Example: Harrow area
-      const userLng = -0.362310;
+      // Use user's current coordinates if available, otherwise fallback to mock
+      const userLat = userCoordinates?.lat || 51.557253; // Example: Harrow area
+      const userLng = userCoordinates?.lng || -0.362310;
       
       // Simple distance calculation (not precise but good enough for demo)
       const latDiff = Math.abs(centerLat - userLat);
@@ -57,6 +123,9 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   };
 
   useEffect(() => {
+    // Get current location on mount
+    getCurrentLocation();
+    
     // Load centers from API on mount
     const loadCenters = async () => {
       try {
@@ -278,7 +347,9 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               <Ionicons name="location-outline" size={16} color={theme.textSecondary} />
               <Text style={[styles.requestLabel,{color: theme.textSecondary}]}>Your location</Text>
             </View>
-            <Text style={[styles.requestAddress,{color: theme.textPrimary}]}>{selectedLocation?.name || 'Downtown, New York - 123 Main Street'}</Text>
+            <Text style={[styles.requestAddress,{color: theme.textPrimary}]}>
+              {isLoadingLocation ? 'Getting location...' : (selectedLocation?.name || currentLocation)}
+            </Text>
           </View>
         </View>
 
