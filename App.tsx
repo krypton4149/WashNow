@@ -356,6 +356,7 @@ const AppContent: React.FC = () => {
             onBack={() => setCurrentScreen('booking-confirmed')}
             onPaymentSuccess={handlePaymentSuccess}
             acceptedCenter={selectedCenter}
+            bookingData={bookingData}
           />
         );
       case 'payment-confirmed':

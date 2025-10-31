@@ -8,6 +8,11 @@ interface Props {
   onBack?: () => void;
   onPaymentSuccess?: (bookingId?: string, bookingData?: { date: string; time: string }) => void;
   acceptedCenter?: any;
+  bookingData?: {
+    date?: string;
+    time?: string;
+    center?: any;
+  };
 }
 
 const PaymentScreen: React.FC<Props> = ({ 
@@ -19,7 +24,8 @@ const PaymentScreen: React.FC<Props> = ({
     rating: 4.8,
     distance: '0.5 mi',
     address: 'Downtown, New York - 123 Main Street',
-  }
+  },
+  bookingData,
 }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -37,6 +43,31 @@ const PaymentScreen: React.FC<Props> = ({
     const hh = d.getHours().toString().padStart(2, '0');
     const mm = d.getMinutes().toString().padStart(2, '0');
     return `${hh}:${mm}`;
+  };
+
+  // Convert time from "HH:MM AM/PM" format to "HH:MM" format for API
+  const convertTimeTo24Hour = (timeStr: string): string => {
+    // If already in 24-hour format (HH:MM), return as is
+    if (timeStr.match(/^\d{2}:\d{2}$/)) {
+      return timeStr;
+    }
+    // If in 12-hour format (HH:MM AM/PM), convert to 24-hour
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (match) {
+      let hours = parseInt(match[1]);
+      const minutes = match[2];
+      const period = match[3].toUpperCase();
+      
+      if (period === 'PM' && hours !== 12) {
+        hours += 12;
+      } else if (period === 'AM' && hours === 12) {
+        hours = 0;
+      }
+      
+      return `${hours.toString().padStart(2, '0')}:${minutes}`;
+    }
+    // If format not recognized, return as is
+    return timeStr;
   };
 
   const handlePayment = async () => {
@@ -57,40 +88,75 @@ const PaymentScreen: React.FC<Props> = ({
           return;
         }
 
-        // Prepare instant booking payload
-        const now = new Date();
+        // Determine if this is a scheduled booking or instant booking
+        const isScheduledBooking = bookingData?.date && bookingData?.time;
+        
+        let bookingDate: Date;
+        let bookingTime: string;
+        
+        if (isScheduledBooking && bookingData.date && bookingData.time) {
+          // Use scheduled date and time
+          bookingDate = new Date(bookingData.date);
+          bookingTime = convertTimeTo24Hour(bookingData.time);
+        } else {
+          // Use current date and time for instant booking
+          const now = new Date();
+          bookingDate = now;
+          bookingTime = getCurrentTime(now);
+        }
+        
+        // Use center from bookingData if available (scheduled) or acceptedCenter (instant)
+        const centerId = bookingData?.center?.id || acceptedCenter?.id;
+        
         const payload = {
-          service_centre_id: String(acceptedCenter.id),
-          booking_date: formatDate(now),
-          booking_time: getCurrentTime(now),
+          service_centre_id: String(centerId),
+          booking_date: formatDate(bookingDate),
+          booking_time: bookingTime,
           vehicle_no: vehicleNumber.trim(),
           notes: notes?.trim() ? notes.trim() : 'Payment method: Cash',
         };
 
+        console.log('PaymentScreen: Calling bookNow API with payload:', JSON.stringify(payload, null, 2));
+        
         const result = await authService.bookNow(payload);
         if (result.success) {
           const bookingId = result.bookingId || 'N/A';
-          // Pass today's date and current time for instant booking
-          const bookingData = {
-            date: now.toISOString(),
-            time: getCurrentTime(now),
+          // Pass booking date and time (either scheduled or current for instant)
+          const bookingDataForResponse = {
+            date: bookingDate.toISOString(),
+            time: isScheduledBooking && bookingData?.time ? bookingData.time : getCurrentTime(bookingDate),
           };
-          onPaymentSuccess?.(bookingId, bookingData);
+          onPaymentSuccess?.(bookingId, bookingDataForResponse);
         } else {
           Alert.alert('Booking Failed', result.error || 'Please try again later.');
           setIsProcessing(false);
         }
       } else {
-        // Simulate card / wallet payment (instant booking)
-        const now = new Date();
+        // Simulate card / wallet payment
+        const isScheduledBooking = bookingData?.date && bookingData?.time;
+        
+        let bookingDate: Date;
+        let bookingTime: string;
+        
+        if (isScheduledBooking && bookingData.date && bookingData.time) {
+          // Use scheduled date and time
+          bookingDate = new Date(bookingData.date);
+          bookingTime = bookingData.time;
+        } else {
+          // Use current date and time for instant booking
+          const now = new Date();
+          bookingDate = now;
+          bookingTime = getCurrentTime(now);
+        }
+        
         const randomId = Math.floor(10000 + Math.random() * 90000);
         const bookingId = `B${randomId.toString().padStart(5, '0')}`;
-        // Pass today's date and current time for instant booking
-        const bookingData = {
-          date: now.toISOString(),
-          time: getCurrentTime(now),
+        // Pass booking date and time (either scheduled or current for instant)
+        const bookingDataForResponse = {
+          date: bookingDate.toISOString(),
+          time: bookingTime,
         };
-        onPaymentSuccess?.(bookingId, bookingData);
+        onPaymentSuccess?.(bookingId, bookingDataForResponse);
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to process payment.');
@@ -126,7 +192,11 @@ const PaymentScreen: React.FC<Props> = ({
           </View>
           <View style={styles.serviceRow}>
             <Ionicons name="time" size={20} color="#000" />
-            <Text style={styles.serviceText}>Service starts immediately</Text>
+            <Text style={styles.serviceText}>
+              {bookingData?.date && bookingData?.time
+                ? `${new Date(bookingData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${bookingData.time}`
+                : 'Service starts immediately'}
+            </Text>
           </View>
         </View>
 
