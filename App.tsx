@@ -265,10 +265,17 @@ const AppContent: React.FC = () => {
     setCurrentScreen('edit-profile');
   };
 
-  const handleSaveProfile = (updatedData: any) => {
-    // Update the user data state with the new information
-    setUserData(updatedData);
-    console.log('Profile updated:', updatedData);
+  const handleSaveProfile = async (updatedData: any) => {
+    // Also refresh from storage to ensure we have the latest data
+    const refreshedUser = await authService.getUser();
+    if (refreshedUser) {
+      setUserData(refreshedUser);
+      console.log('Profile updated from storage:', refreshedUser);
+    } else {
+      // Fallback to updatedData if storage refresh fails
+      setUserData(updatedData);
+      console.log('Profile updated from prop:', updatedData);
+    }
   };
 
   const { toggleDarkMode } = useTheme();
@@ -485,20 +492,57 @@ const AppContent: React.FC = () => {
       case 'profile':
         return (
           <ProfileScreen 
-            onBack={() => setCurrentScreen('customer')}
+            key={`profile-${Date.now()}`} // Force remount when navigating to profile
+            onBack={() => {
+              // Refresh user data when going back
+              authService.getUser().then(user => {
+                if (user) {
+                  setUserData(user);
+                }
+              });
+              setCurrentScreen('customer');
+            }}
             onEditProfile={handleEditProfile}
             onBookingHistory={() => setCurrentScreen('booking-history')}
             onHelpSupport={() => setCurrentScreen('help-support')}
             onSettings={() => setCurrentScreen('settings')}
             userData={userData}
+            onRefresh={async () => {
+              // Refresh user data from storage
+              const user = await authService.getUser();
+              if (user) {
+                console.log('Refreshing userData in App:', user);
+                setUserData(user);
+              }
+            }}
           />
         );
       case 'edit-profile':
         return (
           <EditProfileScreen 
-            onBack={() => setCurrentScreen('profile')}
+            onBack={async () => {
+              // Refresh user data before navigating back
+              const refreshedUser = await authService.getUser();
+              if (refreshedUser) {
+                setUserData(refreshedUser);
+              }
+              setCurrentScreen('profile');
+            }}
             onSaveProfile={handleSaveProfile}
             userData={userData}
+            activeTab="account"
+            onTabChange={(tab) => {
+              // Handle tab navigation from edit profile screen
+              if (tab === 'home') {
+                setCurrentScreen('customer');
+              } else if (tab === 'bookings') {
+                setCurrentScreen('booking-history');
+              } else if (tab === 'activity') {
+                setCurrentScreen('notifications');
+              } else if (tab === 'account') {
+                setCurrentScreen('profile');
+              }
+            }}
           />
         );
       case 'change-password':

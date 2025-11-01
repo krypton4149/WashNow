@@ -160,14 +160,17 @@ class AuthService {
         // Store token and user data
         const token = data.data?.token;
         const userData = data.data?.userData;
+        const loginType = data.data?.loginType || 'visitor';
         
         const user = {
           id: userData?.id?.toString() || '1',
-          email: userData?.email || email,
+          email: userData?.email || emailOrPhone,
           fullName: userData?.name || 'User',
           phoneNumber: userData?.phone || '',
           type: 'customer',
-          status: userData?.status || 'Active'
+          loginType: loginType, // Store loginType from API
+          status: userData?.status || 'Active',
+          createdAt: userData?.created_at || userData?.createdAt || new Date().toISOString()
         };
 
         if (token) {
@@ -225,7 +228,9 @@ class AuthService {
           fullName: apiUserData?.name || userData.fullName,
           phoneNumber: apiUserData?.phone || userData.phoneNumber,
           type: 'customer',
-          status: apiUserData?.status || 'Active'
+          loginType: data.data?.loginType || 'visitor',
+          status: apiUserData?.status || 'Active',
+          createdAt: apiUserData?.created_at || apiUserData?.createdAt || new Date().toISOString()
         };
 
         if (token) {
@@ -347,7 +352,9 @@ class AuthService {
           fullName: apiUserData?.name || 'Phone User',
           phoneNumber: phone,
           type: 'customer',
-          status: apiUserData?.status || 'Active'
+          loginType: data.data?.loginType || 'visitor',
+          status: apiUserData?.status || 'Active',
+          createdAt: apiUserData?.created_at || apiUserData?.createdAt || new Date().toISOString()
         };
 
         if (token) {
@@ -662,6 +669,81 @@ class AuthService {
       }
     } catch (error) {
       console.error('Cancel booking error:', error);
+      return {
+        success: false,
+        error: 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Edit Profile API
+  async editProfile(name: string, phone: string): Promise<{ success: boolean; message?: string; user?: any; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to edit your profile' };
+      }
+
+      const response = await fetch(`${BASE_URL}/api/v1/visitor/editprofile`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name,
+          phone: phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Get current user data to preserve fields not updated by API
+        const currentUser = await this.getUser();
+        // Update user data if returned
+        const apiUserData = data.data?.userData || data.data?.user || data.data;
+        if (apiUserData) {
+          const user = {
+            id: apiUserData?.id?.toString() || currentUser?.id || '1',
+            email: apiUserData?.email || currentUser?.email || '',
+            fullName: apiUserData?.name || name,
+            phoneNumber: apiUserData?.phone || phone,
+            type: apiUserData?.type || currentUser?.type || 'customer',
+            status: apiUserData?.status || currentUser?.status || 'Active',
+            createdAt: apiUserData?.created_at || apiUserData?.createdAt || currentUser?.createdAt || new Date().toISOString()
+          };
+          await this.setUser(user);
+          console.log('User data updated after editProfile:', user);
+        } else {
+          // If API doesn't return user data, update with the data we sent
+          const user = {
+            id: currentUser?.id || '1',
+            email: currentUser?.email || '',
+            fullName: name,
+            phoneNumber: phone,
+            type: currentUser?.type || 'customer',
+            status: currentUser?.status || 'Active',
+            createdAt: currentUser?.createdAt || new Date().toISOString()
+          };
+          await this.setUser(user);
+          console.log('User data updated with sent data:', user);
+        }
+
+        return {
+          success: true,
+          message: data.message || 'Profile updated successfully',
+          user: apiUserData
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || data.error || 'Failed to update profile. Please try again.'
+        };
+      }
+    } catch (error) {
+      console.error('Edit profile error:', error);
       return {
         success: false,
         error: 'Network error. Please check your internet connection and try again.'

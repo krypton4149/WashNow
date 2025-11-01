@@ -5,27 +5,29 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
-  Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { launchImageLibrary, ImagePickerResponse, MediaType } from 'react-native-image-picker';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
+import authService from '../../services/authService';
+import BottomTabBar from '../../components/BottomTabBar';
 
-const PROFILE_IMAGE_KEY = '@profile_image_uri';
 
 interface UserData {
-  id: string;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  type: string;
+  id?: string;
+  fullName?: string;
+  name?: string;
+  email?: string;
+  phoneNumber?: string;
+  phone?: string;
+  type?: string;
   carModel?: string;
   licensePlate?: string;
-  profileImage?: string;
+  status?: string;
+  createdAt?: string;
 }
 
 interface Props {
@@ -35,6 +37,9 @@ interface Props {
   onHelpSupport?: () => void;
   onSettings?: () => void;
   userData?: UserData | null;
+  onRefresh?: () => void;
+  onTabChange?: (tab: 'home' | 'bookings' | 'activity' | 'account') => void;
+  activeTab?: 'home' | 'bookings' | 'activity' | 'account';
 }
 
 const ProfileScreen: React.FC<Props> = ({
@@ -43,278 +48,275 @@ const ProfileScreen: React.FC<Props> = ({
   onBookingHistory,
   onHelpSupport,
   onSettings,
-  userData,
+  userData: propUserData,
+  onRefresh,
+  onTabChange,
+  activeTab = 'account',
 }) => {
   const { colors } = useTheme();
-  const [profileImage, setProfileImage] = useState<string | null>(userData?.profileImage || null);
+  const insets = useSafeAreaInsets();
+  const [userData, setUserData] = useState<UserData | null>(propUserData || null);
+  const [isLoading, setIsLoading] = useState(!propUserData);
 
-  // Load profile image from storage on mount
-  useEffect(() => {
-    loadProfileImage();
-  }, []);
-
-  const loadProfileImage = async () => {
+  // Refresh function to reload user data
+  const refreshUserData = async () => {
     try {
-      const savedImageUri = await AsyncStorage.getItem(PROFILE_IMAGE_KEY);
-      if (savedImageUri) {
-        setProfileImage(savedImageUri);
-      } else if (userData?.profileImage) {
-        setProfileImage(userData.profileImage);
+      const refreshedUser = await authService.getUser();
+      if (refreshedUser) {
+        console.log('Refreshing profile data:', refreshedUser);
+        setUserData(refreshedUser);
       }
     } catch (error) {
-      console.error('Error loading profile image:', error);
+      console.error('Error refreshing user data:', error);
     }
   };
 
-  // Helper function to get initials from full name
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  // Load user data from storage on mount
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  // Update userData when prop changes
+  useEffect(() => {
+    if (propUserData) {
+      setUserData(propUserData);
+    } else {
+      refreshUserData();
+    }
+  }, [propUserData]);
+
+  // Refresh data when component mounts or becomes visible (when returning from edit screen)
+  useEffect(() => {
+    // Immediate refresh
+    refreshUserData();
+    onRefresh?.();
+    
+    // Also refresh after a short delay to ensure AsyncStorage is fully updated
+    const refreshTimer = setTimeout(() => {
+      refreshUserData();
+      onRefresh?.();
+    }, 500);
+    
+    return () => clearTimeout(refreshTimer);
+  }, []); // Run on mount
+
+  // Load user data from AsyncStorage if not provided via props
+  const loadUserData = async () => {
+    try {
+      if (!propUserData) {
+        const storedUser = await authService.getUser();
+        if (storedUser) {
+          setUserData(storedUser);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Default values if userData is not available
-  const displayName = userData?.fullName || 'joe';
-  const displayEmail = userData?.email || 'joe@gmail.com';
-  const displayPhone = userData?.phoneNumber || '3242424324';
+
+  // Helper function to get first letter of first name and last name
+  const getInitials = (name: string) => {
+    const words = name.trim().split(' ').filter(word => word.length > 0);
+    if (words.length === 0) return 'U';
+    if (words.length === 1) return words[0].charAt(0).toUpperCase();
+    
+    // Get first letter of first name and first letter of last name
+    const firstName = words[0].charAt(0).toUpperCase();
+    const lastName = words[words.length - 1].charAt(0).toUpperCase();
+    return firstName + lastName;
+  };
+
+  // Display values from userData (from login API)
+  const displayName = userData?.fullName || userData?.name || 'User';
+  const displayEmail = userData?.email || '';
+  const displayPhone = userData?.phoneNumber || userData?.phone || '';
   const initials = getInitials(displayName);
 
-  const handleProfileImagePress = () => {
-    Alert.alert(
-      'Change Profile Picture',
-      'Select an option',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Choose from Gallery', 
-          onPress: () => openImagePicker()
-        },
-        profileImage ? {
-          text: 'Remove Photo',
-          style: 'destructive',
-          onPress: () => removeProfileImage()
-        } : undefined,
-      ].filter(Boolean)
-    );
-  };
-
-  const openImagePicker = () => {
-    // Check if the module is available
-    if (!launchImageLibrary) {
-      Alert.alert(
-        'Error', 
-        'Image picker is not available. Please rebuild the app after installing dependencies.',
-        [{ text: 'OK' }]
-      );
-      console.error('react-native-image-picker module not available');
-      return;
-    }
-
-    const options = {
-      mediaType: 'photo' as MediaType,
-      quality: 0.8,
-      maxWidth: 512,
-      maxHeight: 512,
-      selectionLimit: 1,
-      includeBase64: false,
-    };
-
-    try {
-      launchImageLibrary(options, (response: ImagePickerResponse) => {
-        if (response.didCancel) {
-          // User cancelled the picker
-          return;
-        } else if (response.errorMessage) {
-          Alert.alert('Error', 'Failed to load image. Please try again.');
-          console.error('ImagePicker Error: ', response.errorMessage);
-          return;
-        }
-
-        const asset = response.assets?.[0];
-        if (asset && asset.uri) {
-          const imageUri = asset.uri;
-          setProfileImage(imageUri);
-          saveProfileImage(imageUri);
-        }
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Failed to open image picker. Please try again.');
-      console.error('ImagePicker Exception: ', error);
-    }
-  };
-
-  const saveProfileImage = async (uri: string) => {
-    try {
-      await AsyncStorage.setItem(PROFILE_IMAGE_KEY, uri);
-    } catch (error) {
-      console.error('Error saving profile image:', error);
-    }
-  };
-
-  const removeProfileImage = async () => {
-    try {
-      await AsyncStorage.removeItem(PROFILE_IMAGE_KEY);
-      setProfileImage(null);
-      Alert.alert('Success', 'Profile picture removed');
-    } catch (error) {
-      console.error('Error removing profile image:', error);
-      Alert.alert('Error', 'Failed to remove profile picture');
-    }
-  };
-
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      {/* Header Section */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.background} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.background }]}>Profile</Text>
-          <TouchableOpacity style={styles.editButton} onPress={onEditProfile}>
-            <Ionicons name="create-outline" size={24} color={colors.background} />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.profileSection}>
-          <View style={styles.profileImageWrapper}>
-            <TouchableOpacity 
-              onPress={handleProfileImagePress}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.profilePictureContainer, { backgroundColor: colors.background, borderColor: colors.background }]}>
-                {profileImage ? (
-                  <Image 
-                    source={{ uri: profileImage }} 
-                    style={styles.profileImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={[styles.profilePicture, { backgroundColor: colors.surface }]}>
-                    <Text style={[styles.profileInitials, { color: colors.text }]}>{initials}</Text>
-                  </View>
-                )}
-              </View>
+  // Show loading state if data is being fetched
+  if (isLoading) {
+    return (
+      <SafeAreaView 
+        style={[styles.container, { backgroundColor: colors.background }]} 
+        edges={['top']}
+      >
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <View style={styles.headerTop}>
+            <TouchableOpacity onPress={onBack} style={styles.headerButton} activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={handleProfileImagePress}
-              activeOpacity={0.8}
-              style={[styles.editImageBadgeTouchable, { backgroundColor: colors.button, borderColor: colors.background }]}
-            >
-              <View style={styles.editImageBadge}>
-                <Ionicons name="camera" size={16} color={colors.buttonText} />
-              </View>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity style={styles.headerButton} onPress={onEditProfile} activeOpacity={0.7}>
+              <Ionicons name="create-outline" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
-          <Text style={[styles.userName, { color: colors.background }]}>{displayName}</Text>
+        </View>
+        <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+
+  // Calculate member since date from account creation date
+  const getMemberSinceDate = (): string => {
+    try {
+      if (userData?.createdAt) {
+        const createdDate = new Date(userData.createdAt);
+        if (!isNaN(createdDate.getTime())) {
+          const month = createdDate.toLocaleString('default', { month: 'long' });
+          const currentYear = new Date().getFullYear();
+          return `${month} ${currentYear}`;
+        }
+      }
+      // Fallback: if no creation date, use current month and year
+      const currentDate = new Date();
+      const month = currentDate.toLocaleString('default', { month: 'long' });
+      const year = currentDate.getFullYear();
+      return `${month} ${year}`;
+    } catch (error) {
+      // Final fallback
+      const currentDate = new Date();
+      const month = currentDate.toLocaleString('default', { month: 'long' });
+      const year = currentDate.getFullYear();
+      return `${month} ${year}`;
+    }
+  };
+
+  const memberSinceDate = getMemberSinceDate();
+
+  return (
+    <SafeAreaView 
+      style={[styles.container, { backgroundColor: colors.background }]} 
+      edges={['top']}
+    >
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <View style={styles.headerTop}>
+          <TouchableOpacity onPress={onBack} style={styles.headerButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity style={styles.headerButton} onPress={onEditProfile} activeOpacity={0.7}>
+            <Ionicons name="create-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Content Section with Background */}
-      <View style={[styles.contentWrapper, { backgroundColor: colors.background }]}>
-        {/* Decorative Background Pattern */}
-        <View style={styles.backgroundPattern}>
-          <View style={[styles.patternCircle1, { backgroundColor: colors.primary, opacity: 0.03 }]} />
-          <View style={[styles.patternCircle2, { backgroundColor: colors.primary, opacity: 0.02 }]} />
-          <View style={[styles.patternCircle3, { backgroundColor: colors.primary, opacity: 0.025 }]} />
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile Summary Section */}
+        <View style={styles.profileSummary}>
+          <View style={styles.profileImageTouchable}>
+            <View style={[styles.profileImageWrapper, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.profileInitials, { color: colors.text }]}>{initials}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.profileInfo}>
+            <View style={styles.nameRow}>
+              <Text style={[styles.userName, { color: colors.text }]}>{displayName}</Text>
+              <View style={[styles.verifiedBadge, { backgroundColor: colors.button }]}>
+                <Ionicons name="shield-checkmark" size={14} color={colors.buttonText} />
+              </View>
+            </View>
+            <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{displayEmail || 'No email provided'}</Text>
+          </View>
         </View>
-        <ScrollView 
-          style={styles.content} 
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Personal Information Card */}
-          <View style={[styles.card, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Contact Information</Text>
-            
-            <TouchableOpacity style={styles.infoItem} activeOpacity={0.7}>
-              <View style={[styles.infoIcon, { backgroundColor: colors.surface }]}>
-                <Ionicons name="mail-outline" size={22} color={colors.button} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Email</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>{displayEmail}</Text>
-              </View>
-            </TouchableOpacity>
 
-            <TouchableOpacity style={styles.infoItem} activeOpacity={0.7}>
-              <View style={[styles.infoIcon, { backgroundColor: colors.surface }]}>
-                <Ionicons name="call-outline" size={22} color={colors.button} />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Phone</Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>{displayPhone}</Text>
-              </View>
-            </TouchableOpacity>
+        {/* Contact Details Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact Details</Text>
+          
+          <View style={[styles.contactCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.contactIcon, { backgroundColor: colors.background }]}>
+              <Ionicons name="call-outline" size={20} color={colors.button} />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Phone Number</Text>
+              <Text style={[styles.contactValue, { color: colors.text }]}>
+                {displayPhone || 'Not provided'}
+              </Text>
+            </View>
           </View>
 
-        {/* Quick Actions Card */}
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Quick Actions</Text>
-          
-          <TouchableOpacity 
-            style={[styles.navItem, styles.enhancedNavItem]} 
-            onPress={onBookingHistory}
-            activeOpacity={0.7}
-          >
-            <View style={styles.navItemLeft}>
-              <View style={[styles.navItemIcon, { backgroundColor: colors.surface }]}>
-                <Ionicons name="calendar-outline" size={22} color={colors.button} />
-              </View>
-              <Text style={[styles.navItemText, { color: colors.text }]}>Booking History</Text>
+          <View style={[styles.contactCard, { backgroundColor: colors.surface }]}>
+            <View style={[styles.contactIcon, { backgroundColor: colors.background }]}>
+              <Ionicons name="calendar-outline" size={20} color={colors.button} />
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
-          
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          
-          <TouchableOpacity 
-            style={[styles.navItem, styles.enhancedNavItem]} 
-            onPress={onHelpSupport}
-            activeOpacity={0.7}
-          >
-            <View style={styles.navItemLeft}>
-              <View style={[styles.navItemIcon, { backgroundColor: colors.surface }]}>
-                <Ionicons name="help-circle-outline" size={22} color={colors.button} />
-              </View>
-              <Text style={[styles.navItemText, { color: colors.text }]}>Help & Support</Text>
+            <View style={styles.contactInfo}>
+              <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Member Since</Text>
+              <Text style={[styles.contactValue, { color: colors.text }]}>{memberSinceDate}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Quick Actions Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
           
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          
-          <TouchableOpacity 
-            style={[styles.navItem, styles.enhancedNavItem]} 
-            onPress={onSettings}
-            activeOpacity={0.7}
-          >
-            <View style={styles.navItemLeft}>
-              <View style={[styles.navItemIcon, { backgroundColor: colors.surface }]}>
-                <Ionicons name="settings-outline" size={22} color={colors.button} />
+          <View style={styles.quickActionsRow}>
+            <TouchableOpacity 
+              style={[styles.quickActionCard, { backgroundColor: colors.surface }]}
+              onPress={onBookingHistory}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: colors.background }]}>
+                <Ionicons name="refresh-circle" size={28} color={colors.button} />
               </View>
-              <Text style={[styles.navItemText, { color: colors.text }]}>Settings</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </TouchableOpacity>
+              <Text style={[styles.quickActionText, { color: colors.text }]}>Booking History</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.quickActionCard, { backgroundColor: colors.surface }]}
+              onPress={onHelpSupport}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: colors.background }]}>
+                <Ionicons name="help-circle-outline" size={28} color={colors.button} />
+              </View>
+              <Text style={[styles.quickActionText, { color: colors.text }]}>Help & Support</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.quickActionCard, { backgroundColor: colors.surface }]}
+              onPress={onSettings}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: colors.background }]}>
+                <Ionicons name="settings-outline" size={28} color={colors.button} />
+              </View>
+              <Text style={[styles.quickActionText, { color: colors.text }]}>Settings</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Edit Profile Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.editProfileButton, { backgroundColor: colors.button }]} 
-            onPress={onEditProfile}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="create-outline" size={20} color={colors.buttonText} style={{ marginRight: 8 }} />
-            <Text style={[styles.editProfileButtonText, { color: colors.buttonText }]}>Edit Profile</Text>
-          </TouchableOpacity>
-        </View>
-        </ScrollView>
-      </View>
+        <TouchableOpacity 
+          style={[styles.editProfileButton, { backgroundColor: colors.surface }]}
+          onPress={onEditProfile}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="create-outline" size={20} color={colors.text} />
+          <Text style={[styles.editProfileButtonText, { color: colors.text }]}>Edit Profile</Text>
+        </TouchableOpacity>
+
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+
+      {/* Bottom Tab Bar */}
+      {onTabChange && (
+        <BottomTabBar 
+          activeTab={activeTab} 
+          onTabChange={onTabChange} 
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -324,193 +326,95 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 20,
-    paddingBottom: 30,
+    paddingTop: 12,
+    paddingBottom: 16,
     paddingHorizontal: 20,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    minHeight: 44,
   },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  editButton: {
-    padding: 4,
-  },
-  profileSection: {
-    alignItems: 'center',
-  },
-  profileImageWrapper: {
-    position: 'relative',
-    marginBottom: 20,
-  },
-  profilePictureContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
+  headerButton: {
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  profilePicture: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 56,
-  },
-  profileInitials: {
-    fontSize: 36,
-    fontWeight: 'bold',
-  },
-  editImageBadgeTouchable: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  editImageBadge: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
-  contentWrapper: {
-    flex: 1,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  backgroundPattern: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-  },
-  patternCircle1: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -50,
-    right: -50,
-  },
-  patternCircle2: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    bottom: 100,
-    left: -30,
-  },
-  patternCircle3: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    top: 250,
-    right: 20,
+    borderRadius: 22,
   },
   content: {
     flex: 1,
-    zIndex: 1,
   },
   contentContainer: {
     paddingHorizontal: 20,
-    marginTop: -20,
-    paddingBottom: 20,
+    paddingTop: 8,
+    paddingBottom: 0, // Bottom padding handled by bottomSpacing
   },
-  card: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 20,
-    letterSpacing: 0.3,
-  },
-  infoItem: {
+  profileSummary: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    paddingVertical: 4,
+    alignItems: 'flex-start',
+    marginBottom: 32,
+    paddingTop: 8,
   },
-  infoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+  profileImageTouchable: {
     marginRight: 16,
   },
-  infoContent: {
-    flex: 1,
+  profileImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  infoLabel: {
+  profileInitials: {
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  profileInfo: {
+    flex: 1,
+    paddingTop: 4,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginRight: 8,
+    letterSpacing: 0.3,
+  },
+  verifiedBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userEmail: {
     fontSize: 14,
-    marginBottom: 4,
+    letterSpacing: 0.2,
   },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: '600',
+  section: {
+    marginBottom: 28,
   },
-  navItem: {
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    letterSpacing: 0.3,
+  },
+  contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
   },
-  enhancedNavItem: {
-    paddingVertical: 16,
-  },
-  navItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  navItemIcon: {
+  contactIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -518,36 +422,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
-  navItemText: {
+  contactInfo: {
+    flex: 1,
+  },
+  contactLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  contactValue: {
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
-  divider: {
-    height: 1,
-    marginVertical: 4,
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  buttonContainer: {
-    paddingBottom: 40,
-    paddingTop: 8,
+  quickActionCard: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    minHeight: 120,
+    justifyContent: 'center',
+  },
+  quickActionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  quickActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
   editProfileButton: {
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    borderRadius: 16,
+    paddingVertical: 16,
+    marginTop: 8,
+    marginBottom: 8,
   },
   editProfileButtonText: {
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+    letterSpacing: 0.3,
+  },
+  bottomSpacing: {
+    minHeight: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
