@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Geolocation from '@react-native-community/geolocation';
 import authService from '../../services/authService';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
   onBack?: () => void;
@@ -22,15 +23,17 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   const [loadingCenters, setLoadingCenters] = useState(true);
   const [centersError, setCentersError] = useState<string | null>(null);
   const [whereToWash, setWhereToWash] = useState(false);
-  const isDark = useColorScheme() === 'dark';
+  const { isDarkMode, colors } = useTheme();
+  
+  // Map theme colors to component-specific theme object
   const theme = {
-    background: isDark ? '#000000' : '#FFFFFF',
-    textPrimary: isDark ? '#FFFFFF' : '#000000',
-    textSecondary: isDark ? '#A3A3A3' : '#666666',
-    border: isDark ? '#333333' : '#E5E7EB',
-    card: isDark ? '#111111' : '#FFFFFF',
-    chip: isDark ? '#111111' : '#F5F5F5',
-    accent: isDark ? '#FFFFFF' : '#000000',
+    background: colors.background,
+    textPrimary: colors.text,
+    textSecondary: colors.textSecondary,
+    border: colors.border,
+    card: colors.card,
+    chip: isDarkMode ? colors.surface : '#F5F5F5',
+    accent: colors.button,
   };
 
   // Mock data for service centers based on the exact image
@@ -213,7 +216,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
           <View style={styles.whereToWashRow}>
             <View style={styles.checkboxContainer}>
               <View style={[styles.checkbox,{borderColor: theme.textPrimary}, whereToWash && {backgroundColor: theme.textPrimary}]}> 
-                {whereToWash && <Ionicons name="checkmark" size={12} color={isDark ? '#000000' : '#FFFFFF'} />}
+                {whereToWash && <Ionicons name="checkmark" size={12} color={colors.buttonText} />}
               </View>
             </View>
             <TextInput
@@ -291,7 +294,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
       {/* Confirm Booking Button */}
       <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.card, borderTopColor: theme.border }]}> 
         <TouchableOpacity style={[styles.confirmButton,{backgroundColor: theme.accent}]} onPress={handleConfirmBooking}>
-          <Text style={[styles.confirmButtonText,{color: isDark ? '#000000' : '#FFFFFF'}]}>Confirm Booking</Text>
+          <Text style={[styles.confirmButtonText,{color: colors.buttonText}]}>Confirm Booking</Text>
         </TouchableOpacity>
         <Text style={[styles.bottomText,{color: theme.textSecondary}]}>
           {searchText.trim() 
@@ -322,14 +325,14 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
 
             <View style={styles.timeOptions}>
               <TouchableOpacity 
-                style={[styles.timeOption,{backgroundColor: isDark ? '#0B0B0B' : '#F9FAFB'}]}
+                style={[styles.timeOption,{backgroundColor: isDarkMode ? colors.surface : '#F9FAFB'}]}
                 onPress={() => {
                   setSelectedTimeOption('now');
                   setShowTimeModal(false);
                 }}
               >
                 <View style={[styles.timeOptionIcon,{backgroundColor: theme.accent}]}> 
-                  <Ionicons name="flash" size={24} color={isDark ? '#000000' : '#FFFFFF'} />
+                  <Ionicons name="flash" size={24} color={colors.buttonText} />
                 </View>
                 <View style={styles.timeOptionContent}>
                   <Text style={[styles.timeOptionTitle,{color: theme.textPrimary}]}>Now</Text>
@@ -340,7 +343,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={[styles.timeOption,{backgroundColor: isDark ? '#0B0B0B' : '#F9FAFB'}]}
+                style={[styles.timeOption,{backgroundColor: isDarkMode ? colors.surface : '#F9FAFB'}]}
                 onPress={() => {
                   setSelectedTimeOption('later');
                   setShowTimeModal(false);
@@ -348,7 +351,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                 }}
               >
                 <View style={[styles.timeOptionIcon,{backgroundColor: theme.accent}]}> 
-                  <Ionicons name="calendar-outline" size={24} color={isDark ? '#000000' : '#FFFFFF'} />
+                  <Ionicons name="calendar-outline" size={24} color={colors.buttonText} />
                 </View>
                 <View style={styles.timeOptionContent}>
                   <Text style={[styles.timeOptionTitle,{color: theme.textPrimary}]}>Schedule for later</Text>

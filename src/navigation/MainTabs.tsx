@@ -8,6 +8,7 @@ import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import HelpSupportScreen from '../screens/support/HelpSupportScreen';
+import { useTheme } from '../context/ThemeContext';
 
 type TabKey = 'home' | 'bookings' | 'activity' | 'account';
 
@@ -40,6 +41,7 @@ const MainTabs: React.FC<MainTabsProps> = ({
   onOpenActivityDetail,
 }) => {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [accountSub, setAccountSub] = useState<'profile' | 'settings' | 'support'>('profile');
 
@@ -106,10 +108,11 @@ const MainTabs: React.FC<MainTabsProps> = ({
 
   const TabButton = ({ keyId, icon, label }: { keyId: TabKey; icon: string; label: string }) => {
     const isActive = activeTab === keyId;
-    const color = isActive ? '#000000' : '#9CA3AF';
+    const iconName = isActive ? (icon.replace('-outline', '') as any) : (icon as any);
+    const color = isActive ? colors.text : colors.textSecondary;
     return (
       <TouchableOpacity style={styles.tab} onPress={() => setActiveTab(keyId)}>
-        <Ionicons name={icon as any} size={24} color={color} />
+        <Ionicons name={iconName} size={24} color={color} />
         <Text style={[styles.tabLabel, { color }]}>{label}</Text>
       </TouchableOpacity>
     );
@@ -118,9 +121,9 @@ const MainTabs: React.FC<MainTabsProps> = ({
   const bottomPadding = Math.max(8, Math.min(insets.bottom || 0, 18));
 
   return (
-    <SafeAreaView style={styles.container} edges={["bottom"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
       <View style={styles.content}>{renderContent()}</View>
-      <View style={[styles.tabBar, { paddingBottom: bottomPadding }]}>
+      <View style={[styles.tabBar, { paddingBottom: bottomPadding, backgroundColor: colors.card, borderTopColor: colors.border }]}>
         <TabButton keyId="home" icon="home-outline" label="Home" />
         <TabButton keyId="bookings" icon="calendar-outline" label="Bookings" />
         <TabButton keyId="activity" icon="notifications-outline" label="Activity" />
@@ -131,7 +134,7 @@ const MainTabs: React.FC<MainTabsProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   content: { flex: 1 },
   tabBar: {
     flexDirection: 'row',
@@ -140,9 +143,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 8,
     paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.08,

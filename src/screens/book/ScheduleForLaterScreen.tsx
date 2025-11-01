@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image,
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackButton from '../../components/ui/BackButton';
 import authService from '../../services/authService';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ScheduleForLaterScreenProps {
   onBack: () => void;
@@ -29,6 +30,7 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
   onCenterSelect,
   selectedLocation,
 }) => {
+  const { colors } = useTheme();
   // Start with empty search so ALL centers are visible by default
   const [searchText, setSearchText] = useState('');
   const [serviceCenters, setServiceCenters] = useState<any[]>([]);
@@ -172,15 +174,15 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
   const renderCarWashCenter = (center: CarWashCenter) => (
     <TouchableOpacity
       key={center.id}
-      style={styles.centerCard}
+      style={[styles.centerCard, { backgroundColor: colors.card }]}
       onPress={() => onCenterSelect(center)}
     >
-      <View style={styles.centerLocationIcon}>
+      <View style={[styles.centerLocationIcon, { backgroundColor: colors.surface }]}>
         <Text style={styles.centerLocationIconText}>📍</Text>
       </View>
       <View style={styles.centerInfo}>
-        <Text style={styles.centerName}>{center.name || 'Service Center'}</Text>
-        <Text style={styles.centerAddress}>{center.address || 'Address not available'}</Text>
+        <Text style={[styles.centerName, { color: colors.text }]}>{center.name || 'Service Center'}</Text>
+        <Text style={[styles.centerAddress, { color: colors.textSecondary }]}>{center.address || 'Address not available'}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -188,25 +190,25 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
   const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container} edges={["top","bottom"]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top","bottom"]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(12, Math.min(insets.bottom || 0, 20)) }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <BackButton onPress={onBack} />
           <View style={styles.headerContent}>
-            <Text style={styles.title}>Schedule for Later</Text>
-            <Text style={styles.subtitle}>Choose location and center first</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Schedule for Later</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Choose location and center first</Text>
           </View>
         </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
+          <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholder="Where do you want the car wash?"
-              placeholderTextColor="#999999"
+              placeholderTextColor={colors.textSecondary}
               value={searchText}
               onChangeText={setSearchText}
             />
@@ -215,7 +217,7 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
 
             {/* Car Wash Centers */}
             <View style={styles.centersContainer}>
-              <Text style={styles.sectionTitle}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {searchText.length > 0 
                   ? `Service Centers matching "${searchText}" (${centersCount})` 
                   : `Available Service Centers (${centersCount})`
@@ -224,14 +226,14 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
               
               {loading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#000000" />
-                  <Text style={styles.loadingText}>Loading service centers...</Text>
+                  <ActivityIndicator size="large" color={colors.text} />
+                  <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading service centers...</Text>
                 </View>
               ) : error ? (
                 <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>{error}</Text>
-                  <TouchableOpacity style={styles.retryButton} onPress={fetchServiceCenters}>
-                    <Text style={styles.retryButtonText}>Try Again</Text>
+                  <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
+                  <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.button }]} onPress={fetchServiceCenters}>
+                    <Text style={[styles.retryButtonText, { color: colors.buttonText }]}>Try Again</Text>
                   </TouchableOpacity>
                 </View>
               ) : filteredCenters.length > 0 ? (
@@ -240,13 +242,13 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
                 </View>
               ) : (
                 <View style={styles.noResultsContainer}>
-                  <Text style={styles.noResultsText}>
+                  <Text style={[styles.noResultsText, { color: colors.text }]}>
                     {searchText.length > 0 
                       ? `No service centers found for "${searchText}"` 
                       : 'No service centers available'
                     }
                   </Text>
-                  <Text style={styles.noResultsSubtext}>
+                  <Text style={[styles.noResultsSubtext, { color: colors.textSecondary }]}>
                     {searchText.length > 0 
                       ? 'Try searching with different keywords or check spelling' 
                       : 'Please try again later'
@@ -265,7 +267,6 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
@@ -284,13 +285,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000000',
     marginBottom: 4,
     fontFamily: 'System',
   },
   subtitle: {
     fontSize: 16,
-    color: '#666666',
     fontWeight: '400',
     fontFamily: 'System',
   },
@@ -301,12 +300,10 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
   },
   searchIcon: {
     fontSize: 18,
@@ -316,7 +313,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000000',
     fontFamily: 'System',
   },
   locationsContainer: {
@@ -325,7 +321,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
     marginBottom: 16,
     fontFamily: 'System',
   },
@@ -380,7 +375,6 @@ const styles = StyleSheet.create({
   centerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
@@ -403,13 +397,11 @@ const styles = StyleSheet.create({
   centerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
     marginBottom: 2,
     fontFamily: 'System',
   },
   centerAddress: {
     fontSize: 14,
-    color: '#666666',
     fontFamily: 'System',
   },
   scheduleInfo: {

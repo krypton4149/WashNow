@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
   onBack?: () => void;
@@ -27,15 +27,17 @@ const BookingConfirmedScreen: React.FC<Props> = ({
     address: 'Downtown, New York - 123 Main Street',
   }
 }) => {
-  const isDark = useColorScheme() === 'dark';
+  const { isDarkMode, colors } = useTheme();
+  
+  // Map theme colors to component-specific theme object
   const theme = {
-    background: isDark ? '#000000' : '#FFFFFF',
-    textPrimary: isDark ? '#FFFFFF' : '#000000',
-    textSecondary: isDark ? '#A3A3A3' : '#666666',
-    border: isDark ? '#333333' : '#E5E7EB',
-    card: isDark ? '#0B0B0B' : '#F9FAFB',
-    surface: isDark ? '#111111' : '#FFFFFF',
-    accent: isDark ? '#FFFFFF' : '#000000',
+    background: colors.background,
+    textPrimary: colors.text,
+    textSecondary: colors.textSecondary,
+    border: colors.border,
+    card: colors.card,
+    surface: colors.surface,
+    accent: colors.button,
   };
   // Get current date and time for instant booking
   const now = new Date();
@@ -75,9 +77,9 @@ const BookingConfirmedScreen: React.FC<Props> = ({
         {/* Match Found Banner */}
         <View style={[styles.matchFoundBanner,{ backgroundColor: theme.card }]}>
           <View style={styles.matchIcon}>
-            <Ionicons name="checkmark" size={16} color={isDark ? '#000000' : '#FFFFFF'} />
+            <Ionicons name="checkmark" size={16} color={colors.buttonText} />
             <View style={styles.clockIcon}>
-              <Ionicons name="time" size={8} color={isDark ? '#000000' : '#FFFFFF'} />
+              <Ionicons name="time" size={8} color={colors.buttonText} />
             </View>
           </View>
           <View style={styles.matchContent}>
@@ -89,7 +91,7 @@ const BookingConfirmedScreen: React.FC<Props> = ({
         {/* Booking Confirmed */}
         <View style={styles.confirmationSection}>
           <View style={[styles.confirmationIcon,{ backgroundColor: theme.accent }]}>
-            <Ionicons name="checkmark" size={48} color={isDark ? '#000000' : '#FFFFFF'} />
+            <Ionicons name="checkmark" size={48} color={colors.buttonText} />
           </View>
           <Text style={[styles.confirmationTitle,{color: theme.textPrimary}]}>Booking Confirmed!</Text>
           <Text style={[styles.confirmationSubtitle,{color: theme.textSecondary}] }>

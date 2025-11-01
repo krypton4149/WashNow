@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Booking {
   id: number;
@@ -25,6 +27,7 @@ interface Props {
 }
 
 const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<'Ongoing' | 'Completed' | 'Canceled'>('Ongoing');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -248,79 +251,86 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Booking History ({bookings.length})</Text>
-        <TouchableOpacity onPress={loadBookings} style={styles.refreshButton}>
-          <Ionicons name="refresh" size={24} color="#000" />
+        <Text style={[styles.title, { color: colors.text }]}>Booking History ({bookings.length})</Text>
+        <TouchableOpacity onPress={loadBookings} style={styles.refreshButton} activeOpacity={0.7}>
+          <Ionicons name="refresh" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabsContainer}>
+      <View style={[styles.tabsContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'Ongoing' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'Ongoing' && [styles.activeTab, { borderBottomColor: colors.button }]]}
           onPress={() => setActiveTab('Ongoing')}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'Ongoing' && styles.activeTabText]}>
+          <Text style={[styles.tabText, { color: activeTab === 'Ongoing' ? colors.text : colors.textSecondary }, activeTab === 'Ongoing' && styles.activeTabText]}>
             Ongoing
           </Text>
           {activeTab === 'Ongoing' && ongoingCount > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{ongoingCount}</Text>
+            <View style={[styles.tabBadge, { backgroundColor: colors.button }]}>
+              <Text style={[styles.tabBadgeText, { color: colors.buttonText }]}>{ongoingCount}</Text>
             </View>
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'Completed' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'Completed' && [styles.activeTab, { borderBottomColor: colors.button }]]}
           onPress={() => setActiveTab('Completed')}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'Completed' && styles.activeTabText]}>
+          <Text style={[styles.tabText, { color: activeTab === 'Completed' ? colors.text : colors.textSecondary }, activeTab === 'Completed' && styles.activeTabText]}>
             Completed
           </Text>
           {activeTab === 'Completed' && completedCount > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{completedCount}</Text>
+            <View style={[styles.tabBadge, { backgroundColor: colors.button }]}>
+              <Text style={[styles.tabBadgeText, { color: colors.buttonText }]}>{completedCount}</Text>
             </View>
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'Canceled' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'Canceled' && [styles.activeTab, { borderBottomColor: colors.button }]]}
           onPress={() => setActiveTab('Canceled')}
+          activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'Canceled' && styles.activeTabText]}>
+          <Text style={[styles.tabText, { color: activeTab === 'Canceled' ? colors.text : colors.textSecondary }, activeTab === 'Canceled' && styles.activeTabText]}>
             Canceled
           </Text>
           {activeTab === 'Canceled' && canceledCount > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{canceledCount}</Text>
+            <View style={[styles.tabBadge, { backgroundColor: colors.button }]}>
+              <Text style={[styles.tabBadgeText, { color: colors.buttonText }]}>{canceledCount}</Text>
             </View>
           )}
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.bookingsList} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.bookingsList} 
+        contentContainerStyle={styles.bookingsListContent}
+        showsVerticalScrollIndicator={false}
+      >
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#000000" />
-            <Text style={styles.loadingText}>Loading your bookings...</Text>
+            <ActivityIndicator size="large" color={colors.text} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your bookings...</Text>
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
-            <Text style={styles.errorText}>Failed to load bookings</Text>
-            <Text style={styles.errorSubtext}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadBookings}>
-              <Text style={styles.retryButtonText}>Try Again</Text>
+            <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.text }]}>Failed to load bookings</Text>
+            <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>{error}</Text>
+            <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.button }]} onPress={loadBookings}>
+              <Text style={[styles.retryButtonText, { color: colors.buttonText }]}>Try Again</Text>
             </TouchableOpacity>
           </View>
         ) : filteredBookings.length > 0 ? (
           filteredBookings.map((booking) => (
-            <View key={booking.id} style={styles.bookingCard}>
+            <View key={booking.id} style={[styles.bookingCard, { backgroundColor: colors.card }]}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{booking.name}</Text>
+                <Text style={[styles.cardTitle, { color: colors.text }]}>{booking.name}</Text>
                 <View
                   style={[
                     styles.statusTag,
@@ -334,27 +344,27 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
               </View>
               {/* Removed service type subtitle as requested */}
               <View style={styles.cardDateTime}>
-                <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-                <Text style={styles.cardDateTimeText}>
+                <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.cardDateTimeText, { color: colors.textSecondary }]}>
                   {booking.date} at {booking.time}
                 </Text>
               </View>
               <View style={styles.cardVehicle}>
-                <Ionicons name="car-outline" size={16} color="#6B7280" />
-                <Text style={styles.cardVehicleText}>
+                <Ionicons name="car-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.cardVehicleText, { color: colors.textSecondary }]}>
                   Vehicle: {booking.vehicle_no}
                 </Text>
               </View>
               <View style={styles.cardBookingId}>
-                <Ionicons name="receipt-outline" size={16} color="#6B7280" />
-                <Text style={styles.cardBookingIdTextBold}>
+                <Ionicons name="receipt-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.cardBookingIdTextBold, { color: colors.text }]}>
                   Booking ID: {booking.id}
                 </Text>
               </View>
-              <View style={styles.cardDivider} />
+              <View style={[styles.cardDivider, { backgroundColor: colors.border }]} />
               <View style={styles.cardFooter}>
-                <Text style={styles.cardTotalLabel}>Total</Text>
-                <Text style={styles.cardTotalPrice}>{booking.total}</Text>
+                <Text style={[styles.cardTotalLabel, { color: colors.textSecondary }]}>Total</Text>
+                <Text style={[styles.cardTotalPrice, { color: colors.text }]}>{booking.total}</Text>
               </View>
               {booking.status === 'In Progress' && (
                 <TouchableOpacity
@@ -368,9 +378,9 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           ))
         ) : (
           <View style={styles.noBookingsContainer}>
-            <Ionicons name="information-circle-outline" size={48} color="#CCCCCC" />
-            <Text style={styles.noBookingsText}>No {activeTab.toLowerCase()} bookings</Text>
-            <Text style={styles.noBookingsSubtext}>Check other tabs or book a new service.</Text>
+            <Ionicons name="information-circle-outline" size={48} color={colors.textSecondary} />
+            <Text style={[styles.noBookingsText, { color: colors.textSecondary }]}>No {activeTab.toLowerCase()} bookings</Text>
+            <Text style={[styles.noBookingsSubtext, { color: colors.textSecondary }]}>Check other tabs or book a new service.</Text>
           </View>
         )}
       </ScrollView>
@@ -381,7 +391,6 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC', // Light gray background
   },
   header: {
     flexDirection: 'row',
@@ -389,9 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     padding: 4,
@@ -402,16 +409,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
   },
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   tab: {
     flex: 1,
@@ -424,19 +428,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   activeTab: {
-    borderBottomColor: '#111827',
   },
   tabText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#6B7280',
   },
   activeTabText: {
-    color: '#111827',
     fontWeight: '600',
   },
   tabBadge: {
-    backgroundColor: '#111827',
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -448,11 +448,14 @@ const styles = StyleSheet.create({
   },
   bookingsList: {
     flex: 1,
+  },
+  bookingsListContent: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+    flexGrow: 1,
   },
   bookingCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -471,7 +474,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
   },
   statusTag: {
     borderRadius: 16,
@@ -495,7 +497,6 @@ const styles = StyleSheet.create({
   },
   cardDateTimeText: {
     fontSize: 14,
-    color: '#6B7280',
   },
   cardVehicle: {
     flexDirection: 'row',
@@ -505,7 +506,6 @@ const styles = StyleSheet.create({
   },
   cardVehicleText: {
     fontSize: 14,
-    color: '#6B7280',
   },
   cardBookingId: {
     flexDirection: 'row',
@@ -519,7 +519,6 @@ const styles = StyleSheet.create({
   },
   cardBookingIdTextBold: {
     fontSize: 14,
-    color: '#111827',
     fontWeight: '700',
   },
   cardDivider: {
@@ -534,12 +533,10 @@ const styles = StyleSheet.create({
   },
   cardTotalLabel: {
     fontSize: 15,
-    color: '#111827',
   },
   cardTotalPrice: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
   },
   cancelButton: {
     marginTop: 12,

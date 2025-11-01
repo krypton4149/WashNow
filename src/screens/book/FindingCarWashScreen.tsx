@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Geolocation from '@react-native-community/geolocation';
 import authService from '../../services/authService';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
   onBack?: () => void;
@@ -33,15 +34,17 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   const [acceptedCenter, setAcceptedCenter] = useState<ServiceCenter | null>(null);
   const [currentLocation, setCurrentLocation] = useState<string>('Getting location...');
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
-  const isDark = useColorScheme() === 'dark';
+  const { isDarkMode, colors } = useTheme();
+  
+  // Map theme colors to component-specific theme object
   const theme = {
-    background: isDark ? '#000000' : '#FFFFFF',
-    textPrimary: isDark ? '#FFFFFF' : '#000000',
-    textSecondary: isDark ? '#A3A3A3' : '#666666',
-    border: isDark ? '#333333' : '#E5E7EB',
-    card: isDark ? '#0B0B0B' : '#F9FAFB',
-    surface: isDark ? '#111111' : '#FFFFFF',
-    accent: isDark ? '#FFFFFF' : '#000000',
+    background: colors.background,
+    textPrimary: colors.text,
+    textSecondary: colors.textSecondary,
+    border: colors.border,
+    card: colors.card,
+    surface: colors.surface,
+    accent: colors.button,
   };
 
   // Store user's current coordinates for distance calculation
@@ -306,7 +309,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   };
 
   const renderCenter = (center: ServiceCenter) => (
-    <View key={center.id} style={styles.centerCard}>
+    <View key={center.id} style={[styles.centerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.centerLeft}>
         <View style={[
           styles.statusIcon,
@@ -336,9 +339,13 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       <View style={styles.centerRight}>
         <Text style={[
           styles.statusText,
-          center.status === 'waiting' && styles.statusTextWaiting,
-          center.status === 'not-available' && styles.statusTextNotAvailable,
-          center.status === 'accepted' && styles.statusTextAccepted,
+          { 
+            color: center.status === 'waiting' 
+              ? '#F59E0B' // Keep orange for waiting status
+              : center.status === 'not-available' 
+                ? colors.error 
+                : colors.success 
+          },
         ]}>
           {center.status === 'waiting' && 'Waiting...'}
           {center.status === 'not-available' && 'Not Available'}
@@ -377,9 +384,9 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               { backgroundColor: theme.accent }
             ]}>
               {hasAcceptedCenter ? (
-                <Ionicons name="checkmark" size={20} color={isDark ? '#000000' : '#FFFFFF'} />
+                <Ionicons name="checkmark" size={20} color={colors.buttonText} />
               ) : (
-                <Ionicons name="refresh" size={20} color={isDark ? '#000000' : '#FFFFFF'} />
+                <Ionicons name="refresh" size={20} color={colors.buttonText} />
               )}
             </View>
           </View>
@@ -397,7 +404,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
           <View style={[styles.requestCard,{backgroundColor: theme.card}]}> 
             <View style={styles.requestRow}>
               <View style={[styles.requestIcon,{backgroundColor: theme.accent}]}> 
-                <Ionicons name="flash" size={16} color={isDark ? '#000000' : '#FFFFFF'} />
+                <Ionicons name="flash" size={16} color={colors.buttonText} />
               </View>
               <Text style={[styles.requestText,{color: theme.textPrimary}]}>Car Wash - Instant Booking</Text>
             </View>
@@ -566,11 +573,10 @@ const styles = StyleSheet.create({
   centerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    marginBottom: 12,
   },
   centerLeft: {
     marginRight: 12,
@@ -618,7 +624,6 @@ const styles = StyleSheet.create({
   },
   centerDistance: {
     fontSize: 14,
-    color: '#666666',
   },
   centerRight: {
     marginLeft: 12,
@@ -627,20 +632,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  statusTextWaiting: {
-    color: '#F59E0B',
-  },
-  statusTextNotAvailable: {
-    color: '#EF4444',
-  },
-  statusTextAccepted: {
-    color: '#059669',
-  },
   bottomContainer: {
     padding: 16,
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
   },
   centerSimpleCard: {
     flexDirection: 'row',

@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import authService from '../../services/authService';
+import axios from 'axios';
 
 interface Props {
   onBack?: () => void;
@@ -15,73 +18,166 @@ interface Props {
 }
 
 interface FAQ {
-  id: string;
+  id: string | number;
   question: string;
   answer: string;
   isExpanded: boolean;
 }
 
+interface APIFAQ {
+  id?: string | number;
+  question?: string;
+  answer?: string;
+  title?: string;
+  description?: string;
+  [key: string]: any;
+}
+
 const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
   const [activeTab, setActiveTab] = useState<'faqs' | 'contact'>('faqs');
-  const [faqs, setFaqs] = useState<FAQ[]>([
-    {
-      id: '1',
-      question: 'How do I book a car wash?',
-      answer: 'To book a car wash, go to the dashboard and tap "Book a car wash". Select your preferred service center, choose a time slot, and confirm your booking.',
-      isExpanded: false,
-    },
-    {
-      id: '2',
-      question: 'Can I cancel my booking?',
-      answer: 'Yes, you can cancel your booking up to 2 hours before the scheduled time. Go to your booking history and tap on the booking you want to cancel.',
-      isExpanded: false,
-    },
-    {
-      id: '3',
-      question: 'What payment methods are accepted?',
-      answer: 'We accept all major credit cards, debit cards, PayPal, and digital wallets like Apple Pay and Google Pay.',
-      isExpanded: false,
-    },
-    {
-      id: '4',
-      question: 'How do I track my service status?',
-      answer: 'You can track your service status in real-time through the app. Go to "Recent Activity" on your dashboard to see the current status of your booking.',
-      isExpanded: false,
-    },
-  ]);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleFAQ = (id: string) => {
+  useEffect(() => {
+    fetchFAQs();
+  }, []);
+
+  const fetchFAQs = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const token = await authService.getToken();
+      if (!token) {
+        setError('Authentication required');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await axios.get(
+        'https://carwashapp.shoppypie.in/api/v1/visitor/faqlist',
+        {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log('FAQ API Response:', JSON.stringify(response.data, null, 2));
+
+      // Handle different response structures
+      let faqData: APIFAQ[] = [];
+      if (response.data) {
+        // Primary structure: response.data.data.faqslist (based on actual API response)
+        if (response.data.data && response.data.data.faqslist && Array.isArray(response.data.data.faqslist)) {
+          faqData = response.data.data.faqslist;
+          console.log('Found FAQs in data.faqslist:', faqData.length);
+        }
+        // Fallback to other possible structures
+        else if (response.data.data && Array.isArray(response.data.data)) {
+          faqData = response.data.data;
+          console.log('Found FAQs in data array:', faqData.length);
+        } else if (Array.isArray(response.data)) {
+          faqData = response.data;
+          console.log('Found FAQs in root array:', faqData.length);
+        } else if (response.data.faqs && Array.isArray(response.data.faqs)) {
+          faqData = response.data.faqs;
+          console.log('Found FAQs in faqs array:', faqData.length);
+        } else {
+          console.log('No FAQs found in response structure');
+        }
+      }
+
+      // Transform API data to FAQ format
+      const transformedFAQs: FAQ[] = faqData.map((item: APIFAQ, index: number) => ({
+        id: item.id || index + 1,
+        question: item.question || item.title || `Question ${index + 1}`,
+        answer: item.answer || item.description || 'No answer available.',
+        isExpanded: false,
+      }));
+
+      console.log('Transformed FAQs:', transformedFAQs.length);
+      setFaqs(transformedFAQs);
+    } catch (err: any) {
+      console.error('Error fetching FAQs:', err);
+      setError('Failed to load FAQs. Please try again later.');
+      // Optionally show fallback FAQs
+      setFaqs([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleFAQ = (id: string | number) => {
     setFaqs(faqs.map(faq => 
       faq.id === id ? { ...faq, isExpanded: !faq.isExpanded } : faq
     ));
   };
 
-  const renderFAQs = () => (
-    <View style={styles.faqsContainer}>
-      <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-      {faqs.map((faq) => (
-        <TouchableOpacity
-          key={faq.id}
-          style={styles.faqCard}
-          onPress={() => toggleFAQ(faq.id)}
-        >
-          <View style={styles.faqHeader}>
-            <Text style={styles.faqQuestion}>{faq.question}</Text>
-            <Ionicons
-              name={faq.isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color="#6B7280"
-            />
-          </View>
-          {faq.isExpanded && (
-            <View style={styles.faqAnswer}>
-              <Text style={styles.faqAnswerText}>{faq.answer}</Text>
+  const renderFAQs = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#000" />
+          <Text style={styles.loadingText}>Loading FAQs...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchFAQs}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (faqs.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="help-circle-outline" size={48} color="#9CA3AF" />
+          <Text style={styles.emptyText}>No FAQs available</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchFAQs}>
+            <Text style={styles.retryButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.faqsContainer}>
+        <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+        {faqs.map((faq) => (
+          <TouchableOpacity
+            key={faq.id}
+            style={styles.faqCard}
+            onPress={() => toggleFAQ(faq.id)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.faqHeader}>
+              <Text style={styles.faqQuestion}>{faq.question}</Text>
+              <Ionicons
+                name={faq.isExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#6B7280"
+              />
             </View>
-          )}
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
+            {faq.isExpanded && (
+              <View style={styles.faqAnswer}>
+                <Text style={styles.faqAnswerText}>{faq.answer}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
   const renderContact = () => (
     <View style={styles.contactContainer}>
@@ -97,9 +193,9 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Help & Support</Text>
@@ -110,6 +206,7 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'faqs' && styles.activeTab]}
           onPress={() => setActiveTab('faqs')}
+          activeOpacity={0.7}
         >
           <Text style={[styles.tabText, activeTab === 'faqs' && styles.activeTabText]}>
             FAQs
@@ -118,6 +215,7 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
         <TouchableOpacity
           style={[styles.tab, activeTab === 'contact' && styles.activeTab]}
           onPress={() => setActiveTab('contact')}
+          activeOpacity={0.7}
         >
           <Text style={[styles.tabText, activeTab === 'contact' && styles.activeTabText]}>
             Contact
@@ -125,7 +223,11 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {activeTab === 'faqs' ? renderFAQs() : renderContact()}
       </ScrollView>
     </SafeAreaView>
@@ -136,6 +238,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  contentContainer: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -262,6 +368,58 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   contactButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#000',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  retryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',

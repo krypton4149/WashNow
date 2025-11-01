@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ThemeContextType {
   isDarkMode: boolean;
@@ -54,11 +55,34 @@ const darkColors = {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const THEME_STORAGE_KEY = '@WashNow:darkMode';
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
+  // Load saved theme preference on mount
+  useEffect(() => {
+    const loadThemePreference = async () => {
+      try {
+        const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+        if (savedTheme !== null) {
+          setIsDarkMode(savedTheme === 'true');
+        }
+      } catch (error) {
+        console.error('Error loading theme preference:', error);
+      }
+    };
+    loadThemePreference();
+  }, []);
+
+  const toggleDarkMode = async () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    try {
+      await AsyncStorage.setItem(THEME_STORAGE_KEY, newMode.toString());
+    } catch (error) {
+      console.error('Error saving theme preference:', error);
+    }
   };
 
   const colors = isDarkMode ? darkColors : lightColors;
