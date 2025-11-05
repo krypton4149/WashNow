@@ -69,19 +69,54 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess }) => {
           ]
         );
       } else {
-        Alert.alert(
-          'Registration Failed',
-          result.error || 'There was an error creating your account. Please try again.',
-          [{ text: 'OK' }]
-        );
+        // Debug: Log result for troubleshooting
+        console.log('=== AUTH NAVIGATOR HANDLING RESULT ===');
+        console.log('Registration Result:', {
+          success: result.success,
+          error: result.error,
+          hasValidationErrors: !!result.validationErrors,
+          validationErrors: result.validationErrors,
+          validationErrorsKeys: result.validationErrors ? Object.keys(result.validationErrors) : null
+        });
+        
+        // If there are validation errors, throw them so RegisterScreen can handle them
+        if (result.validationErrors && Object.keys(result.validationErrors).length > 0) {
+          console.log('✅ VALIDATION ERRORS DETECTED - Throwing to RegisterScreen');
+          // Use a more descriptive error message if available
+          const errorMessage = result.error && !result.error.toLowerCase().includes('validation failed') 
+            ? result.error 
+            : 'Please check the form fields for errors';
+          const error: any = new Error(errorMessage);
+          error.validationErrors = result.validationErrors;
+          console.log('Throwing Error:', {
+            message: errorMessage,
+            validationErrors: error.validationErrors
+          });
+          throw error;
+        } else {
+          console.log('❌ NO VALIDATION ERRORS - Showing generic alert');
+          // For non-validation errors, show alert
+          Alert.alert(
+            'Registration Failed',
+            result.error || 'There was an error creating your account. Please try again.',
+            [{ text: 'OK' }]
+          );
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Only re-throw if it's a validation error (so RegisterScreen can handle it)
+      if (error?.validationErrors) {
+        // Don't log validation errors as errors, just re-throw
+        throw error;
+      }
+      // For network or other non-validation errors, log and show alert
       console.error('Registration error:', error);
       Alert.alert(
         'Registration Failed',
-        'An error occurred during registration. Please try again.',
+        error?.message || 'An error occurred during registration. Please try again.',
         [{ text: 'OK' }]
       );
+      // Don't re-throw non-validation errors to prevent unhandled promise rejection
     }
   };
 

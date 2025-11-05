@@ -45,10 +45,15 @@ const EditProfileScreen: React.FC<Props> = ({
 }) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  
+  // Get original values properly
+  const getOriginalName = () => userData?.fullName || userData?.name || '';
+  const getOriginalPhone = () => userData?.phoneNumber || userData?.phone || '';
+  
   const [editedData, setEditedData] = useState({
-    fullName: userData?.fullName || '',
+    fullName: getOriginalName(),
     email: userData?.email || '',
-    phoneNumber: userData?.phoneNumber || '',
+    phoneNumber: getOriginalPhone(),
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -102,35 +107,173 @@ const EditProfileScreen: React.FC<Props> = ({
   };
 
   const handleSave = async () => {
-    // Validate inputs
-    if (!editedData.fullName.trim()) {
-      Alert.alert('Validation Error', 'Please enter your full name.');
+    // Get original values from userData (using the same method as initialization)
+    const originalName = getOriginalName().trim();
+    const originalPhone = getOriginalPhone().trim();
+    
+    // Get current edited values
+    const currentName = (editedData.fullName || '').trim();
+    const currentPhone = (editedData.phoneNumber || '').trim();
+    
+    console.log('=== VALIDATION CHECK ===');
+    console.log('Original values:', {
+      originalName,
+      originalNameLength: originalName.length,
+      originalPhone,
+      originalPhoneLength: originalPhone.length
+    });
+    console.log('Current edited values:', {
+      currentName,
+      currentNameLength: currentName.length,
+      currentPhone,
+      currentPhoneLength: currentPhone.length
+    });
+    
+    // Determine which fields have been changed (compare trimmed values)
+    const nameChanged = currentName !== originalName;
+    const phoneChanged = currentPhone !== originalPhone;
+    
+    console.log('Changed status:', {
+      nameChanged,
+      phoneChanged
+    });
+    
+    // If nothing changed, show message
+    if (!nameChanged && !phoneChanged) {
+      Alert.alert('No Changes', 'You haven\'t made any changes to save.');
       return;
+    }
+    
+    // Determine final values: use changed value if changed, otherwise use original
+    // This allows users to change only name, only phone, or both
+    let finalName = nameChanged ? currentName : originalName;
+    let finalPhone = phoneChanged ? currentPhone : originalPhone;
+    
+    // Ensure we have valid values
+    if (!finalName || finalName.length === 0) {
+      console.log('⚠️ Final name was empty, using original:', originalName);
+      finalName = originalName;
+    }
+    if (!finalPhone || finalPhone.length === 0) {
+      console.log('⚠️ Final phone was empty, using original:', originalPhone);
+      finalPhone = originalPhone;
+    }
+    
+    finalName = finalName.trim();
+    finalPhone = finalPhone.trim();
+    
+    console.log('=== CLIENT-SIDE VALIDATION ===');
+    console.log('Final values to validate:', {
+      finalName,
+      finalNameLength: finalName.length,
+      finalPhone,
+      finalPhoneLength: finalPhone.length,
+      nameChanged,
+      phoneChanged
+    });
+    
+    // Validate ONLY the fields that were changed
+    // Name validation removed - user can enter any name
+    // If user only changed phone, only validate phone
+    // If user changed both, validate phone only
+    
+    console.log('Name field - no validation (user can enter any name):', {
+      finalName,
+      nameLength: finalName.length,
+      nameChanged
+    });
+    
+    // Validate phone (only if it was changed)
+    if (phoneChanged) {
+      // Extract only digits from phone number
+      const phoneDigits = finalPhone.replace(/\D/g, '');
+      
+      console.log('Phone validation (changed):', {
+        originalPhone: finalPhone,
+        digitsOnly: phoneDigits,
+        digitsLength: phoneDigits.length
+      });
+      
+      if (!phoneDigits || phoneDigits.length === 0) {
+        console.log('❌ VALIDATION FAILED: Changed phone is empty');
+        Alert.alert('Validation Error', 'Phone number cannot be empty. Please enter your phone number.');
+        return;
+      }
+      
+      if (phoneDigits.length < 10) {
+        console.log('❌ VALIDATION FAILED: Changed phone too short (', phoneDigits.length, 'digits)');
+        Alert.alert('Validation Error', 'Phone number must be at least 10 digits.');
+        return;
+      }
+      
+      if (phoneDigits.length > 15) {
+        console.log('❌ VALIDATION FAILED: Changed phone too long (', phoneDigits.length, 'digits)');
+        Alert.alert('Validation Error', 'Phone number is too long. Maximum 15 digits allowed.');
+        return;
+      }
+      
+      // Phone should start with a digit 1-9
+      if (!/^[1-9]/.test(phoneDigits)) {
+        console.log('❌ VALIDATION FAILED: Changed phone does not start with 1-9. First digit:', phoneDigits[0]);
+        Alert.alert('Validation Error', 'Phone number must start with a digit 1-9.');
+        return;
+      }
+      console.log('✅ Phone validation passed');
+    } else {
+      // Phone wasn't changed, extract digits for API but don't validate (it's original)
+      console.log('Phone not changed, using original value');
     }
 
-    if (!editedData.phoneNumber.trim()) {
-      Alert.alert('Validation Error', 'Please enter your phone number.');
-      return;
-    }
+    // Extract digits from phone for API (always send digits only)
+    const phoneDigits = finalPhone.replace(/\D/g, '');
 
-    // Validate phone number format (exactly 10 digits)
-    if (!validatePhoneNumber(editedData.phoneNumber)) {
-      Alert.alert('Validation Error', 'Phone number must be exactly 10 digits.');
-      return;
-    }
+    console.log('✅ CLIENT-SIDE VALIDATION PASSED');
+    console.log('Final values to send:', {
+      name: finalName,
+      nameLength: finalName.length,
+      phone: phoneDigits,
+      phoneLength: phoneDigits.length,
+      nameChanged,
+      phoneChanged,
+      whatChanged: nameChanged && phoneChanged ? 'both' : (nameChanged ? 'name only' : 'phone only')
+    });
 
     setIsLoading(true);
     try {
-      // Extract only digits from phone number
-      const phoneDigits = editedData.phoneNumber.replace(/\D/g, '');
+      console.log('=== SENDING TO API ===');
+      console.log('API Request Data:', {
+        name: finalName,
+        phone: phoneDigits,
+        nameChanged,
+        phoneChanged,
+        nameLength: finalName.length,
+        phoneLength: phoneDigits.length,
+        originalName,
+        originalPhone,
+        requestBody: JSON.stringify({
+          name: finalName,
+          phone: phoneDigits
+        })
+      });
       
-      // Call the API (only name and phone are sent)
+      // Call the API - always send both name and phone (API requires both)
+      // But we only validated the changed fields
       const result = await authService.editProfile(
-        editedData.fullName.trim(),
+        finalName, 
         phoneDigits
       );
 
+      console.log('=== API RESPONSE RECEIVED ===');
+      console.log('Result:', {
+        success: result.success,
+        error: result.error,
+        message: result.message,
+        hasValidationErrors: !!result.validationErrors,
+        isAuthError: result.isAuthError
+      });
+
       if (result.success) {
+        console.log('✅ Profile update successful');
         // Wait a bit for AsyncStorage to be fully updated
         await new Promise(resolve => setTimeout(resolve, 200));
         
@@ -143,9 +286,9 @@ const EditProfileScreen: React.FC<Props> = ({
           ...userData,
           ...(updatedUser && {
             id: updatedUser.id || userData?.id,
-            fullName: updatedUser.fullName || editedData.fullName,
+            fullName: updatedUser.fullName || finalName,
             phoneNumber: updatedUser.phoneNumber || phoneDigits,
-            email: updatedUser.email || editedData.email,
+            email: updatedUser.email || editedData.email || userData?.email,
             type: updatedUser.type || userData?.type,
             status: updatedUser.status || userData?.status,
             createdAt: updatedUser.createdAt || userData?.createdAt,
@@ -167,11 +310,67 @@ const EditProfileScreen: React.FC<Props> = ({
           }
         ]);
       } else {
-        Alert.alert('Error', result.error || 'Failed to update profile. Please try again.');
+        console.log('❌ Profile update failed');
+        console.log('Error details:', {
+          error: result.error,
+          validationErrors: result.validationErrors,
+          isAuthError: result.isAuthError
+        });
+        // Handle authentication errors (only if it's truly an auth error, not validation)
+        if (result.isAuthError && result.error && !result.error.toLowerCase().includes('validation')) {
+          console.log('⚠️ Authentication error detected');
+          Alert.alert(
+            'Session Expired',
+            result.error || 'Your session has expired. Please login again.',
+            [
+              {
+                text: 'OK',
+                onPress: async () => {
+                  // Optionally logout user here
+                  // await authService.logout();
+                  // onBack();
+                }
+              }
+            ]
+          );
+          return;
+        }
+        
+        // Handle validation errors
+        let errorMessage = result.error || 'Failed to update profile. Please try again.';
+        
+        // If there are validation errors, extract and show them
+        if (result.validationErrors && typeof result.validationErrors === 'object') {
+          const validationErrors = result.validationErrors;
+          console.log('Edit profile validation errors:', validationErrors);
+          
+          // Extract first validation error message
+          const errorKeys = Object.keys(validationErrors);
+          if (errorKeys.length > 0) {
+            const firstError = validationErrors[errorKeys[0]];
+            errorMessage = Array.isArray(firstError) ? firstError[0] : String(firstError);
+          }
+          
+          // Map validation errors to form fields if needed
+          if (validationErrors.name) {
+            const nameError = Array.isArray(validationErrors.name) ? validationErrors.name[0] : String(validationErrors.name);
+            console.log('Name validation error:', nameError);
+            // You can set this to a state variable to show in the form field
+          }
+          if (validationErrors.phone) {
+            const phoneError = Array.isArray(validationErrors.phone) ? validationErrors.phone[0] : String(validationErrors.phone);
+            console.log('Phone validation error:', phoneError);
+            // You can set this to a state variable to show in the form field
+          }
+        }
+        
+        console.log('Edit profile error:', errorMessage);
+        Alert.alert('Error', errorMessage);
       }
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      Alert.alert('Error', error.message || 'An unexpected error occurred. Please try again.');
+      const errorMessage = error.message || 'An unexpected error occurred. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

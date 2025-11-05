@@ -40,6 +40,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [errors, setErrors] = useState<FormErrors>({});
 
   const handleRegister = async () => {
+    console.log('=== REGISTRATION START ===');
+    console.log('Form Data Before Validation:', {
+      fullName,
+      email,
+      phoneNumber,
+      password: password ? '***' : '',
+      confirmPassword: confirmPassword ? '***' : '',
+      agreeToTerms
+    });
+
     // Validate form using validation utility
     const validation = validateRegistrationForm({
       name: fullName,
@@ -49,16 +59,33 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       password_confirmation: confirmPassword,
     });
 
+    console.log('Client-Side Validation Result:', {
+      isValid: validation.isValid,
+      errors: validation.errors
+    });
+
     if (!validation.isValid) {
+      console.log('❌ CLIENT-SIDE VALIDATION FAILED');
       setErrors(validation.errors);
+      // Show first error in alert for better visibility
+      const firstError = Object.values(validation.errors)[0];
+      if (firstError) {
+        Alert.alert(
+          'Validation Error',
+          firstError,
+          [{ text: 'OK' }]
+        );
+      }
       return;
     }
 
     if (!agreeToTerms) {
+      console.log('❌ TERMS NOT AGREED');
       Alert.alert('Error', 'Please agree to the Terms of Service and Privacy Policy');
       return;
     }
 
+    console.log('✅ CLIENT-SIDE VALIDATION PASSED');
     setIsLoading(true);
     setErrors({});
 
@@ -67,14 +94,119 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       email: email.trim(),
       phoneNumber: phoneNumber.trim(),
       password: password.trim(),
+      passwordConfirmation: confirmPassword.trim(), // Add password confirmation
     };
+
+    console.log('Sending Registration Request:', {
+      fullName: userData.fullName,
+      email: userData.email,
+      phoneNumber: userData.phoneNumber,
+      password: userData.password ? '***' : '',
+      passwordConfirmation: userData.passwordConfirmation ? '***' : ''
+    });
 
     try {
       await onRegister(userData);
-    } catch (error) {
-      console.error('Registration error:', error);
+    } catch (error: any) {
+      // Debug: Log error for troubleshooting
+      console.log('=== REGISTERSCREEN ERROR HANDLING ===');
+      console.log('Caught Error Object:', {
+        message: error?.message,
+        name: error?.name,
+        stack: error?.stack,
+        validationErrors: error?.validationErrors,
+        fullError: error
+      });
+      
+      // Handle validation errors from API
+      if (error?.validationErrors) {
+        console.log('✅ VALIDATION ERRORS FOUND');
+        const apiErrors: FormErrors = {};
+        const validationErrors = error.validationErrors;
+        
+        // Debug: Log validation errors structure
+        console.log('Raw Validation Errors:', validationErrors);
+        console.log('Validation Errors Type:', typeof validationErrors);
+        console.log('Validation Errors Keys:', Object.keys(validationErrors));
+        
+        // Map API error keys to form field names
+        if (validationErrors.name) {
+          apiErrors.name = Array.isArray(validationErrors.name) ? validationErrors.name[0] : String(validationErrors.name);
+          console.log('✅ Mapped name error:', apiErrors.name);
+        }
+        if (validationErrors.email) {
+          apiErrors.email = Array.isArray(validationErrors.email) ? validationErrors.email[0] : String(validationErrors.email);
+          console.log('✅ Mapped email error:', apiErrors.email);
+        }
+        if (validationErrors.phone || validationErrors.phone_number) {
+          const phoneError = validationErrors.phone || validationErrors.phone_number;
+          apiErrors.phone = Array.isArray(phoneError) ? phoneError[0] : String(phoneError);
+          console.log('✅ Mapped phone error:', apiErrors.phone);
+        }
+        if (validationErrors.password) {
+          apiErrors.password = Array.isArray(validationErrors.password) ? validationErrors.password[0] : String(validationErrors.password);
+          console.log('✅ Mapped password error:', apiErrors.password);
+        }
+        // Handle password_confirmation errors (map to password_confirmation field)
+        if (validationErrors.password_confirmation) {
+          apiErrors.password_confirmation = Array.isArray(validationErrors.password_confirmation) 
+            ? validationErrors.password_confirmation[0] 
+            : String(validationErrors.password_confirmation);
+          console.log('✅ Mapped password_confirmation error:', apiErrors.password_confirmation);
+        }
+        // Handle device_token error (API requirement but not in our form)
+        if (validationErrors.device_token) {
+          console.log('⚠️ Device token error (API requirement):', validationErrors.device_token);
+          // We can't show this in form, but we can log it
+        }
+        if (validationErrors.general) {
+          console.log('✅ Found general error:', validationErrors.general);
+        }
+        
+        // Debug: Log mapped errors
+        console.log('Final Mapped Errors for Form:', apiErrors);
+        console.log('Number of mapped errors:', Object.keys(apiErrors).length);
+        
+        setErrors(apiErrors);
+        
+        // Show first validation error in alert for visibility
+        let errorToShow = null;
+        
+        // Priority: field-specific errors > general error > error message
+        if (Object.keys(apiErrors).length > 0) {
+          errorToShow = Object.values(apiErrors)[0];
+          console.log('Using field-specific error for alert:', errorToShow);
+        } else if (validationErrors.general) {
+          errorToShow = Array.isArray(validationErrors.general) ? validationErrors.general[0] : String(validationErrors.general);
+          console.log('Using general error for alert:', errorToShow);
+        } else {
+          errorToShow = error?.message || 'Please check all form fields and try again.';
+          console.log('Using error message for alert:', errorToShow);
+        }
+        
+        console.log('Showing Alert with message:', errorToShow);
+        if (errorToShow) {
+          Alert.alert(
+            'Validation Error',
+            errorToShow,
+            [{ text: 'OK' }]
+          );
+        }
+        console.log('=== REGISTRATION END (WITH VALIDATION ERRORS) ===');
+      } else {
+        console.log('❌ NO VALIDATION ERRORS - This is a non-validation error');
+        console.error('Registration error (non-validation):', error);
+        Alert.alert(
+          'Registration Failed',
+          error?.message || 'An error occurred during registration. Please try again.',
+          [{ text: 'OK' }]
+        );
+        console.log('=== REGISTRATION END (WITH NON-VALIDATION ERROR) ===');
+      }
     } finally {
       setIsLoading(false);
+      console.log('=== REGISTRATION FINALLY BLOCK ===');
+      console.log('Loading set to false');
     }
   };
 

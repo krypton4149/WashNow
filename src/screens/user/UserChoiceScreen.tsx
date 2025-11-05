@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
+  Image,
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -23,10 +24,15 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
     <SafeAreaView style={styles.container}>
       {/* App Icon and Title */}
       <View style={styles.header}>
-        <View style={styles.appIcon}>
-          <Text style={styles.sparkleIcon1}>✨</Text>
-          <Text style={styles.sparkleIcon2}>✨</Text>
-          <Text style={styles.plusSymbol}>+</Text>
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../assets/images/logo.png')} 
+            style={styles.appLogo}
+            resizeMode="contain"
+            onError={(error) => {
+              console.log('Logo image error:', error);
+            }}
+          />
         </View>
         <Text style={styles.appTitle}>CarWash</Text>
         <Text style={styles.subtitle}>Choose how you want to continue</Text>
@@ -71,37 +77,31 @@ const styles = StyleSheet.create({
     marginTop: 100,
     marginBottom: 80,
   },
-  appIcon: {
-    width: 88,
-    height: 88,
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 32,
     backgroundColor: '#000000',
-    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 28,
-    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    overflow: 'hidden',
+    // Add curved border accent
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  sparkleIcon1: {
-    fontSize: 20,
-    color: '#FFD700',
-    position: 'absolute',
-    left: 10,
-    top: 10,
-  },
-  sparkleIcon2: {
-    fontSize: 28,
-    color: '#FFD700',
-    position: 'absolute',
-    right: 10,
-    bottom: 10,
-  },
-  plusSymbol: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    position: 'absolute',
-    right: 6,
-    top: 6,
-    fontWeight: 'bold',
+  appLogo: {
+    width: 88,
+    height: 88,
+    borderRadius: 24,
   },
   appTitle: {
     fontSize: 32,
