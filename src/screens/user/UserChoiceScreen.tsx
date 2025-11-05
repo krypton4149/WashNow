@@ -5,9 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  SafeAreaView,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,7 +21,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
   onServiceOwnerPress,
 }) => {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* App Icon and Title */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginTop: 100,
+    marginTop: 60,
     marginBottom: 80,
   },
   logoContainer: {
@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     overflow: 'hidden',
-    // Add curved border accent
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },

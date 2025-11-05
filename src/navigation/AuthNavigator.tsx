@@ -96,12 +96,12 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess }) => {
         } else {
           console.log('❌ NO VALIDATION ERRORS - Showing generic alert');
           // For non-validation errors, show alert
-          Alert.alert(
-            'Registration Failed',
-            result.error || 'There was an error creating your account. Please try again.',
-            [{ text: 'OK' }]
-          );
-        }
+        Alert.alert(
+          'Registration Failed',
+          result.error || 'There was an error creating your account. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
       }
     } catch (error: any) {
       // Only re-throw if it's a validation error (so RegisterScreen can handle it)
@@ -186,7 +186,7 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess }) => {
     }
   };
 
-  const handleResetPassword = async (newPassword: string, confirmPassword: string) => {
+  const handleResetPassword = async (newPassword: string, confirmPassword: string, currentPassword?: string) => {
     try {
       console.log('Password reset:', { newPassword, confirmPassword });
       // Here you would typically call your password reset API

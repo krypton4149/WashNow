@@ -25,6 +25,7 @@ import BookingHistoryScreen from './src/screens/booking/BookingHistoryScreen';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
 import EditProfileScreen from './src/screens/profile/EditProfileScreen';
 import ChangePasswordScreen from './src/screens/settings/ChangePasswordScreen';
+import CreateNewPasswordScreen from './src/screens/auth/CreateNewPasswordScreen';
 import HelpSupportScreen from './src/screens/support/HelpSupportScreen';
 import SettingsScreen from './src/screens/settings/SettingsScreen';
 import NotificationsScreen from './src/screens/notifications/NotificationsScreen';
@@ -366,6 +367,7 @@ const AppContent: React.FC = () => {
             onEditProfile={() => setCurrentScreen('edit-profile')}
             navigateTo={(screen) => setCurrentScreen(screen as ScreenType)}
             onLogout={handleLogout}
+            onChangePassword={handleChangePassword}
           />
         );
       case 'book-wash':
@@ -547,9 +549,42 @@ const AppContent: React.FC = () => {
         );
       case 'change-password':
         return (
-          <ChangePasswordScreen 
+          <CreateNewPasswordScreen 
             onBack={() => setCurrentScreen('settings')}
-            onPasswordChanged={() => setCurrentScreen('settings')}
+            onResetPassword={async (newPassword, confirmPassword, currentPassword) => {
+              try {
+                if (!currentPassword) {
+                  Alert.alert('Error', 'Please enter your current password');
+                  return;
+                }
+                
+                const result = await authService.changePassword(
+                  currentPassword,
+                  newPassword,
+                  confirmPassword
+                );
+                
+                if (result.success) {
+                  Alert.alert(
+                    'Success',
+                    result.message || 'Password changed successfully!',
+                    [
+                      {
+                        text: 'OK',
+                        onPress: () => setCurrentScreen('settings'),
+                      },
+                    ]
+                  );
+                } else {
+                  Alert.alert('Error', result.error || 'Failed to change password. Please try again.');
+                }
+              } catch (error) {
+                Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+              }
+            }}
+            emailOrPhone={userData?.email || userData?.phoneNumber || ''}
+            mode="change"
+            showCurrentPassword={true}
           />
         );
       case 'help-support':

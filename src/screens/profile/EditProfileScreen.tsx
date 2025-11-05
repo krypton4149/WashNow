@@ -150,7 +150,7 @@ const EditProfileScreen: React.FC<Props> = ({
     let finalPhone = phoneChanged ? currentPhone : originalPhone;
     
     // Ensure we have valid values
-    if (!finalName || finalName.length === 0) {
+      if (!finalName || finalName.length === 0) {
       console.log('⚠️ Final name was empty, using original:', originalName);
       finalName = originalName;
     }
@@ -199,7 +199,7 @@ const EditProfileScreen: React.FC<Props> = ({
         Alert.alert('Validation Error', 'Phone number cannot be empty. Please enter your phone number.');
         return;
       }
-      
+
       if (phoneDigits.length < 10) {
         console.log('❌ VALIDATION FAILED: Changed phone too short (', phoneDigits.length, 'digits)');
         Alert.alert('Validation Error', 'Phone number must be at least 10 digits.');

@@ -11,29 +11,41 @@ import {
   TouchableOpacity,
   TextInput,
   Keyboard,
+  Alert,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
 
 interface CreateNewPasswordScreenProps {
   onBack: () => void;
-  onResetPassword: (newPassword: string, confirmPassword: string) => void;
+  onResetPassword: (newPassword: string, confirmPassword: string, currentPassword?: string) => void;
   emailOrPhone: string;
+  mode?: 'reset' | 'change'; // 'reset' for forgot password, 'change' for change password
+  showCurrentPassword?: boolean; // Whether to show current password field
 }
 
 const CreateNewPasswordScreen: React.FC<CreateNewPasswordScreenProps> = ({
   onBack,
   onResetPassword,
   emailOrPhone,
+  mode = 'reset',
+  showCurrentPassword = false,
 }) => {
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPasswordField, setShowCurrentPasswordField] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleResetPassword = () => {
+    if (showCurrentPassword && !currentPassword.trim()) {
+      Alert.alert('Error', 'Please enter your current password');
+      return;
+    }
+    
     if (newPassword.trim() && confirmPassword.trim()) {
       if (newPassword === confirmPassword) {
-        onResetPassword(newPassword, confirmPassword);
+        onResetPassword(newPassword, confirmPassword, showCurrentPassword ? currentPassword : undefined);
       } else {
         Alert.alert('Error', 'Passwords do not match');
       }
@@ -52,6 +64,7 @@ const CreateNewPasswordScreen: React.FC<CreateNewPasswordScreenProps> = ({
   };
 
   const isResetEnabled = 
+    (!showCurrentPassword || currentPassword.trim()) &&
     newPassword.trim() && 
     confirmPassword.trim() && 
     newPassword === confirmPassword && 
@@ -76,18 +89,24 @@ const CreateNewPasswordScreen: React.FC<CreateNewPasswordScreenProps> = ({
               {/* Back Button */}
               <BackButton onPress={onBack} />
 
-              {/* Success Icon */}
-              <View style={styles.successContainer}>
-                <View style={styles.successIcon}>
-                  <Text style={styles.checkmark}>✓</Text>
+              {/* Success Icon - Only show for reset mode */}
+              {mode === 'reset' && (
+                <View style={styles.successContainer}>
+                  <View style={styles.successIcon}>
+                    <Text style={styles.checkmark}>✓</Text>
+                  </View>
                 </View>
-              </View>
+              )}
 
               {/* Header */}
               <View style={styles.header}>
-                <Text style={styles.title}>Create new password</Text>
+                <Text style={styles.title}>
+                  {mode === 'change' ? 'Change Password' : 'Create new password'}
+                </Text>
                 <Text style={styles.subtitle}>
-                  Code verified for {maskedEmailOrPhone}
+                  {mode === 'change' 
+                    ? 'Update your password to keep your account secure'
+                    : `Code verified for ${maskedEmailOrPhone}`}
                 </Text>
               </View>
 
@@ -124,6 +143,30 @@ const CreateNewPasswordScreen: React.FC<CreateNewPasswordScreenProps> = ({
 
               {/* Password Input Fields */}
               <View style={styles.inputContainer}>
+                {showCurrentPassword && (
+                  <View style={styles.inputField}>
+                    <View style={styles.inputIcon}>
+                      <Text style={styles.iconText}>🔒</Text>
+                    </View>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Current Password"
+                      placeholderTextColor="#999999"
+                      value={currentPassword}
+                      onChangeText={setCurrentPassword}
+                      secureTextEntry={!showCurrentPasswordField}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeIcon}
+                      onPress={() => setShowCurrentPasswordField(!showCurrentPasswordField)}
+                    >
+                      <Text style={styles.iconText}>👁</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                
                 <View style={styles.inputField}>
                   <View style={styles.inputIcon}>
                     <Text style={styles.iconText}>🔒</Text>
@@ -175,7 +218,9 @@ const CreateNewPasswordScreen: React.FC<CreateNewPasswordScreenProps> = ({
                 onPress={handleResetPassword}
                 disabled={!isResetEnabled}
               >
-                <Text style={styles.resetButtonText}>Reset Password</Text>
+                <Text style={styles.resetButtonText}>
+                  {mode === 'change' ? 'Change Password' : 'Reset Password'}
+                </Text>
               </TouchableOpacity>
             </ScrollView>
           </KeyboardAvoidingView>

@@ -88,7 +88,14 @@ const MainTabs: React.FC<MainTabsProps> = ({
             <SettingsScreen
               onBack={() => setAccountSub('profile')}
               onHelpCenter={() => setAccountSub('support')}
-              onChangePassword={onChangePassword}
+              onChangePassword={() => {
+                // Navigate to full-screen change password
+                if (onChangePassword) {
+                  onChangePassword();
+                } else {
+                  navigateTo('change-password');
+                }
+              }}
               onLanguageChange={onLanguageChange}
               onDarkModeChange={onDarkModeChange}
               onLogout={onLogout}

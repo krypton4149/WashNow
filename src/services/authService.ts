@@ -4,6 +4,22 @@ const BASE_URL = 'https://carwashapp.shoppypie.in';
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user_data';
 
+// Cache configuration
+const CACHE_KEYS = {
+  BOOKINGS: 'cached_bookings',
+  SERVICE_CENTERS: 'cached_service_centers',
+  ALERTS: 'cached_alerts',
+};
+
+const CACHE_DURATION = {
+  BOOKINGS: 30000, // 30 seconds
+  SERVICE_CENTERS: 60000, // 1 minute
+  ALERTS: 30000, // 30 seconds
+};
+
+// Request timeout (5 seconds for faster response)
+const REQUEST_TIMEOUT = 5000;
+
 class AuthService {
   // Store authentication token
   async setToken(token: string): Promise<void> {
@@ -119,16 +135,66 @@ class AuthService {
     }
   }
 
+  // Helper method for fetch with timeout
+  private async fetchWithTimeout(url: string, options: RequestInit, timeout: number = REQUEST_TIMEOUT): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout. Please check your internet connection.');
+      }
+      throw error;
+    }
+  }
+
+  // Helper method to get cached data
+  private async getCachedData(key: string): Promise<any | null> {
+    try {
+      const cached = await AsyncStorage.getItem(key);
+      if (!cached) return null;
+      
+      const { data, timestamp } = JSON.parse(cached);
+      return { data, timestamp };
+    } catch {
+      return null;
+    }
+  }
+
+  // Helper method to set cached data
+  private async setCachedData(key: string, data: any): Promise<void> {
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify({
+        data,
+        timestamp: Date.now(),
+      }));
+    } catch (error) {
+      // Ignore cache errors
+    }
+  }
+
+  // Helper method to check if cache is valid
+  private isCacheValid(timestamp: number, duration: number): boolean {
+    return Date.now() - timestamp < duration;
+  }
+
   // Login method
   async login(emailOrPhone: string, password: string, loginType: 'email' | 'phone' = 'email'): Promise<{ success: boolean; token?: string; user?: any; error?: string }> {
     try {
       // For phone OTP login, we'll simulate success since we don't have the actual API
       if (loginType === 'phone') {
-        // Simulate phone OTP login success
         const mockToken = 'phone_otp_token_' + Date.now();
         const mockUser = {
           id: '1',
-          email: emailOrPhone + '@phone.com', // Use phone as email for now
+          email: emailOrPhone + '@phone.com',
           fullName: 'Phone User',
           phoneNumber: emailOrPhone,
           type: 'customer',
@@ -141,8 +207,8 @@ class AuthService {
         return { success: true, token: mockToken, user: mockUser };
       }
 
-      // Regular email login
-      const response = await fetch(`${BASE_URL}/api/v1/auth/visitor/login`, {
+      // Regular email login with timeout
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/login`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -157,7 +223,6 @@ class AuthService {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Store token and user data
         const token = data.data?.token;
         const userData = data.data?.userData;
         const loginType = data.data?.loginType || 'visitor';
@@ -168,7 +233,7 @@ class AuthService {
           fullName: userData?.name || 'User',
           phoneNumber: userData?.phone || '',
           type: 'customer',
-          loginType: loginType, // Store loginType from API
+          loginType: loginType,
           status: userData?.status || 'Active',
           createdAt: userData?.created_at || userData?.createdAt || new Date().toISOString()
         };
@@ -177,6 +242,13 @@ class AuthService {
           await this.setToken(token);
         }
         await this.setUser(user);
+
+        // Clear caches on login
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.SERVICE_CENTERS),
+          AsyncStorage.removeItem(CACHE_KEYS.ALERTS),
+        ]);
 
         return {
           success: true,
@@ -189,11 +261,10 @@ class AuthService {
           error: data.message || data.error || 'Login failed. Please check your credentials.'
         };
       }
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
@@ -206,20 +277,11 @@ class AuthService {
         email: userData.email,
         phone: userData.phoneNumber,
         password: userData.password,
-        password_confirmation: userData.passwordConfirmation || userData.password, // Add password confirmation
-        device_token: 'mobile-app', // Add device_token to prevent validation error
+        password_confirmation: userData.passwordConfirmation || userData.password,
+        device_token: 'mobile-app',
       };
 
-      console.log('=== API REQUEST ===');
-      console.log('Endpoint:', `${BASE_URL}/api/v1/auth/visitor/register`);
-      console.log('Request Payload:', {
-        name: requestPayload.name,
-        email: requestPayload.email,
-        phone: requestPayload.phone,
-        password: requestPayload.password ? '***' : ''
-      });
-
-      const response = await fetch(`${BASE_URL}/api/v1/auth/visitor/register`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/register`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -228,25 +290,7 @@ class AuthService {
         body: JSON.stringify(requestPayload),
       });
 
-      console.log('=== API RESPONSE ===');
-      console.log('Response Status:', response.status, response.statusText);
-      console.log('Response OK:', response.ok);
-      console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
-
       const data = await response.json();
-      
-      // Debug: Log API response for troubleshooting
-      console.log('API Response Data:', JSON.stringify(data, null, 2));
-      console.log('API Response Summary:', {
-        status: response.status,
-        ok: response.ok,
-        success: data.success,
-        message: data.message,
-        error: data.error,
-        hasErrors: !!data.errors,
-        errorsKeys: data.errors ? Object.keys(data.errors) : null,
-        errors: data.errors
-      });
 
       if (response.ok && data.success) {
         // Store token and user data
@@ -338,32 +382,16 @@ class AuthService {
           };
         }
 
-        console.log('=== ERROR PARSING ===');
-        console.log('Is Validation Error:', isValidationError);
-        console.log('Error Message:', errorMessage);
-        console.log('Validation Errors Object:', validationErrors);
-        console.log('Original API Message:', data.message);
-        console.log('Original API Errors (data.errors):', data.errors);
-        console.log('Nested API Errors (data.data.errors):', data.data?.errors);
-        console.log('Found Errors (from all locations):', errors);
-        console.log('Final Return Object:', {
-          success: false,
-          error: errorMessage,
-          hasValidationErrors: !!validationErrors,
-          validationErrorsKeys: validationErrors ? Object.keys(validationErrors) : null
-        });
-
         return {
           success: false,
           error: errorMessage,
           validationErrors: validationErrors
         };
       }
-    } catch (error) {
-      console.error('Registration error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
@@ -371,15 +399,13 @@ class AuthService {
   // Request OTP for phone login
   async requestOTP(phone: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/auth/visitor/request-otp`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/request-otp`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          phone: phone,
-        }),
+        body: JSON.stringify({ phone }),
       });
 
       const data = await response.json();
@@ -392,67 +418,34 @@ class AuthService {
           error: data.message || data.error || 'Failed to send OTP. Please try again.'
         };
       }
-    } catch (error) {
-      console.error('Request OTP error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
 
   // Resend OTP for phone login
   async resendOTP(phone: string): Promise<{ success: boolean; error?: string }> {
-    try {
-      const response = await fetch(`${BASE_URL}/api/v1/auth/visitor/request-otp`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: phone,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        return { success: true };
-      } else {
-        return {
-          success: false,
-          error: data.message || data.error || 'Failed to resend OTP. Please try again.'
-        };
-      }
-    } catch (error) {
-      console.error('Resend OTP error:', error);
-      return {
-        success: false,
-        error: 'Network error. Please check your internet connection and try again.'
-      };
-    }
+    return this.requestOTP(phone);
   }
 
   // Verify OTP for phone login
   async verifyOTP(phone: string, otp: string): Promise<{ success: boolean; token?: string; user?: any; error?: string }> {
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/auth/visitor/verify-otp`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/verify-otp`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          phone: phone,
-          otp: otp,
-        }),
+        body: JSON.stringify({ phone, otp }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Store token and user data
         const token = data.data?.token;
         const apiUserData = data.data?.userData;
         
@@ -472,6 +465,13 @@ class AuthService {
         }
         await this.setUser(user);
 
+        // Clear caches on login
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.SERVICE_CENTERS),
+          AsyncStorage.removeItem(CACHE_KEYS.ALERTS),
+        ]);
+
         return {
           success: true,
           token: token,
@@ -483,11 +483,10 @@ class AuthService {
           error: data.message || data.error || 'Invalid OTP. Please try again.'
         };
       }
-    } catch (error) {
-      console.error('Verify OTP error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
@@ -506,7 +505,6 @@ class AuthService {
         return { success: false, error: 'Please login to book a service' };
       }
 
-      // Create FormData for the API
       const formData = new FormData();
       formData.append('service_centre_id', bookingData.service_centre_id);
       formData.append('booking_date', bookingData.booking_date);
@@ -516,15 +514,7 @@ class AuthService {
         formData.append('notes', bookingData.notes);
       }
 
-      console.log('Sending form data:', {
-        service_centre_id: bookingData.service_centre_id,
-        booking_date: bookingData.booking_date,
-        booking_time: bookingData.booking_time,
-        vehicle_no: bookingData.vehicle_no,
-        notes: bookingData.notes
-      });
-
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/booknow`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/booknow`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -536,6 +526,9 @@ class AuthService {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Invalidate booking cache
+        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        
         return { 
           success: true, 
           bookingId: data.data?.bookingData?.booking_id || data.data?.booking_id || 'unknown'
@@ -546,24 +539,34 @@ class AuthService {
           error: data.message || data.error || 'Failed to book service. Please try again.'
         };
       }
-    } catch (error) {
-      console.error('Book now error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
 
-  // Service Centers API
-  async getServiceCenters(): Promise<{ success: boolean; serviceCenters?: any[]; error?: string }> {
+  // Service Centers API with caching
+  async getServiceCenters(forceRefresh: boolean = false): Promise<{ success: boolean; serviceCenters?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
       if (!token) {
         return { success: false, error: 'Please login to view service centers' };
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/servicecentrelist`, {
+      // Check cache first
+      if (!forceRefresh) {
+        const cached = await this.getCachedData(CACHE_KEYS.SERVICE_CENTERS);
+        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.SERVICE_CENTERS)) {
+          return {
+            success: true,
+            serviceCenters: cached.data,
+          };
+        }
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/servicecentrelist`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -574,9 +577,14 @@ class AuthService {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        const serviceCenters = data.data?.list || [];
+        
+        // Cache the result
+        await this.setCachedData(CACHE_KEYS.SERVICE_CENTERS, serviceCenters);
+        
         return { 
           success: true, 
-          serviceCenters: data.data?.list || []
+          serviceCenters: serviceCenters
         };
       } else {
         return {
@@ -584,11 +592,19 @@ class AuthService {
           error: data.message || data.error || 'Failed to fetch service centers. Please try again.'
         };
       }
-    } catch (error) {
-      console.error('Get service centers error:', error);
+    } catch (error: any) {
+      // Try to return cached data on error
+      const cached = await this.getCachedData(CACHE_KEYS.SERVICE_CENTERS);
+      if (cached) {
+        return {
+          success: true,
+          serviceCenters: cached.data,
+        };
+      }
+      
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
@@ -604,7 +620,7 @@ class AuthService {
         return { success: true, message: 'Logged out' };
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/logout`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/logout`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -652,7 +668,7 @@ class AuthService {
         return { success: false, error: 'Please login to change password' };
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/change-password`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/change-password`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -688,19 +704,27 @@ class AuthService {
     }
   }
 
-  // Booking List API
-  async getBookingList(): Promise<{ success: boolean; bookings?: any[]; error?: string }> {
+  // Booking List API with caching
+  async getBookingList(forceRefresh: boolean = false): Promise<{ success: boolean; bookings?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
-      console.log('Token for booking list:', token ? 'Present' : 'Missing');
       
       if (!token) {
         return { success: false, error: 'Please login to view your bookings' };
       }
 
-      console.log('Making API call to:', `${BASE_URL}/api/v1/visitor/bookinglist`);
-      
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/bookinglist`, {
+      // Check cache first
+      if (!forceRefresh) {
+        const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.BOOKINGS)) {
+          return {
+            success: true,
+            bookings: cached.data,
+          };
+        }
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/bookinglist`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -708,37 +732,46 @@ class AuthService {
         },
       });
 
-      console.log('API response status:', response.status);
       const data = await response.json();
 
-      console.log('Booking list API response:', JSON.stringify(data, null, 2));
-
       if (response.ok && data.success) {
-        // Handle the correct structure: data.data.bookinglist
-        console.log('Raw data structure:', JSON.stringify(data, null, 2));
-        console.log('data.data:', data.data);
-        console.log('data.data.bookinglist:', data.data?.bookinglist);
-        
         const bookings = data.data?.bookinglist || [];
-        console.log('Extracted bookings:', bookings.length, 'items');
-        console.log('First booking:', bookings[0]);
+        
+        // Cache the result
+        await this.setCachedData(CACHE_KEYS.BOOKINGS, bookings);
         
         return { 
           success: true, 
           bookings: bookings
         };
       } else {
-        console.log('API call failed:', data.message || data.error);
+        // Try to return cached data on API error
+        const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+        if (cached) {
+          return {
+            success: true,
+            bookings: cached.data,
+          };
+        }
+        
         return {
           success: false,
           error: data.message || data.error || 'Failed to fetch bookings. Please try again.'
         };
       }
-    } catch (error) {
-      console.error('Get booking list error:', error);
+    } catch (error: any) {
+      // Try to return cached data on network error
+      const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+      if (cached) {
+        return {
+          success: true,
+          bookings: cached.data,
+        };
+      }
+      
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
@@ -751,7 +784,7 @@ class AuthService {
         return { success: false, error: 'Please login to cancel a booking' };
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/cancle-booking`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/cancle-booking`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -767,6 +800,9 @@ class AuthService {
       const data = await response.json();
 
       if (response.ok) {
+        // Invalidate booking cache
+        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        
         return {
           success: true,
           message: data.message || 'Booking cancelled successfully'
@@ -777,11 +813,10 @@ class AuthService {
           error: data.message || data.error || 'Failed to cancel booking. Please try again.'
         };
       }
-    } catch (error) {
-      console.error('Cancel booking error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
@@ -791,76 +826,20 @@ class AuthService {
     try {
       const token = await this.getToken();
       
-      console.log('=== EDIT PROFILE API REQUEST ===');
-      console.log('Endpoint:', `${BASE_URL}/api/v1/visitor/editprofile`);
-      console.log('Token Status:', token ? `Token present (${token.substring(0, 20)}...)` : 'Token MISSING');
-      console.log('Request Body:', { name, phone });
-      
       if (!token) {
-        console.log('❌ NO TOKEN - Cannot proceed');
         return { success: false, error: 'Please login to edit your profile', isAuthError: true };
       }
 
-      // Validate inputs before creating request body
-      let trimmedName = (name || '').trim();
-      let trimmedPhone = (phone || '').trim();
-      
-      console.log('=== AUTH SERVICE: EDIT PROFILE ===');
-      console.log('Input parameters:', {
-        name: name,
-        nameLength: name?.length || 0,
-        nameTrimmed: trimmedName,
-        nameTrimmedLength: trimmedName.length,
-        phone: phone,
-        phoneLength: phone?.length || 0,
-        phoneTrimmed: trimmedPhone,
-        phoneTrimmedLength: trimmedPhone.length
-      });
-      
-      // Extract digits from phone
-      let phoneDigits = trimmedPhone.replace(/\D/g, '');
-      
-      console.log('Phone processing:', {
-        original: trimmedPhone,
-        digitsOnly: phoneDigits,
-        digitsLength: phoneDigits.length
-      });
-      
-      // Don't validate here - EditProfileScreen already validated changed fields
-      // The API will do its own validation and return specific errors
-      // Just ensure we have values (not null/undefined)
-      if (!trimmedName) {
-        console.log('⚠️ AUTH SERVICE: Name is empty after trim');
-        trimmedName = '';
-      }
-      
-      if (!phoneDigits) {
-        console.log('⚠️ AUTH SERVICE: Phone digits empty after processing');
-        phoneDigits = '';
-      }
-      
-      console.log('✅ AUTH SERVICE: Passing data to API (validation handled by EditProfileScreen)');
-      console.log('Final request values:', {
-        name: trimmedName,
-        nameLength: trimmedName.length,
-        phone: phoneDigits,
-        phoneLength: phoneDigits.length
-      });
+      const trimmedName = (name || '').trim();
+      const trimmedPhone = (phone || '').trim();
+      const phoneDigits = trimmedPhone.replace(/\D/g, '');
       
       const requestBody = {
         name: trimmedName,
         phone: phoneDigits,
       };
-      
-      console.log('Request body to send:', JSON.stringify(requestBody, null, 2));
-      console.log('Request body validation:', {
-        nameLength: requestBody.name.length,
-        phoneLength: requestBody.phone.length,
-        nameIsEmpty: !requestBody.name || requestBody.name.length === 0,
-        phoneIsEmpty: !requestBody.phone || requestBody.phone.length === 0
-      });
 
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/editprofile`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/editprofile`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -870,44 +849,11 @@ class AuthService {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('=== EDIT PROFILE API RESPONSE ===');
-      console.log('Response Status:', response.status, response.statusText);
-      console.log('Response OK:', response.ok);
+      const data = await response.json();
 
-      // Get response text first to see raw response
-      const responseText = await response.text();
-      console.log('Raw API Response Text:', responseText);
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Failed to parse JSON response:', e);
-        return {
-          success: false,
-          error: 'Invalid response from server. Please try again.'
-        };
-      }
-      
-      console.log('API Response Data:', JSON.stringify(data, null, 2));
-      console.log('Response Data Keys:', Object.keys(data));
-      console.log('Response Data Structure:', {
-        hasData: !!data.data,
-        hasErrors: !!data.errors,
-        hasMessage: !!data.message,
-        dataType: typeof data.data,
-        errorsType: typeof data.errors,
-        fullStructure: data
-      });
-
-      // Success case - API returns { success: true, message: "Profile updated successfully" }
       if (response.ok && data.success) {
-        console.log('✅ Profile updated successfully');
-        
-        // Get current user data to update with new values
         const currentUser = await this.getUser();
         
-        // Update user data in storage
         const updatedUser = {
           id: currentUser?.id || '1',
           email: currentUser?.email || '',
@@ -919,7 +865,6 @@ class AuthService {
         };
         
         await this.setUser(updatedUser);
-        console.log('User data updated in storage:', updatedUser);
 
         return {
           success: true,
@@ -928,93 +873,40 @@ class AuthService {
         };
       }
 
-      // Error case
-      console.log('=== EDIT PROFILE ERROR ===');
-      console.log('Status:', response.status);
-      console.log('Response Data:', data);
-      console.log('Full Response Object:', JSON.stringify(data, null, 2));
-      console.log('Request that was sent:', {
-        name: requestBody.name,
-        phone: requestBody.phone,
-        nameLength: requestBody.name.length,
-        phoneLength: requestBody.phone.length
-      });
-
-      // Check for errors in ALL possible nested locations
-      console.log('=== SEARCHING FOR ERRORS ===');
-      console.log('data.errors:', data.errors);
-      console.log('data.data:', data.data);
-      console.log('data.data?.errors:', data.data?.errors);
-      console.log('data.data?.data?.errors:', data.data?.data?.errors);
+      // Error handling
+      let errors = data.errors || data.data?.errors || data.data?.data?.errors;
       
-      // Deep search for errors
-      let errors = null;
-      if (data.errors) {
-        errors = data.errors;
-        console.log('✅ Found errors in data.errors');
-      } else if (data.data?.errors) {
-        errors = data.data.errors;
-        console.log('✅ Found errors in data.data.errors');
-      } else if (data.data?.data?.errors) {
-        errors = data.data.data.errors;
-        console.log('✅ Found errors in data.data.data.errors');
-      } else if (data.data && typeof data.data === 'object') {
-        // Try to find errors object in data.data
-        const dataDataKeys = Object.keys(data.data);
-        console.log('data.data keys:', dataDataKeys);
-        for (const key of dataDataKeys) {
+      // Deep search for errors if not found in common locations
+      if (!errors && data.data && typeof data.data === 'object') {
+        for (const key of Object.keys(data.data)) {
           const value = data.data[key];
           if (value && typeof value === 'object' && !Array.isArray(value)) {
             const valueKeys = Object.keys(value);
             if (valueKeys.length > 0 && valueKeys.some(k => Array.isArray(value[k]) || typeof value[k] === 'string')) {
               errors = value;
-              console.log('✅ Found errors in data.data.' + key);
               break;
             }
           }
         }
       }
-      
-      console.log('Errors found:', {
-        hasErrors: !!errors,
-        errorsType: typeof errors,
-        errorsKeys: errors ? Object.keys(errors) : null,
-        errors: errors
-      });
 
       let errorMessage = 'Failed to update profile. Please try again.';
       let validationErrors = null;
       let isAuthError = false;
 
-      // Handle 401 - check if it's validation or authentication
       if (response.status === 401) {
         const isValidationMessage = data.message && data.message.toLowerCase().includes('validation');
         
-        console.log('Processing 401 response:', {
-          isValidationMessage,
-          hasErrors: !!errors,
-          errorsType: typeof errors,
-          errorsKeys: errors ? Object.keys(errors) : null
-        });
-        
         if (errors && typeof errors === 'object' && Object.keys(errors).length > 0) {
-          // Has validation errors - treat as validation error
           validationErrors = errors;
           const errorKeys = Object.keys(errors);
           const firstError = errors[errorKeys[0]];
           errorMessage = Array.isArray(firstError) ? firstError[0] : String(firstError);
           isAuthError = false;
-          console.log('✅ 401 with validation errors found:', errorMessage);
         } else if (isValidationMessage) {
-          // Message says validation but no structured errors
-          // Provide a more specific helpful message based on what we sent
-          const sentName = requestBody.name;
           const sentPhone = requestBody.phone;
-          
-          let specificMessage = 'Validation failed. ';
           const issues = [];
           
-          // Only check phone validation (name validation removed)
           if (!sentPhone || sentPhone.trim().length < 10) {
             issues.push('Phone number must be at least 10 digits');
           }
@@ -1023,24 +915,17 @@ class AuthService {
           }
           
           if (issues.length > 0) {
-            errorMessage = specificMessage + issues.join('. ') + '.';
+            errorMessage = 'Validation failed. ' + issues.join('. ') + '.';
           } else {
-            // If no specific issues found, show generic message but mention phone only
             errorMessage = 'Validation failed. Please check your phone number format.';
           }
           
           isAuthError = false;
-          console.log('⚠️ 401 with validation message but no structured errors');
-          console.log('Sent data:', { name: sentName, phone: sentPhone });
-          console.log('Providing specific validation message:', errorMessage);
         } else {
-          // True authentication error
           errorMessage = data.message || 'Your session has expired. Please login again.';
           isAuthError = true;
-          console.log('❌ 401 authentication error:', errorMessage);
         }
       } else {
-        // Handle other error statuses (422, 400, etc.)
         if (errors && typeof errors === 'object' && Object.keys(errors).length > 0) {
           validationErrors = errors;
           const errorKeys = Object.keys(errors);
@@ -1052,14 +937,7 @@ class AuthService {
           errorMessage = data.error;
         }
       }
-
-      console.log('Final Error Object:', {
-        errorMessage,
-        validationErrors,
-        isAuthError,
-        hasValidationErrors: !!validationErrors
-      });
-
+        
       return {
         success: false,
         error: errorMessage,
@@ -1067,24 +945,34 @@ class AuthService {
         isAuthError: isAuthError
       };
 
-    } catch (error) {
-      console.error('Edit profile network error:', error);
+    } catch (error: any) {
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
 
-  // Get Alerts/Notifications API
-  async getAlerts(): Promise<{ success: boolean; alerts?: any[]; error?: string }> {
+  // Get Alerts/Notifications API with caching
+  async getAlerts(forceRefresh: boolean = false): Promise<{ success: boolean; alerts?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
       if (!token) {
         return { success: false, error: 'Please login to view notifications' };
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/alerts`, {
+      // Check cache first
+      if (!forceRefresh) {
+        const cached = await this.getCachedData(CACHE_KEYS.ALERTS);
+        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.ALERTS)) {
+          return {
+            success: true,
+            alerts: cached.data,
+          };
+        }
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/alerts`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -1094,10 +982,8 @@ class AuthService {
       });
 
       const data = await response.json();
-      console.log('Get alerts API response:', JSON.stringify(data, null, 2));
 
       if (response.ok && data.success) {
-        // Handle various response structures - API returns data.alertslist
         let alertsArray = [];
         
         if (data.data && Array.isArray(data.data.alertslist)) {
@@ -1114,23 +1000,41 @@ class AuthService {
           alertsArray = data;
         }
         
-        console.log('Parsed alerts array:', alertsArray);
+        // Cache the result
+        await this.setCachedData(CACHE_KEYS.ALERTS, alertsArray);
         
         return {
           success: true,
           alerts: alertsArray
         };
       } else {
+        // Try to return cached data on error
+        const cached = await this.getCachedData(CACHE_KEYS.ALERTS);
+        if (cached) {
+          return {
+            success: true,
+            alerts: cached.data,
+          };
+        }
+        
         return {
           success: false,
           error: data.message || data.error || 'Failed to fetch notifications. Please try again.'
         };
       }
-    } catch (error) {
-      console.error('Get alerts error:', error);
+    } catch (error: any) {
+      // Try to return cached data on network error
+      const cached = await this.getCachedData(CACHE_KEYS.ALERTS);
+      if (cached) {
+        return {
+          success: true,
+          alerts: cached.data,
+        };
+      }
+      
       return {
         success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
@@ -1143,9 +1047,7 @@ class AuthService {
         return { success: false, error: 'Please login to mark notification as read' };
       }
 
-      console.log('Marking alert as read, ID:', alertId);
-
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/alerts/${alertId}/read`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/alerts/${alertId}/read`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -1155,9 +1057,10 @@ class AuthService {
       });
 
       const data = await response.json();
-      console.log('Mark alert as read API response:', JSON.stringify(data, null, 2));
 
       if (response.ok && data.success) {
+        // Invalidate alerts cache
+        await AsyncStorage.removeItem(CACHE_KEYS.ALERTS);
         return {
           success: true,
           message: data.message || 'Notification marked as read'
@@ -1168,7 +1071,8 @@ class AuthService {
         
         // If alert doesn't exist, we can still treat it as success (optimistic update)
         if (errorMessage.includes('No query results') || errorMessage.includes('not found')) {
-          console.log('Alert not found in database, treating as success (already read or deleted)');
+          // Invalidate alerts cache
+          await AsyncStorage.removeItem(CACHE_KEYS.ALERTS);
           return {
             success: true,
             message: 'Notification marked as read'
@@ -1197,7 +1101,7 @@ class AuthService {
         return { success: false, error: 'Please login to mark all notifications as read' };
       }
 
-      const response = await fetch(`${BASE_URL}/api/v1/visitor/alerts/read-all`, {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/alerts/read-all`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -1209,6 +1113,8 @@ class AuthService {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Invalidate alerts cache
+        await AsyncStorage.removeItem(CACHE_KEYS.ALERTS);
         return {
           success: true,
           message: data.message || 'All notifications marked as read'
