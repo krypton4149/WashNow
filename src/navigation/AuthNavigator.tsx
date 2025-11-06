@@ -10,11 +10,12 @@ import authService from '../services/authService';
 
 interface AuthNavigatorProps {
   onAuthSuccess: () => void;
+  onBackToUserChoice?: () => void;
 }
 
 type AuthScreen = 'login' | 'register' | 'forgot-password' | 'verification' | 'create-new-password' | 'phone-otp-verification';
 
-const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess }) => {
+const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUserChoice }) => {
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>('login');
   const [forgotPasswordData, setForgotPasswordData] = useState<{
     emailOrPhone: string;
@@ -314,7 +315,7 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess }) => {
       case 'login':
         return (
           <LoginScreen
-            onBack={() => {}} // No back button needed for login
+            onBack={onBackToUserChoice || (() => {})}
             onLogin={handleLogin}
             onSendOTP={handleSendOTP}
             onRegister={() => setCurrentScreen('register')}
@@ -366,7 +367,7 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess }) => {
       default:
         return (
           <LoginScreen
-            onBack={() => {}}
+            onBack={onBackToUserChoice || (() => {})}
             onLogin={handleLogin}
             onSendOTP={handleSendOTP}
             onRegister={() => setCurrentScreen('register')}

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,8 +12,12 @@ import {
   Keyboard,
   Alert,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
-import BackButton from '../../components/ui/BackButton';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+const { width, height } = Dimensions.get('window');
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -60,49 +63,43 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   const isFormValid = email.trim().length > 0 && password.trim().length > 0;
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View style={styles.touchableContainer}>
-          <KeyboardAvoidingView 
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Fixed Header Section - Does NOT scroll */}
+      <View style={styles.headerSection}>
+        {/* Back Button */}
+        <View style={[styles.backButtonContainer, { top: insets.top + 16 }]}>
+          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Scrollable White Card Section with Form - ONLY THIS SECTION SCROLLS */}
+      <View style={styles.formCard}>
+        <TouchableWithoutFeedback onPress={dismissKeyboard}>
+          <KeyboardAvoidingView
             style={styles.keyboardAvoidingView}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
           >
-            <ScrollView 
+            <ScrollView
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              bounces={true}
+              alwaysBounceVertical={false}
+              nestedScrollEnabled={true}
             >
-              {/* Back Button */}
-              <BackButton onPress={onBack} />
-
-              {/* Header */}
-              <View style={styles.header}>
-                <Text style={styles.title}>Welcome to Car Wash </Text>
+              {/* Welcome Message */}
+              <View style={styles.welcomeSection}>
+                <Text style={styles.title}>Welcome to CarWash</Text>
                 <Text style={styles.subtitle}>
                   Sign in to your account to continue
                 </Text>
               </View>
-
-              {/* Login Type Selector - Hidden */}
-              {/* <View style={styles.loginTypeContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.loginTypeButton,
-                    loginType === 'email' && styles.loginTypeButtonActive
-                  ]}
-                  onPress={() => setLoginType('email')}
-                >
-                  <Text style={[
-                    styles.loginTypeText,
-                    loginType === 'email' && styles.loginTypeTextActive
-                  ]}>
-                    Email
-                  </Text>
-                </TouchableOpacity>
-              </View> */}
 
               {/* Form Fields */}
               <View style={styles.formContainer}>
@@ -110,6 +107,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Email Address</Text>
                   <View style={styles.inputField}>
+                    <Ionicons name="mail-outline" size={20} color="#666666" style={styles.inputIcon} />
                     <TextInput
                       style={styles.textInput}
                       placeholder="Enter your email"
@@ -127,6 +125,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 <View style={styles.inputContainer}>
                   <Text style={styles.label}>Password</Text>
                   <View style={styles.inputField}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#666666" style={styles.inputIcon} />
                     <TextInput
                       style={styles.textInput}
                       placeholder="Enter your password"
@@ -141,7 +140,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                       style={styles.eyeButton}
                       onPress={() => setShowPassword(!showPassword)}
                     >
-                      <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                      <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={20}
+                        color="#666666"
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -152,7 +155,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
 
-              {/* Login Button */}
+              {/* Sign In Button */}
               <TouchableOpacity
                 style={[styles.loginButton, (!isFormValid || isLoading) && styles.loginButtonDisabled]}
                 onPress={handleLogin}
@@ -165,6 +168,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                 )}
               </TouchableOpacity>
 
+              {/* OR Separator */}
+              <View style={styles.separatorContainer}>
+                <View style={styles.separatorLine} />
+                <Text style={styles.separatorText}>OR</Text>
+                <View style={styles.separatorLine} />
+              </View>
+
               {/* Register Link */}
               <View style={styles.registerContainer}>
                 <Text style={styles.registerText}>Don't have an account? </Text>
@@ -172,10 +182,25 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                   <Text style={styles.registerLink}>Sign Up</Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Legal Disclaimer */}
+              <View style={styles.legalContainer}>
+                <Text style={styles.legalText}>
+                  By continuing, you agree to our{' '}
+                  <Text style={styles.legalLink} onPress={() => console.log('Terms of Service')}>
+                    Terms of Service
+                  </Text>
+                  {' '}and{' '}
+                  <Text style={styles.legalLink} onPress={() => console.log('Privacy Policy')}>
+                    Privacy Policy
+                  </Text>
+                </Text>
+              </View>
             </ScrollView>
           </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </View>
+      
       {/* Overlay loader */}
       {isLoading && (
         <View style={styles.overlay} pointerEvents="none">
@@ -192,22 +217,60 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  touchableContainer: {
-    flex: 1,
+    backgroundColor: '#1A1A2E',
   },
   keyboardAvoidingView: {
     flex: 1,
   },
+  headerSection: {
+    height: height * 0.18,
+    backgroundColor: '#1A1A2E',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  backButtonContainer: {
+    position: 'absolute',
+    left: 20,
+    zIndex: 10,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: height * 0.18 - 24,
+    paddingTop: 40,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 2,
+  },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingBottom: Platform.OS === 'android' ? 20 : 0,
+    paddingBottom: Platform.OS === 'android' ? 20 : 40,
+    minHeight: height * 0.65,
   },
-  header: {
+  welcomeSection: {
+    alignItems: 'center',
     marginBottom: 32,
-    paddingTop: 8,
   },
   title: {
     fontSize: 28,
@@ -217,6 +280,7 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
     letterSpacing: -0.5,
     lineHeight: 36,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
@@ -224,41 +288,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: 'System',
     lineHeight: 22,
-  },
-  loginTypeContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 24,
-  },
-  loginTypeButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  loginTypeButtonActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  loginTypeText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#666666',
-    fontFamily: 'System',
-  },
-  loginTypeTextActive: {
-    color: '#000000',
-    fontWeight: '600',
+    textAlign: 'center',
   },
   formContainer: {
     marginBottom: 16,
@@ -283,6 +313,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
+  inputIcon: {
+    marginRight: 12,
+  },
   textInput: {
     flex: 1,
     fontSize: 16,
@@ -291,18 +324,16 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     padding: 4,
-  },
-  eyeText: {
-    fontSize: 18,
+    marginLeft: 8,
   },
   forgotPasswordContainer: {
     alignItems: 'flex-end',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: '#000000',
+    fontWeight: '500',
     fontFamily: 'System',
   },
   loginButton: {
@@ -310,7 +341,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   loginButtonDisabled: {
     backgroundColor: '#CCCCCC',
@@ -321,10 +352,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'System',
   },
+  separatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  separatorText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#999999',
+    fontWeight: '400',
+    fontFamily: 'System',
+  },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 24,
   },
   registerText: {
     fontSize: 14,
@@ -333,8 +382,27 @@ const styles = StyleSheet.create({
   },
   registerLink: {
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: '#000000',
+    fontWeight: '700',
+    fontFamily: 'System',
+  },
+  legalContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  legalText: {
+    fontSize: 12,
+    color: '#666666',
+    textAlign: 'center',
+    lineHeight: 18,
+    fontFamily: 'System',
+  },
+  legalLink: {
+    fontSize: 12,
+    color: '#666666',
+    textDecorationLine: 'underline',
     fontFamily: 'System',
   },
   overlay: {

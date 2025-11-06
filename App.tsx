@@ -355,7 +355,10 @@ const AppContent: React.FC = () => {
         );
       case 'auth':
         return (
-          <AuthNavigator onAuthSuccess={handleAuthSuccess} />
+          <AuthNavigator 
+            onAuthSuccess={handleAuthSuccess}
+            onBackToUserChoice={() => setCurrentScreen('user-choice')}
+          />
         );
       case 'customer':
         return (
