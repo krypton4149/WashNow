@@ -18,24 +18,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-interface LoginScreenProps {
+interface OwnerLoginScreenProps {
   onBack: () => void;
   onLogin: (emailOrPhone: string, password: string, loginType: 'email' | 'phone') => void;
   onSendOTP: (phoneNumber: string) => void;
   onForgotPassword: () => void;
-  onRegister: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({
+const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
   onBack,
   onLogin,
   onSendOTP,
   onForgotPassword,
-  onRegister,
 }) => {
-  const [loginType, setLoginType] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -179,14 +175,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                   </>
                 )}
               </TouchableOpacity>
-
-              {/* Register Link */}
-              <View style={styles.registerContainer}>
-                <Text style={styles.registerQuestion}>DON'T HAVE AN ACCOUNT?</Text>
-                <TouchableOpacity onPress={onRegister}>
-                  <Text style={styles.registerLink}>Sign up instead</Text>
-                </TouchableOpacity>
-              </View>
 
               {/* Security Indicators */}
               <View style={styles.securityContainer}>
@@ -352,7 +340,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -377,21 +365,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  registerContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  registerQuestion: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  registerLink: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '700',
   },
   securityContainer: {
     flexDirection: 'row',
@@ -444,4 +417,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default OwnerLoginScreen;
+

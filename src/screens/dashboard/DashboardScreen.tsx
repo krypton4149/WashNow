@@ -202,12 +202,31 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const renderActivityItem = (activity: Activity) => (
     <TouchableOpacity
       key={activity.id}
-      style={[styles.activityItem, { backgroundColor: colors.card }]}
+      style={[styles.activityItem, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => onActivityPress?.(activity)}
     >
       <View style={styles.activityContent}>
         <View style={styles.activityInfo}>
-          <Text style={[styles.activityTitle, { color: colors.text }]}>{activity.title}</Text>
+          {/* Title and Status Tag on Same Row */}
+          <View style={styles.titleRow}>
+            <Text style={[styles.activityTitle, { color: colors.text }]}>{activity.title}</Text>
+            {activity.status === 'In Progress' && (
+              <View style={styles.statusTagInProgress}>
+                <Text style={styles.statusTextInProgress}>{activity.status}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+              </View>
+            )}
+            {activity.status === 'Completed' && (
+              <View style={styles.statusTagCompleted}>
+                <Text style={styles.statusTextCompleted}>{activity.status}</Text>
+              </View>
+            )}
+            {activity.status === 'Canceled' && (
+              <View style={styles.statusTagCanceled}>
+                <Text style={styles.statusTextCanceled}>{activity.status}</Text>
+              </View>
+            )}
+          </View>
           <View style={styles.timeRow}>
             <Ionicons name="time-outline" size={16} color={colors.textSecondary} style={styles.timeIcon} />
             <Text style={[styles.activityTimeText, { color: colors.textSecondary }]}>{activity.time}</Text>
@@ -233,14 +252,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <Text style={styles.cancelButtonText}>Cancel Booking</Text>
             </TouchableOpacity>
           )}
-        </View>
-        <View style={styles.activityRight}>
-          <View style={[styles.statusTag, { backgroundColor: getStatusStyles(activity.status).backgroundColor }]}>
-            <Text style={[styles.statusText, { color: getStatusStyles(activity.status).color }]}>
-              {activity.status}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} style={styles.chevron} />
         </View>
       </View>
     </TouchableOpacity>
@@ -419,15 +430,22 @@ const styles = StyleSheet.create({
   activityItem: {
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  activityContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  activityContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   activityInfo: { flex: 1 },
-  activityTitle: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  activityTitle: { fontSize: 16, fontWeight: '600', flex: 1 },
   activityService: { fontSize: 14, marginBottom: 8 },
   timeRow: { flexDirection: 'row', alignItems: 'center' },
   timeIcon: { marginRight: 6 },
@@ -437,12 +455,57 @@ const styles = StyleSheet.create({
   recentText: { fontSize: 13 },
   recentBookingId: { fontSize: 13, fontWeight: '700' },
   activityDivider: { height: 1, marginTop: 12 },
-  activityRight: { alignItems: 'center', flexDirection: 'row' },
-  statusTag: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 },
-  statusText: { fontSize: 12, fontWeight: '600' },
-  chevron: { marginLeft: 10 },
-  cancelButton: { marginTop: 10, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#FCA5A5', backgroundColor: '#FEE2E2', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  cancelButtonText: { color: '#DC2626', fontWeight: '700', fontSize: 12 },
+  statusTagInProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#3366FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusTextInProgress: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  statusTagCompleted: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusTextCompleted: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  statusTagCanceled: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusTextCanceled: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  cancelButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: '#DC2626',
+    fontWeight: '700',
+    fontSize: 12,
+  },
   loadingContainer: { alignItems: 'center', paddingVertical: 40 },
   loadingText: { fontSize: 14, marginTop: 12 },
   emptyContainer: { alignItems: 'center', paddingVertical: 40 },

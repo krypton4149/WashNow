@@ -65,6 +65,23 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
     }
   };
 
+  // Calculate duration (simple estimation)
+  const getDuration = (bookingDate: string, bookingTime: string): string => {
+    try {
+      const bookingDateTime = new Date(`${bookingDate}T${bookingTime}`);
+      const now = new Date();
+      const diffMs = now.getTime() - bookingDateTime.getTime();
+      const diffMins = Math.max(0, Math.floor(diffMs / (1000 * 60)));
+      
+      if (diffMins < 60) return `${diffMins} mins`;
+      const hours = Math.floor(diffMins / 60);
+      const mins = diffMins % 60;
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    } catch (error) {
+      return '45 mins';
+    }
+  };
+
   // Helper function to get display values from booking data
   const getBookingDisplayData = (booking: Booking) => {
     console.log('Processing booking:', JSON.stringify(booking, null, 2));
@@ -75,10 +92,13 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
       type: booking.service_type || 'Car Wash',
       date: formatDate(booking.booking_date),
       time: formatTime(booking.booking_time),
+      dateTime: `${formatDate(booking.booking_date)} • ${formatTime(booking.booking_time)}`,
       status: mapBookingStatus(booking.status),
       total: '$25.00', // Default amount since it's not in the API response
       vehicle_no: booking.vehicle_no,
       notes: booking.notes,
+      address: `Service Center ${booking.service_centre_id} Location`, // Default address
+      duration: getDuration(booking.booking_date, booking.booking_time),
     };
     
     console.log('Display data:', JSON.stringify(displayData, null, 2));
@@ -328,52 +348,103 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           </View>
         ) : filteredBookings.length > 0 ? (
           filteredBookings.map((booking) => (
-            <View key={booking.id} style={[styles.bookingCard, { backgroundColor: colors.card }]}>
-              <View style={styles.cardHeader}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>{booking.name}</Text>
-                <View
-                  style={[
-                    styles.statusTag,
-                    { backgroundColor: getStatusColor(booking.status) },
-                  ]}
-                >
-                  <Text style={[styles.statusText, { color: getStatusTextColor(booking.status) }]}>
-                    {booking.status}
+            <View key={booking.id} style={[styles.bookingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {/* Header Bar - Different colors for different statuses */}
+              {booking.status === 'In Progress' && (
+                <View style={styles.statusHeaderBar}>
+                  <View style={styles.statusHeaderLeft}>
+                    <Text style={styles.statusHeaderText}>In Progress</Text>
+                    <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                  </View>
+                </View>
+              )}
+              {booking.status === 'Completed' && (
+                <View style={styles.statusHeaderBarCompleted}>
+                  <View style={styles.statusHeaderLeft}>
+                    <Text style={styles.statusHeaderTextCompleted}>Completed</Text>
+                  </View>
+                </View>
+              )}
+              {booking.status === 'Canceled' && (
+                <View style={styles.statusHeaderBarCanceled}>
+                  <View style={styles.statusHeaderLeft}>
+                    <Text style={styles.statusHeaderTextCanceled}>Canceled </Text>
+                  </View>
+                </View>
+              )}
+              
+              {/* Card Content */}
+              <View style={styles.cardContent}>
+                <Text style={[styles.serviceName, { color: colors.text }]}>{booking.name}</Text>
+                
+                {/* Location */}
+                <View style={styles.locationRow}>
+                  <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.locationText, { color: colors.textSecondary }]}>{booking.address}</Text>
+                </View>
+                
+                {/* Date/Time in Pill - Different colors based on status */}
+                <View style={[
+                  styles.dateTimePill, 
+                  booking.status === 'Completed' 
+                    ? { backgroundColor: '#E8F5E9' }
+                    : booking.status === 'In Progress'
+                    ? { backgroundColor: '#E0E8F9' }
+                    : booking.status === 'Canceled'
+                    ? { backgroundColor: '#F3F4F6' }
+                    : { backgroundColor: colors.border + '30' }
+                ]}>
+                  <Ionicons 
+                    name="calendar-outline" 
+                    size={14} 
+                    color={
+                      booking.status === 'Completed' 
+                        ? '#4CAF50' 
+                        : booking.status === 'In Progress'
+                        ? '#3366FF'
+                        : booking.status === 'Canceled'
+                        ? '#6B7280'
+                        : '#3366FF'
+                    } 
+                  />
+                  <Text style={[styles.dateTimeText, { color: colors.text }]}>{booking.dateTime}</Text>
+                </View>
+                
+                {/* Vehicle Number */}
+                <View style={styles.infoRow}>
+                  <Ionicons name="car-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                    Vehicle: {booking.vehicle_no}
+                  </Text>
+                </View>
+                
+                {/* Booking ID */}
+                <View style={styles.infoRow}>
+                  <Ionicons name="receipt-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.infoTextBold, { color: colors.text }]}>
+                    Booking ID: {booking.id}
                   </Text>
                 </View>
               </View>
-              {/* Removed service type subtitle as requested */}
-              <View style={styles.cardDateTime}>
-                <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.cardDateTimeText, { color: colors.textSecondary }]}>
-                  {booking.date} at {booking.time}
-                </Text>
-              </View>
-              <View style={styles.cardVehicle}>
-                <Ionicons name="car-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.cardVehicleText, { color: colors.textSecondary }]}>
-                  Vehicle: {booking.vehicle_no}
-                </Text>
-              </View>
-              <View style={styles.cardBookingId}>
-                <Ionicons name="receipt-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.cardBookingIdTextBold, { color: colors.text }]}>
-                  Booking ID: {booking.id}
-                </Text>
-              </View>
+              
+              {/* Separator */}
               <View style={[styles.cardDivider, { backgroundColor: colors.border }]} />
+              
+              {/* Footer */}
               <View style={styles.cardFooter}>
-                <Text style={[styles.cardTotalLabel, { color: colors.textSecondary }]}>Total</Text>
-                <Text style={[styles.cardTotalPrice, { color: colors.text }]}>{booking.total}</Text>
+                <View style={styles.totalSection}>
+                  <Text style={[styles.cardTotalLabel, { color: colors.textSecondary }]}>Total Amount</Text>
+                  <Text style={[styles.cardTotalPrice, { color: colors.text }]}>{booking.total}</Text>
+                </View>
+                {booking.status === 'In Progress' && (
+                  <TouchableOpacity
+                    style={styles.cancelButtonFooter}
+                    onPress={() => handleCancelBooking(booking.id)}
+                  >
+                    <Text style={styles.cancelButtonFooterText}>Cancel Booking</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-              {booking.status === 'In Progress' && (
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => handleCancelBooking(booking.id)}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel Booking</Text>
-                </TouchableOpacity>
-              )}
             </View>
           ))
         ) : (
@@ -456,102 +527,157 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   bookingCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  cardHeader: {
+  statusHeaderBar: {
+    backgroundColor: '#3366FF',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  statusHeaderBarCompleted: {
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  statusHeaderBarCanceled: {
+    backgroundColor: '#6B7280',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  statusHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E0E8F9',
+  },
+  statusHeaderText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  statusHeaderTextCompleted: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  statusHeaderTextCanceled: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  cardContent: {
+    padding: 16,
+  },
+  serviceName: {
+    fontSize: 18,
+    fontWeight: '700',
     marginBottom: 4,
   },
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  statusTag: {
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardSubtitle: {
+  serviceType: {
     fontSize: 14,
-    color: '#6B7280',
     marginBottom: 12,
   },
-  cardDateTime: {
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     marginBottom: 12,
   },
-  cardDateTimeText: {
+  locationText: {
     fontSize: 14,
+    flex: 1,
   },
-  cardVehicle: {
+  dateTimePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
   },
-  cardVehicleText: {
-    fontSize: 14,
+  dateTimeText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
-  cardBookingId: {
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 6,
+    marginTop: 8,
   },
-  cardBookingIdText: {
+  infoText: {
     fontSize: 14,
-    color: '#6B7280',
   },
-  cardBookingIdTextBold: {
+  infoTextBold: {
     fontSize: 14,
     fontWeight: '700',
   },
   cardDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 12,
+    marginHorizontal: 16,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 16,
+    paddingTop: 12,
+  },
+  totalSection: {
+    flex: 1,
   },
   cardTotalLabel: {
-    fontSize: 15,
+    fontSize: 12,
+    marginBottom: 4,
   },
   cardTotalPrice: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
   },
-  cancelButton: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
+  cancelButtonFooter: {
     backgroundColor: '#FEE2E2',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
   },
-  cancelButtonText: {
+  cancelButtonFooterText: {
     color: '#DC2626',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 14,
   },
   noBookingsContainer: {
     alignItems: 'center',

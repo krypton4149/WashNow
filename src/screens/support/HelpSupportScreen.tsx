@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -152,6 +153,30 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
 
     return (
       <View style={styles.faqsContainer}>
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <ImageBackground
+            source={{
+              uri: 'https://images.unsplash.com/photo-1694878981905-b742a32f8121?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2JpbGUlMjBhcHAlMjBpbnRlcmZhY2UlMjBtb2NrdXB8ZW58MXx8fHwxNzYyMzk4OTM3fDA&ixlib=rb-4.1.0&q=80&w=1080'
+            }}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+          >
+            <View style={styles.heroOverlay} />
+            {/* Decorative shapes */}
+            <View style={styles.decorativeShape1} />
+            <View style={styles.decorativeShape2} />
+            <View style={styles.decorativeShape3} />
+            
+            {/* Central overlay */}
+            <View style={styles.heroContentOverlay}>
+              <Text style={styles.heroTitle}>How can we help you?</Text>
+              <Text style={styles.heroSubtitle}>Find answers to common questions</Text>
+            </View>
+          </ImageBackground>
+        </View>
+
+        {/* FAQs Section */}
         <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
         {faqs.map((faq) => (
           <TouchableOpacity
@@ -165,7 +190,7 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
               <Ionicons
                 name={faq.isExpanded ? 'chevron-up' : 'chevron-down'}
                 size={20}
-                color="#6B7280"
+                color="#000000"
               />
             </View>
             {faq.isExpanded && (
@@ -237,7 +262,7 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   contentContainer: {
     flexGrow: 1,
@@ -250,8 +275,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     padding: 4,
@@ -259,7 +282,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: '#000000',
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -276,30 +299,96 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#000',
+    borderBottomColor: '#000000',
   },
   tabText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#6B7280',
+    color: '#9CA3AF',
   },
   activeTabText: {
-    color: '#000',
-    fontWeight: '600',
+    color: '#000000',
+    fontWeight: '700',
   },
   content: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingTop: 20,
   },
   faqsContainer: {
     flex: 1,
   },
+  heroSection: {
+    height: 200,
+    borderRadius: 16,
+    marginBottom: 24,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(30, 30, 30, 0.85)',
+  },
+  decorativeShape1: {
+    position: 'absolute',
+    top: 20,
+    right: 40,
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    transform: [{ rotate: '15deg' }],
+  },
+  decorativeShape2: {
+    position: 'absolute',
+    bottom: 30,
+    left: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    transform: [{ rotate: '-20deg' }],
+  },
+  decorativeShape3: {
+    position: 'absolute',
+    top: 50,
+    left: 50,
+    width: 100,
+    height: 100,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    transform: [{ rotate: '45deg' }],
+  },
+  heroContentOverlay: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#FFFFFF',
+    opacity: 0.9,
+    textAlign: 'center',
+  },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 20,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 16,
   },
   faqCard: {
     backgroundColor: '#FFFFFF',
@@ -307,9 +396,9 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 4,
     elevation: 2,
   },
   faqHeader: {
@@ -320,7 +409,7 @@ const styles = StyleSheet.create({
   faqQuestion: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#000000',
     flex: 1,
     marginRight: 12,
   },

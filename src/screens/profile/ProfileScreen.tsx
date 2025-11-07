@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -190,19 +191,54 @@ const ProfileScreen: React.FC<Props> = ({
 
   return (
     <SafeAreaView 
-      style={[styles.container, { backgroundColor: colors.background }]} 
-      edges={['top']}
+      style={[styles.container, { backgroundColor: '#FFFFFF' }]} 
+      edges={['top', 'bottom']}
     >
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={onBack} style={styles.headerButton} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity style={styles.headerButton} onPress={onEditProfile} activeOpacity={0.7}>
-            <Ionicons name="create-outline" size={24} color={colors.text} />
-          </TouchableOpacity>
+      {/* Blurred Background Section at Top */}
+      <View style={styles.topBackgroundSection}>
+        <ImageBackground
+          source={{
+            uri: 'https://images.unsplash.com/photo-1642520922834-2494eb4c1d73?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGdyYWRpZW50JTIwcGF0dGVybnxlbnwxfHx8fDE3NjI0MTAxMzN8MA&ixlib=rb-4.1.0&q=80&w=1080'
+          }}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+          blurRadius={20}
+        >
+          {/* Semi-transparent overlay for better readability and blur effect */}
+          <View style={styles.overlay} />
+        </ImageBackground>
+        
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: 'transparent' }]}>
+          <View style={styles.headerTop}>
+            <TouchableOpacity onPress={onBack} style={styles.headerButtonWhite} activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={24} color="#000000" />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity style={styles.headerButtonBlack} onPress={onEditProfile} activeOpacity={0.7}>
+              <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Profile Summary Section */}
+        <View style={styles.profileSummary}>
+          <View style={styles.profileImageTouchable}>
+            <View style={styles.profileImageWrapper}>
+              <Text style={styles.profileInitials}>{initials}</Text>
+            </View>
+            <View style={styles.onlineDot} />
+          </View>
+          
+          <View style={styles.profileInfo}>
+            <View style={styles.nameRow}>
+              <Text style={styles.userNameWhite}>{displayName}</Text>
+              <View style={styles.verifiedBadgeBlue}>
+                <Ionicons name="shield-outline" size={14} color="#FFFFFF" />
+              </View>
+            </View>
+            <Text style={styles.userEmailLight}>{displayEmail || 'No email provided'}</Text>
+          </View>
         </View>
       </View>
 
@@ -211,88 +247,69 @@ const ProfileScreen: React.FC<Props> = ({
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Summary Section */}
-        <View style={styles.profileSummary}>
-          <View style={styles.profileImageTouchable}>
-            <View style={[styles.profileImageWrapper, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.profileInitials, { color: colors.text }]}>{initials}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.profileInfo}>
-            <View style={styles.nameRow}>
-              <Text style={[styles.userName, { color: colors.text }]}>{displayName}</Text>
-              <View style={[styles.verifiedBadge, { backgroundColor: colors.button }]}>
-                <Ionicons name="shield-checkmark" size={14} color={colors.buttonText} />
-              </View>
-            </View>
-            <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{displayEmail || 'No email provided'}</Text>
-          </View>
-        </View>
-
         {/* Contact Details Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact Details</Text>
+          <Text style={styles.sectionTitle}>Contact Details</Text>
           
-          <View style={[styles.contactCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.contactIcon, { backgroundColor: colors.background }]}>
-              <Ionicons name="call-outline" size={20} color={colors.button} />
+          <View style={styles.contactCard}>
+            <View style={styles.contactIconPhone}>
+              <Ionicons name="call-outline" size={24} color="#FFFFFF" />
             </View>
             <View style={styles.contactInfo}>
-              <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Phone Number</Text>
-              <Text style={[styles.contactValue, { color: colors.text }]}>
+              <Text style={styles.contactLabel}>Phone Number</Text>
+              <Text style={styles.contactValue}>
                 {displayPhone || 'Not provided'}
               </Text>
             </View>
           </View>
 
-          <View style={[styles.contactCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.contactIcon, { backgroundColor: colors.background }]}>
-              <Ionicons name="calendar-outline" size={20} color={colors.button} />
+          <View style={styles.contactCard}>
+            <View style={styles.contactIconCalendar}>
+              <Ionicons name="calendar-outline" size={24} color="#FFFFFF" />
             </View>
             <View style={styles.contactInfo}>
-              <Text style={[styles.contactLabel, { color: colors.textSecondary }]}>Member Since</Text>
-              <Text style={[styles.contactValue, { color: colors.text }]}>{memberSinceDate}</Text>
+              <Text style={styles.contactLabel}>Member Since</Text>
+              <Text style={styles.contactValue}>{memberSinceDate}</Text>
             </View>
           </View>
         </View>
 
         {/* Quick Actions Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
           
           <View style={styles.quickActionsRow}>
             <TouchableOpacity 
-              style={[styles.quickActionCard, { backgroundColor: colors.surface }]}
+              style={styles.quickActionCard}
               onPress={onBookingHistory}
               activeOpacity={0.7}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: colors.background }]}>
-                <Ionicons name="refresh-circle" size={28} color={colors.button} />
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="refresh-circle" size={28} color="#374151" />
               </View>
-              <Text style={[styles.quickActionText, { color: colors.text }]}>Booking History</Text>
+              <Text style={styles.quickActionText}>Booking History</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.quickActionCard, { backgroundColor: colors.surface }]}
+              style={styles.quickActionCard}
               onPress={onHelpSupport}
               activeOpacity={0.7}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: colors.background }]}>
-                <Ionicons name="help-circle-outline" size={28} color={colors.button} />
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="help-circle-outline" size={28} color="#374151" />
               </View>
-              <Text style={[styles.quickActionText, { color: colors.text }]}>Help & Support</Text>
+              <Text style={styles.quickActionText}>Help & Support</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.quickActionCard, { backgroundColor: colors.surface }]}
+              style={styles.quickActionCard}
               onPress={onSettings}
               activeOpacity={0.7}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: colors.background }]}>
-                <Ionicons name="settings-outline" size={28} color={colors.button} />
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="settings-outline" size={28} color="#374151" />
               </View>
-              <Text style={[styles.quickActionText, { color: colors.text }]}>Settings</Text>
+              <Text style={styles.quickActionText}>Settings</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -324,6 +341,18 @@ const ProfileScreen: React.FC<Props> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  topBackgroundSection: {
+    width: '100%',
+    minHeight: 220,
+    paddingBottom: 20,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   header: {
     paddingTop: 12,
@@ -336,26 +365,39 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 44,
   },
-  headerButton: {
+  headerButtonWhite: {
     width: 44,
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+  },
+  headerButtonBlack: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: '#000000',
   },
   content: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 0,
     paddingBottom: 0, // Bottom padding handled by bottomSpacing
   },
   profileSummary: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 32,
+    marginBottom: 20,
     paddingTop: 8,
+    paddingHorizontal: 20,
+    position: 'relative',
+    zIndex: 1,
   },
   profileImageTouchable: {
     marginRight: 16,
@@ -364,13 +406,27 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
+    backgroundColor: '#374151',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   profileInitials: {
     fontSize: 28,
     fontWeight: '700',
     letterSpacing: 1,
+    color: '#FFFFFF',
+  },
+  onlineDot: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   profileInfo: {
     flex: 1,
@@ -381,22 +437,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  userName: {
+  userNameWhite: {
     fontSize: 22,
     fontWeight: '700',
     marginRight: 8,
     letterSpacing: 0.3,
+    color: '#FFFFFF',
   },
-  verifiedBadge: {
+  verifiedBadgeBlue: {
     width: 20,
     height: 20,
     borderRadius: 10,
+    backgroundColor: '#3366FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  userEmail: {
+  userEmailLight: {
     fontSize: 14,
     letterSpacing: 0.2,
+    color: '#E5E7EB',
   },
   section: {
     marginBottom: 28,
@@ -406,18 +465,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 16,
     letterSpacing: 0.3,
+    color: '#000000',
   },
   contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  contactIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  contactIconPhone: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: '#4285F4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  contactIconCalendar: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: '#8B5CF6',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -426,14 +502,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#6B7280',
     marginBottom: 4,
     letterSpacing: 0.2,
   },
   contactValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#000000',
     letterSpacing: 0.2,
   },
   quickActionsRow: {
@@ -443,25 +521,37 @@ const styles = StyleSheet.create({
   },
   quickActionCard: {
     flex: 1,
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     padding: 20,
     alignItems: 'center',
     minHeight: 120,
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   quickActionIcon: {
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
   },
   quickActionText: {
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.2,
+    color: '#000000',
   },
   editProfileButton: {
     flexDirection: 'row',

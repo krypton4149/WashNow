@@ -11,7 +11,9 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import OnboardingScreen from './src/screens/onboarding/OnboardingScreen';
 import UserChoiceScreen from './src/screens/user/UserChoiceScreen';
 import AuthNavigator from './src/navigation/AuthNavigator';
+import OwnerAuthNavigator from './src/navigation/OwnerAuthNavigator';
 import DashboardScreen from './src/screens/dashboard/DashboardScreen';
+import OwnerTabs from './src/navigation/OwnerTabs';
 import BookCarWashScreen from './src/screens/book/BookCarWashScreen';
 import FindingCarWashScreen from './src/screens/book/FindingCarWashScreen';
 import BookingConfirmedScreen from './src/screens/book/BookingConfirmedScreen';
@@ -60,7 +62,10 @@ const AppContent: React.FC = () => {
       if (isLoggedIn) {
         const user = await authService.getUser();
         setUserData(user);
-        setCurrentScreen('customer');
+        // Check user type from stored user data or default to customer
+        const storedUserType = user?.type === 'service-owner' ? 'service-owner' : 'customer';
+        setUserType(storedUserType);
+        setCurrentScreen(storedUserType === 'service-owner' ? 'service-owner' : 'customer');
       }
     } catch (error) {
       console.error('Auth check error:', error);
@@ -71,21 +76,28 @@ const AppContent: React.FC = () => {
 
   const onboardingScreens = [
     {
-      icon: <Text style={{ fontSize: 64, color: '#000000' }}>📍</Text>,
+      icon: 'location-outline',
       title: 'Find Nearby Centers',
       description: 'Discover car wash centers near you with real-time distance tracking',
     },
     {
-      icon: <Text style={{ fontSize: 64, color: '#000000' }}>🕙</Text>,
+      icon: 'time-outline',
       title: 'Easy Scheduling',
       description: 'Book your preferred time slot and service in just a few taps',
     },
     {
-      icon: <Text style={{ fontSize: 64, color: '#000000' }}>💳</Text>,
+      icon: 'card-outline',
       title: 'Secure Payments',
       description: 'Pay safely with multiple payment options and track your history',
     },
   ];
+
+  const handlePreview = () => {
+    // Go back to previous screen
+    if (currentOnboardingIndex > 0) {
+      setCurrentOnboardingIndex(currentOnboardingIndex - 1);
+    }
+  };
 
   const handleNext = () => {
     if (currentOnboardingIndex < onboardingScreens.length - 1) {
@@ -114,7 +126,12 @@ const AppContent: React.FC = () => {
       setIsAuthenticated(true);
       const user = await authService.getUser();
       setUserData(user);
-      setCurrentScreen('customer');
+      // Redirect based on user type
+      if (userType === 'service-owner') {
+        setCurrentScreen('service-owner');
+      } else {
+        setCurrentScreen('customer');
+      }
     } catch (error) {
       console.error('Error loading user data:', error);
     }
@@ -344,6 +361,7 @@ const AppContent: React.FC = () => {
             currentIndex={currentOnboardingIndex}
             onNext={handleNext}
             onSkip={handleSkip}
+            onPreview={currentOnboardingIndex === 1 ? handlePreview : undefined}
           />
         );
       case 'user-choice':
@@ -354,7 +372,12 @@ const AppContent: React.FC = () => {
           />
         );
       case 'auth':
-        return (
+        return userType === 'service-owner' ? (
+          <OwnerAuthNavigator 
+            onAuthSuccess={handleAuthSuccess}
+            onBackToUserChoice={() => setCurrentScreen('user-choice')}
+          />
+        ) : (
           <AuthNavigator 
             onAuthSuccess={handleAuthSuccess}
             onBackToUserChoice={() => setCurrentScreen('user-choice')}
@@ -371,6 +394,13 @@ const AppContent: React.FC = () => {
             navigateTo={(screen) => setCurrentScreen(screen as ScreenType)}
             onLogout={handleLogout}
             onChangePassword={handleChangePassword}
+          />
+        );
+      case 'service-owner':
+        return (
+          <OwnerTabs
+            userData={userData}
+            onLogout={handleLogout}
           />
         );
       case 'book-wash':

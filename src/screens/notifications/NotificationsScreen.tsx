@@ -188,19 +188,19 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
     switch (type) {
       case 'booking-confirmed':
       case 'booking_confirmed':
-        return { name: 'checkmark-circle' as const, color: '#10B981' };
+        return { name: 'checkmark-circle' as const, color: '#4CAF50' };
       case 'service-starting':
       case 'service_starting':
-        return { name: 'time' as const, color: '#3B82F6' };
+        return { name: 'time-outline' as const, color: '#3366FF' };
       case 'service-completed':
       case 'service_completed':
-        return { name: 'checkmark-circle' as const, color: '#10B981' };
+        return { name: 'checkmark-circle' as const, color: '#4CAF50' };
       case 'special-offer':
       case 'special_offer':
-        return { name: 'gift' as const, color: '#8B5CF6' };
+        return { name: 'gift-outline' as const, color: '#8B5CF6' };
       case 'booking-canceled':
       case 'booking_canceled':
-        return { name: 'close-circle' as const, color: '#EF4444' };
+        return { name: 'close-circle' as const, color: '#DC2626' };
       default:
         return { name: 'notifications-circle' as const, color: '#6B7280' };
     }
@@ -219,24 +219,33 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
     const isUnread = notification.isUnread || !notification.is_read;
     const isMarking = markingRead === notification.id;
     
+    // Determine icon background color based on read status
+    const iconBackgroundColor = isUnread ? '#3366FF' : '#4CAF50';
+    
     return (
       <TouchableOpacity
         key={notification.id.toString()}
         style={[
           styles.notificationItem,
-          { backgroundColor: colors.card || colors.surface, borderBottomColor: colors.border },
-          isUnread && { backgroundColor: colors.surface }
+          { backgroundColor: colors.card || '#FFFFFF', borderColor: colors.border },
         ]}
         onPress={() => handleNotificationPress(notification)}
         disabled={isMarking}
         activeOpacity={0.7}
       >
         <View style={styles.notificationContent}>
-          <View style={[styles.notificationIcon, { backgroundColor: icon.color }]}>
+          <View style={[styles.notificationIcon, { backgroundColor: iconBackgroundColor }]}>
             <Ionicons name={icon.name} size={20} color="#FFFFFF" />
           </View>
           <View style={styles.notificationText}>
-            <Text style={[styles.notificationTitle, { color: colors.text }]}>{notification.title}</Text>
+            <View style={styles.titleRow}>
+              <Text style={[styles.notificationTitle, { color: colors.text }]}>{notification.title}</Text>
+              {isMarking ? (
+                <ActivityIndicator size="small" color={colors.button} style={styles.markingIndicator} />
+              ) : (
+                isUnread && <View style={[styles.unreadDot, { backgroundColor: '#3366FF' }]} />
+              )}
+            </View>
             <Text style={[styles.notificationDescription, { color: colors.textSecondary }]}>
               {notification.description || notification.message || ''}
             </Text>
@@ -244,11 +253,6 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
               {formatTimestamp(notification.timestamp || notification.created_at)}
             </Text>
           </View>
-          {isMarking ? (
-            <ActivityIndicator size="small" color={colors.button} style={styles.markingIndicator} />
-          ) : (
-            isUnread && <View style={[styles.unreadDot, { backgroundColor: colors.button }]} />
-          )}
         </View>
       </TouchableOpacity>
     );
@@ -292,6 +296,7 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
       ) : (
         <ScrollView 
           style={styles.content} 
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -302,7 +307,9 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
           }
         >
           {notifications.length > 0 ? (
-            notifications.map(renderNotification)
+            <View style={styles.notificationsList}>
+              {notifications.map(renderNotification)}
+            </View>
           ) : (
             <View style={styles.emptyContainer}>
               <Ionicons name="notifications-outline" size={64} color={colors.textSecondary} />
@@ -361,6 +368,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  scrollContent: {
+    padding: 16,
+  },
+  notificationsList: {
+    gap: 12,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -372,18 +385,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   notificationItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    position: 'relative',
   },
   notificationContent: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -391,15 +411,22 @@ const styles = StyleSheet.create({
   notificationText: {
     flex: 1,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
   notificationTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    flex: 1,
     marginBottom: 4,
   },
   notificationDescription: {
     fontSize: 14,
     lineHeight: 20,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   notificationTimestamp: {
     fontSize: 12,
@@ -408,12 +435,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginTop: 4,
     marginLeft: 8,
+    marginTop: 4,
   },
   markingIndicator: {
-    marginTop: 4,
     marginLeft: 8,
+    marginTop: 4,
   },
   emptyContainer: {
     flex: 1,

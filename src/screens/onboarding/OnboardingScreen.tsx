@@ -7,11 +7,12 @@ import {
   Dimensions,
   SafeAreaView,
 } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 
 interface OnboardingScreenProps {
-  icon: React.ReactNode;
+  icon: string; // Icon name from Ionicons
   title: string;
   description: string;
   isActive: boolean;
@@ -19,6 +20,7 @@ interface OnboardingScreenProps {
   currentIndex: number;
   onNext: () => void;
   onSkip: () => void;
+  onPreview?: () => void; // Optional preview button for second screen
 }
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
@@ -30,24 +32,35 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   currentIndex,
   onNext,
   onSkip,
+  onPreview,
 }) => {
   const renderPagination = () => {
-    const dots = [];
+    const indicators = [];
     for (let i = 0; i < totalScreens; i++) {
-      dots.push(
-        <View
-          key={i}
-          style={[
-            i === currentIndex ? styles.activeIndicator : styles.inactiveIndicator,
-          ]}
-        />
-      );
+      if (i === currentIndex) {
+        // First screen: black dash, other screens: solid black circle
+        if (currentIndex === 0) {
+          indicators.push(
+            <View key={i} style={styles.activeIndicatorDash} />
+          );
+        } else {
+          indicators.push(
+            <View key={i} style={styles.activeIndicatorCircle} />
+          );
+        }
+      } else {
+        // Inactive: grey outline circles
+        indicators.push(
+          <View key={i} style={styles.inactiveIndicator} />
+        );
+      }
     }
-    return <View style={styles.pagination}>{dots}</View>;
+    return <View style={styles.pagination}>{indicators}</View>;
   };
 
   const isLastScreen = currentIndex === totalScreens - 1;
   const buttonText = isLastScreen ? 'Get Started' : 'Next';
+  const showPreview = currentIndex === 1 && onPreview; // Show preview on second screen
 
   if (!isActive) return null;
 
@@ -60,9 +73,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
 
       {/* Main Content */}
       <View style={styles.content}>
-        {/* Icon */}
+        {/* Icon with Gradient Background */}
         <View style={styles.iconContainer}>
-          {icon}
+          <View style={styles.gradientTop} />
+          <View style={styles.gradientMiddle} />
+          <Ionicons name={icon as any} size={56} color="#FFFFFF" style={styles.icon} />
         </View>
 
         {/* Title */}
@@ -75,10 +90,17 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       {/* Pagination */}
       {renderPagination()}
 
-      {/* Action Button */}
-      <TouchableOpacity style={styles.actionButton} onPress={onNext}>
-        <Text style={styles.actionButtonText}>{buttonText}</Text>
-      </TouchableOpacity>
+      {/* Action Buttons Container */}
+      <View style={styles.buttonContainer}>
+        {/* Next Button */}
+        <TouchableOpacity style={styles.actionButton} onPress={onNext}>
+          <Text style={styles.actionButtonText}>{buttonText}</Text>
+          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" style={styles.arrowIcon} />
+        </TouchableOpacity>
+
+        {/* Preview Button (only on second screen) */}
+       
+      </View>
     </SafeAreaView>
   );
 };
@@ -108,21 +130,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   iconContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: '#F2F2F7',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 48,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    marginBottom: 40,
+    backgroundColor: '#000000',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  gradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: '#4A4A4A',
+  },
+  gradientMiddle: {
+    position: 'absolute',
+    top: '40%',
+    left: 0,
+    right: 0,
+    height: '20%',
+    backgroundColor: '#2A2A2A',
+  },
+  icon: {
+    zIndex: 1,
   },
   title: {
     fontSize: 32,
@@ -146,48 +181,70 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 32,
     gap: 12,
   },
-  activeIndicator: {
-    width: 24,
+  activeIndicatorDash: {
+    width: 32,
     height: 4,
     borderRadius: 2,
     backgroundColor: '#000000',
   },
+  activeIndicatorCircle: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#000000',
+  },
   inactiveIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#D1D1D6',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: '#D1D1D6',
+    backgroundColor: 'transparent',
+  },
+  buttonContainer: {
+    position: 'relative',
+    marginBottom: 40,
+    marginHorizontal: 24,
   },
   actionButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#1F1F1F',
     paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 60,
-    marginHorizontal: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-    // Add subtle border for better definition
-    borderWidth: 0.5,
-    borderColor: '#1A1A1A',
+    justifyContent: 'flex-start',
+    minHeight: 56,
   },
   actionButtonText: {
     color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
     fontFamily: 'System',
-    letterSpacing: -0.2,
+    flex: 1,
+  },
+  arrowIcon: {
+    marginLeft: 8,
+  },
+  previewButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#2F2F2F',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderTopLeftRadius: 0,
+    borderBottomRightRadius: 12,
+  },
+  previewButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'System',
   },
 });
 

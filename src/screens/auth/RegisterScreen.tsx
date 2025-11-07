@@ -12,9 +12,11 @@ import {
   Keyboard,
   Alert,
   ActivityIndicator,
+  ImageBackground,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import BackButton from '../../components/ui/BackButton';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { validateRegistrationForm, FormErrors } from '../../utils/validation';
 
 interface RegisterScreenProps {
@@ -249,134 +251,152 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     agreeToTerms;
 
   return (
-    <>
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
+        <View style={styles.topSection}>
+          <ImageBackground
+            source={{
+              uri: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNofGVufDF8fHx8MTc2MjM5ODkzN3ww&ixlib=rb-4.1.0&q=80&w=1080'
+            }}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+            blurRadius={10}
+          >
+            <View style={styles.gradientOverlay} />
+            {/* Back Button */}
+            <TouchableOpacity style={styles.backButton} onPress={onBack}>
+              <View style={styles.backButtonCircle}>
+                <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+            
+            {/* App Logo */}
+            <View style={styles.logoContainer}>
+              <View style={styles.logo}>
+                <Image
+                  source={require('../../assets/images/logo.png')}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
+          </ImageBackground>
+        </View>
+
         <ScrollView 
-          style={styles.scrollView}
+          style={styles.bottomSection}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          bounces={true}
         >
           <TouchableWithoutFeedback onPress={dismissKeyboard}>
-            <View style={styles.contentContainer}>
-              {/* Back Button */}
-              <BackButton onPress={onBack} />
-
+            <View style={styles.formContainer}>
               {/* Header */}
               <View style={styles.header}>
-                <Text style={styles.title}>Create your account</Text>
+                <Text style={styles.title}>Create Your Account</Text>
                 <Text style={styles.subtitle}>
-                  Join us to book premium car wash services
+                  Join us for premium car wash services
                 </Text>
               </View>
 
               {/* Form Fields */}
-              <View style={styles.formContainer}>
+              <View style={styles.inputsContainer}>
                 {/* Full Name Field */}
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Full Name</Text>
-                  <View style={[styles.inputField, errors.name && styles.inputFieldError]}>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Enter your full name"
-                      placeholderTextColor="#999999"
-                      value={fullName}
-                      onChangeText={(value) => handleInputChange('name', value)}
-                      autoCapitalize="words"
-                      autoCorrect={false}
-                    />
-                  </View>
-                  {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+                <View style={[styles.inputField, errors.name && styles.inputFieldError]}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Full Name"
+                    placeholderTextColor="#9CA3AF"
+                    value={fullName}
+                    onChangeText={(value) => handleInputChange('name', value)}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                  />
                 </View>
+                {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
                 {/* Email Field */}
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Email Address</Text>
-                  <View style={[styles.inputField, errors.email && styles.inputFieldError]}>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Enter your email"
-                      placeholderTextColor="#999999"
-                      value={email}
-                      onChangeText={(value) => handleInputChange('email', value)}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
-                  {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                <View style={[styles.inputField, errors.email && styles.inputFieldError]}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Email"
+                    placeholderTextColor="#9CA3AF"
+                    value={email}
+                    onChangeText={(value) => handleInputChange('email', value)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
                 </View>
+                {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
                 {/* Phone Number Field */}
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Phone Number</Text>
-                  <View style={[styles.inputField, errors.phone && styles.inputFieldError]}>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Enter your phone number"
-                      placeholderTextColor="#999999"
-                      value={phoneNumber}
-                      onChangeText={(value) => handleInputChange('phone', value)}
-                      keyboardType="phone-pad"
-                      autoCorrect={false}
-                    />
-                  </View>
-                  {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+                <View style={[styles.inputField, errors.phone && styles.inputFieldError]}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Phone Number"
+                    placeholderTextColor="#9CA3AF"
+                    value={phoneNumber}
+                    onChangeText={(value) => handleInputChange('phone', value)}
+                    keyboardType="phone-pad"
+                    autoCorrect={false}
+                  />
                 </View>
+                {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
                 {/* Password Field */}
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Password</Text>
-                  <View style={[styles.inputField, errors.password && styles.inputFieldError]}>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Enter your password"
-                      placeholderTextColor="#999999"
-                      value={password}
-                      onChangeText={(value) => handleInputChange('password', value)}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
+                <View style={[styles.inputField, errors.password && styles.inputFieldError]}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Password"
+                    placeholderTextColor="#9CA3AF"
+                    value={password}
+                    onChangeText={(value) => handleInputChange('password', value)}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <Ionicons 
+                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color="#6B7280" 
                     />
-                    <TouchableOpacity
-                      style={styles.eyeButton}
-                      onPress={() => setShowPassword(!showPassword)}
-                    >
-                      <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                  </TouchableOpacity>
                 </View>
+                {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
                 {/* Confirm Password Field */}
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Confirm Password</Text>
-                  <View style={[styles.inputField, errors.password_confirmation && styles.inputFieldError]}>
-                    <TextInput
-                      style={styles.textInput}
-                      placeholder="Confirm your password"
-                      placeholderTextColor="#999999"
-                      value={confirmPassword}
-                      onChangeText={(value) => handleInputChange('password_confirmation', value)}
-                      secureTextEntry={!showConfirmPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
+                <View style={[styles.inputField, errors.password_confirmation && styles.inputFieldError]}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Confirm Password"
+                    placeholderTextColor="#9CA3AF"
+                    value={confirmPassword}
+                    onChangeText={(value) => handleInputChange('password_confirmation', value)}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <Ionicons 
+                      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color="#6B7280" 
                     />
-                    <TouchableOpacity
-                      style={styles.eyeButton}
-                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      <Text style={styles.eyeText}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {errors.password_confirmation && <Text style={styles.errorText}>{errors.password_confirmation}</Text>}
+                  </TouchableOpacity>
                 </View>
+                {errors.password_confirmation && <Text style={styles.errorText}>{errors.password_confirmation}</Text>}
               </View>
 
               {/* Terms and Privacy */}
@@ -386,12 +406,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
                   onPress={() => setAgreeToTerms(!agreeToTerms)}
                 >
                   <View style={[styles.checkbox, agreeToTerms && styles.checkboxChecked]}>
-                    {agreeToTerms && <Text style={styles.checkmark}>✓</Text>}
+                    {agreeToTerms && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
                   </View>
                   <Text style={styles.termsText}>
                     I agree to the{' '}
                     <Text style={styles.termsLink}>Terms of Service</Text>
-                    {' '}and{' '}
+                    {'\n'}and{' '}
                     <Text style={styles.termsLink}>Privacy Policy</Text>
                   </Text>
                 </TouchableOpacity>
@@ -406,33 +426,53 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 {isLoading ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.createAccountButtonText}>Create Account</Text>
+                  <>
+                    <Text style={styles.createAccountButtonText}>Create Account</Text>
+                    <View style={styles.checkmarkCircle}>
+                      <Ionicons name="checkmark" size={16} color="#000000" />
+                    </View>
+                  </>
                 )}
               </TouchableOpacity>
 
               {/* Login Link */}
               <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>Already have an account? </Text>
+                <Text style={styles.loginQuestion}>ALREADY HAVE AN ACCOUNT?</Text>
                 <TouchableOpacity onPress={onLogin}>
-                  <Text style={styles.loginLink}>Log in</Text>
+                  <Text style={styles.loginLink}>Sign in instead</Text>
                 </TouchableOpacity>
+              </View>
+
+              {/* Security Indicators */}
+              <View style={styles.securityContainer}>
+                <View style={styles.securityItem}>
+                  <View style={[styles.securityDot, { backgroundColor: '#10B981' }]} />
+                  <Text style={styles.securityText}>Secure</Text>
+                </View>
+                <View style={styles.securityItem}>
+                  <View style={[styles.securityDot, { backgroundColor: '#3B82F6' }]} />
+                  <Text style={styles.securityText}>Encrypted</Text>
+                </View>
+                <View style={styles.securityItem}>
+                  <View style={[styles.securityDot, { backgroundColor: '#8B5CF6' }]} />
+                  <Text style={styles.securityText}>Private</Text>
+                </View>
               </View>
             </View>
           </TouchableWithoutFeedback>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
-    
-    {/* Overlay loader while creating account */}
-    {isLoading && (
-      <View style={styles.overlay} pointerEvents="none">
-        <View style={styles.overlayBox}>
-          <ActivityIndicator size="large" color="#000" />
-          <Text style={styles.overlayText}>Please wait…</Text>
+      
+      {/* Overlay loader while creating account */}
+      {isLoading && (
+        <View style={styles.overlay} pointerEvents="none">
+          <View style={styles.overlayBox}>
+            <ActivityIndicator size="large" color="#000" />
+            <Text style={styles.overlayText}>Please wait…</Text>
+          </View>
         </View>
-      </View>
-    )}
-    </>
+      )}
+    </SafeAreaView>
   );
 };
 
@@ -444,81 +484,123 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: {
     flex: 1,
   },
-  scrollView: {
+  topSection: {
+    height: '25%',
+    position: 'relative',
+  },
+  gradientOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
+  backButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(156, 163, 175, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
+    position: 'absolute',
+    bottom: -40,
+    left: '50%',
+    marginLeft: -40,
+    zIndex: 20,
+    overflow: 'visible',
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+  },
+  bottomSection: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -10,
+    paddingTop: 65,
+    zIndex: 10,
   },
   scrollContent: {
-    flexGrow: 1,
+    paddingBottom: 40,
   },
-  contentContainer: {
-    flex: 1,
+  formContainer: {
     paddingHorizontal: 24,
-    paddingBottom: 50,
   },
   header: {
     marginBottom: 32,
-    paddingTop: 8,
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
+    color: '#111827',
     marginBottom: 8,
-    fontFamily: 'System',
-    letterSpacing: -0.5,
-    lineHeight: 36,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 14,
+    color: '#6B7280',
     fontWeight: '400',
-    fontFamily: 'System',
-    lineHeight: 22,
+    textAlign: 'center',
   },
-  formContainer: {
+  inputsContainer: {
     marginBottom: 24,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 8,
-    fontFamily: 'System',
   },
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inputFieldError: {
-    borderColor: '#FF3B30',
-    backgroundColor: '#FFF5F5',
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
   },
   textInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000000',
-    fontFamily: 'System',
+    color: '#111827',
   },
   eyeButton: {
     padding: 4,
   },
-  eyeText: {
-    fontSize: 18,
-  },
   errorText: {
-    fontSize: 14,
-    color: '#FF3B30',
-    marginTop: 4,
-    fontFamily: 'System',
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: -12,
+    marginBottom: 12,
+    marginLeft: 4,
   },
   termsContainer: {
     marginBottom: 24,
@@ -532,49 +614,42 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
+    borderColor: '#D1D5DB',
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
   checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   termsText: {
     flex: 1,
     fontSize: 14,
-    color: '#666666',
+    color: '#6B7280',
     lineHeight: 20,
-    fontFamily: 'System',
   },
   termsLink: {
-    color: '#007AFF',
-    textDecorationLine: 'underline',
+    color: '#111827',
+    fontWeight: '700',
   },
   createAccountButton: {
     backgroundColor: '#000000',
     borderRadius: 12,
-    paddingVertical: 18,
+    paddingVertical: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    justifyContent: 'center',
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   createAccountButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: '#9CA3AF',
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -582,24 +657,52 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'System',
+    marginRight: 8,
+  },
+  checkmarkCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loginContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  loginQuestion: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  loginLink: {
+    fontSize: 16,
+    color: '#111827',
+    fontWeight: '700',
+  },
+  securityContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    gap: 24,
+    marginBottom: 20,
   },
-  loginText: {
-    fontSize: 14,
-    color: '#666666',
-    fontFamily: 'System',
+  securityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  loginLink: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
-    fontFamily: 'System',
+  securityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  securityText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   overlay: {
     position: 'absolute',
