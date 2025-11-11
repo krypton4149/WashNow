@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import authService from '../../services/authService';
 
 interface OwnerDashboardScreenProps {
   onLogout?: () => void;
@@ -30,8 +31,52 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   onLogout,
   onViewAllActivity,
   onBookingRequestPress,
-  businessName = 'Premium Auto Wash',
+  businessName: businessNameProp = 'Premium Auto Wash',
 }) => {
+  const [resolvedBusinessName, setResolvedBusinessName] = useState<string>(businessNameProp);
+
+  useEffect(() => {
+    setResolvedBusinessName(businessNameProp);
+  }, [businessNameProp]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadBusinessName = async () => {
+      try {
+        const storedUser = await authService.getUser();
+        if (!isMounted || !storedUser) {
+          return;
+        }
+
+        const profile =
+          storedUser?.rawUserData ||
+          storedUser?.userData ||
+          storedUser;
+
+        const nameCandidate =
+          profile?.businessName ||
+          profile?.business_name ||
+          profile?.name ||
+          storedUser?.businessName ||
+          storedUser?.business_name ||
+          storedUser?.name;
+
+        if (typeof nameCandidate === 'string' && nameCandidate.trim().length > 0) {
+          setResolvedBusinessName(nameCandidate.trim());
+        }
+      } catch (error) {
+        // Swallow error silently; keep existing business name fallback
+      }
+    };
+
+    loadBusinessName();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Dummy data - in real app, this would come from API
   const [metrics] = useState({
     todayBookings: 12,
@@ -86,17 +131,18 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
       >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.businessName}>{businessName}</Text>
+            <Text style={styles.businessName}>{resolvedBusinessName}</Text>
           </View>
           <TouchableOpacity 
             style={styles.logoutButton}
@@ -226,14 +272,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    marginBottom: 18,
   },
   headerLeft: {
     flex: 1,
@@ -259,19 +306,19 @@ const styles = StyleSheet.create({
   metricsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 24,
-    gap: 12,
+    marginBottom: 18,
+    gap: 10,
   },
   metricCard: {
     width: '48%',
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   metricIconContainer: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   metricValue: {
     fontSize: 24,
@@ -286,12 +333,13 @@ const styles = StyleSheet.create({
   },
   bookingRequestsBanner: {
     backgroundColor: '#000000',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   bookingRequestsLeft: {
     flex: 1,
@@ -308,9 +356,9 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   bookingRequestsBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#374151',
     justifyContent: 'center',
     alignItems: 'center',
@@ -321,13 +369,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   recentActivitySection: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   recentActivityHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   recentActivityTitle: {
     fontSize: 18,
@@ -340,12 +388,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activityList: {
-    gap: 12,
+    gap: 10,
   },
   activityCard: {
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -396,4 +444,5 @@ const styles = StyleSheet.create({
 });
 
 export default OwnerDashboardScreen;
+
 

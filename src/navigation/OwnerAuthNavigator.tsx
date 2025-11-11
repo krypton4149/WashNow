@@ -24,29 +24,14 @@ const OwnerAuthNavigator: React.FC<OwnerAuthNavigatorProps> = ({ onAuthSuccess, 
     phoneNumber: string;
   } | null>(null);
 
-  const handleLogin = async (emailOrPhone: string, password: string, loginType: 'email' | 'phone') => {
-    // Bypass authentication - directly redirect to owner dashboard
-    // This allows any email/password to work for owner login
+  const handleLogin = async () => {
     try {
-      // Store dummy user data for owner
-      const ownerUser = {
-        id: 'owner-1',
-        fullName: 'Service Owner',
-        email: emailOrPhone,
-        phoneNumber: '',
-        type: 'service-owner',
-        businessName: 'Premium Auto Wash',
-      };
-      await authService.setUser(ownerUser);
-      await authService.setToken('owner-dummy-token');
-      
-      // Directly proceed with authentication
-      onAuthSuccess();
+      const storedUser = await authService.getUser();
+      console.log('[OwnerAuthNavigator] stored user after login:', storedUser);
     } catch (error) {
-      console.error('Login error:', error);
-      // Even if storing fails, still redirect to dashboard
-      onAuthSuccess();
+      console.warn('[OwnerAuthNavigator] could not read stored user after login:', error);
     }
+    onAuthSuccess();
   };
 
   const handleSendCode = (emailOrPhone: string, method: 'email' | 'phone') => {

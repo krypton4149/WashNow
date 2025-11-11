@@ -125,6 +125,7 @@ const AppContent: React.FC = () => {
     try {
       setIsAuthenticated(true);
       const user = await authService.getUser();
+      console.log('[App] handleAuthSuccess loaded user:', user);
       setUserData(user);
       // Redirect based on user type
       if (userType === 'service-owner') {

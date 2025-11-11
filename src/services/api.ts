@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 // Base API configuration
-const API_BASE_URL = 'https://carwashapp.shoppypie.in/api/v1';
+export const API_BASE_URL = 'https://carwashapp.shoppypie.in/api/v1';
 
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({

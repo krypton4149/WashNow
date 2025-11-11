@@ -17,6 +17,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import authService from '../../services/authService';
+import { API_BASE_URL } from '../../services/api';
 
 interface OwnerLoginScreenProps {
   onBack: () => void;
@@ -36,20 +38,118 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    // For email login, check both email and password
-    if (email.trim() && password.trim()) {
-      setIsLoading(true);
-      // Support both sync and async handlers
-      const maybePromise = onLogin(email.trim(), password.trim(), 'email');
-      Promise.resolve(maybePromise)
-        .catch(() => {})
-        .finally(() => {
-          // Safety net: if screen doesn't unmount (e.g., failed login), hide loader
-          setIsLoading(false);
-        });
-    } else {
+  const handleLogin = async () => {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/user/login`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password: trimmedPassword,
+        }),
+      });
+
+      let responseData: any = null;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        responseData = null;
+      }
+
+      console.log('Owner login raw response:', responseData);
+
+      if (!response.ok || responseData?.success === false) {
+        const errorMessage =
+          responseData?.message ||
+          responseData?.error ||
+          'Login failed. Please check your credentials.';
+        Alert.alert('Login Failed', errorMessage);
+        return;
+      }
+
+      const payload = responseData?.data || responseData;
+      console.log('Owner login parsed payload:', payload);
+      const userPayload =
+        payload?.user ||
+        payload?.userData ||
+        payload?.owner ||
+        payload?.profile ||
+        payload;
+
+      const ownerUser = {
+        id:
+          userPayload?.id?.toString() ||
+          userPayload?.user_id?.toString() ||
+          userPayload?.owner_id?.toString() ||
+          'owner-1',
+        name:
+          userPayload?.name ||
+          userPayload?.fullName ||
+          userPayload?.full_name ||
+          userPayload?.ownerName ||
+          userPayload?.owner_name ||
+          trimmedEmail,
+        email: userPayload?.email || trimmedEmail,
+        phone:
+          userPayload?.phone ||
+          userPayload?.phoneNumber ||
+          userPayload?.phone_number ||
+          '',
+        address:
+          userPayload?.address ||
+          userPayload?.business_address ||
+          userPayload?.location ||
+          '',
+        type: userPayload?.type || userPayload?.role || 'service-owner',
+        loginType: userPayload?.loginType || payload?.loginType || 'owner',
+        businessName:
+          userPayload?.businessName ||
+          userPayload?.business_name ||
+          userPayload?.shopName ||
+          userPayload?.companyName ||
+          userPayload?.company_name ||
+          userPayload?.name ||
+          '',
+        ownerName:
+          userPayload?.ownerName ||
+          userPayload?.owner_name ||
+          userPayload?.contactName ||
+          userPayload?.contact_name ||
+          userPayload?.contactPerson ||
+          userPayload?.contact_person ||
+          userPayload?.name ||
+          '',
+        rawUserData: userPayload,
+        userData: userPayload,
+        token: payload?.token || payload?.access_token || payload?.jwt || null,
+      };
+
+      if (ownerUser.token) {
+        await authService.setToken(ownerUser.token);
+      }
+
+      await authService.setUser(ownerUser);
+
+      // Invoke the original callback so navigation can continue
+      const maybePromise = onLogin(trimmedEmail, trimmedPassword, 'email');
+      await Promise.resolve(maybePromise);
+    } catch (error: any) {
+      Alert.alert('Network Error', error?.message || 'Unable to reach the server. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -418,4 +518,7 @@ const styles = StyleSheet.create({
 });
 
 export default OwnerLoginScreen;
+
+
+
 

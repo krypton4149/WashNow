@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -13,136 +14,184 @@ interface OwnerActivityScreenProps {
   onBack?: () => void;
 }
 
-interface Activity {
+type Tone = 'success' | 'info' | 'warning' | 'danger' | 'promo';
+
+interface ActivityNotification {
   id: string;
-  customerName: string;
-  carModel: string;
-  serviceType: string;
-  time: string;
-  date: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  price: string;
+  title: string;
+  message: string;
+  timeAgo: string;
+  tone: Tone;
+  icon: string;
+  highlight?: boolean;
 }
 
 const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
   onBack,
 }) => {
   // Dummy data - in real app, this would come from API
-  const [activities] = useState<Activity[]>([
+  const notifications = useMemo<ActivityNotification[]>(() => [
     {
       id: '1',
-      customerName: 'John Smith',
-      carModel: 'Tesla Model 3',
-      serviceType: 'Premium Wash',
-      time: '10:30 AM',
-      date: 'Today',
-      status: 'Pending',
-      price: '$25',
+      title: 'Booking Confirmed',
+      message: 'Your car wash has been scheduled for Oct 6 at 10:00 AM',
+      timeAgo: '2 hours ago',
+      tone: 'success',
+      icon: 'checkmark-circle',
+      highlight: true,
     },
     {
       id: '2',
-      customerName: 'Sarah Johnson',
-      carModel: 'Honda Civic',
-      serviceType: 'Standard Wash',
-      time: '11:00 AM',
-      date: 'Today',
-      status: 'In Progress',
-      price: '$20',
+      title: 'Service Starting Soon',
+      message: 'Your service will begin in 30 minutes at Premium Auto Wash',
+      timeAgo: '5 hours ago',
+      tone: 'info',
+      icon: 'time',
+      highlight: true,
     },
     {
       id: '3',
-      customerName: 'Mike Wilson',
-      carModel: 'BMW X5',
-      serviceType: 'Premium Wash',
-      time: '2:00 PM',
-      date: 'Today',
-      status: 'Completed',
-      price: '$30',
+      title: 'Service Completed',
+      message: 'Your car wash is complete! Please rate your experience',
+      timeAgo: '1 day ago',
+      tone: 'success',
+      icon: 'flash',
     },
     {
       id: '4',
-      customerName: 'Emily Davis',
-      carModel: 'Toyota Camry',
-      serviceType: 'Standard Wash',
-      time: '9:00 AM',
-      date: 'Yesterday',
-      status: 'Completed',
-      price: '$20',
+      title: 'Special Offer',
+      message: 'Get 20% off on your next premium wash service!',
+      timeAgo: '2 days ago',
+      tone: 'promo',
+      icon: 'gift',
     },
-  ]);
+    {
+      id: '5',
+      title: 'Booking Canceled',
+      message: 'Your booking for Sep 15 has been canceled. Refund processed.',
+      timeAgo: '3 days ago',
+      tone: 'danger',
+      icon: 'close-circle',
+    },
+  ], []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Pending':
-        return { bg: 'rgba(251, 146, 60, 0.15)', text: '#F97316' };
-      case 'In Progress':
-        return { bg: 'rgba(59, 130, 246, 0.15)', text: '#3B82F6' };
-      case 'Completed':
-        return { bg: 'rgba(16, 185, 129, 0.15)', text: '#10B981' };
-      default:
-        return { bg: 'rgba(107, 114, 128, 0.15)', text: '#6B7280' };
+  const getToneStyles = (tone: Tone, highlight?: boolean) => {
+    if (tone === 'success') {
+      return {
+        container: highlight ? styles.cardSuccessHighlight : styles.cardSuccess,
+        iconBackground: '#DCFCE7',
+        iconColor: '#16A34A',
+        dotColor: highlight ? '#16A34A' : '#22C55E',
+      };
     }
+    if (tone === 'info') {
+      return {
+        container: highlight ? styles.cardInfoHighlight : styles.cardInfo,
+        iconBackground: '#DBEAFE',
+        iconColor: '#2563EB',
+        dotColor: highlight ? '#2563EB' : '#3B82F6',
+      };
+    }
+    if (tone === 'danger') {
+      return {
+        container: styles.cardDanger,
+        iconBackground: '#FEE2E2',
+        iconColor: '#DC2626',
+        dotColor: '#EF4444',
+      };
+    }
+    if (tone === 'warning') {
+      return {
+        container: styles.cardWarning,
+        iconBackground: '#FEF3C7',
+        iconColor: '#F59E0B',
+        dotColor: '#F59E0B',
+      };
+    }
+    return {
+      container: styles.cardPromo,
+      iconBackground: '#EDE9FE',
+      iconColor: '#7C3AED',
+      dotColor: '#7C3AED',
+    };
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        {onBack && (
+        {onBack ? (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Ionicons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
+        ) : (
+          <View style={styles.backButtonPlaceholder} />
         )}
-        <Text style={styles.headerTitle}>Activity</Text>
-        <View style={styles.placeholder} />
+        <View style={styles.headerTextGroup}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerSubtitle}>2 unread notifications</Text>
+        </View>
+        <TouchableOpacity>
+          <Text style={styles.markAllReadText}>Mark all read</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
       >
-        {/* Activities List */}
-        <View style={styles.activitiesList}>
-          {activities.map((activity) => {
-            const statusColors = getStatusColor(activity.status);
+        <ImageBackground
+          source={{
+            uri: 'https://images.unsplash.com/photo-1515923152115-758a6b16b743?auto=format&fit=crop&w=900&q=80',
+          }}
+          imageStyle={styles.bannerImage}
+          style={styles.banner}
+        >
+          <View style={styles.bannerOverlay} />
+          <View style={styles.bannerContent}>
+            <Text style={styles.bannerTitle}>Stay Updated</Text>
+            <Text style={styles.bannerSubtitle}>
+              Get real-time updates on your bookings
+            </Text>
+          </View>
+        </ImageBackground>
+
+        {/* Notifications List */}
+        <View style={styles.notificationsList}>
+          {notifications.map((item) => {
+            const toneStyles = getToneStyles(item.tone, item.highlight);
             return (
-              <View key={activity.id} style={styles.activityCard}>
-                <View style={styles.activityLeft}>
-                  <Text style={styles.activityCustomerName}>
-                    {activity.customerName}
-                  </Text>
-                  <Text style={styles.activityCarModel}>
-                    {activity.carModel}
-                  </Text>
-                  <Text style={styles.activityServiceType}>
-                    {activity.serviceType}
-                  </Text>
-                  <View style={styles.activityTimeContainer}>
-                    <Ionicons name="time-outline" size={14} color="#6B7280" />
-                    <Text style={styles.activityTime}>
-                      {activity.date} • {activity.time}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.activityRight}>
-                  <View 
+              <View
+                key={item.id}
+                style={[styles.notificationCard, toneStyles.container]}
+              >
+                <View style={styles.notificationLeft}>
+                  <View
                     style={[
-                      styles.activityStatusBadge,
-                      { backgroundColor: statusColors.bg }
+                      styles.notificationIconWrapper,
+                      { backgroundColor: toneStyles.iconBackground },
                     ]}
                   >
-                    <Text 
-                      style={[
-                        styles.activityStatusText,
-                        { color: statusColors.text }
-                      ]}
-                    >
-                      {activity.status}
-                    </Text>
+                    <Ionicons
+                      name={item.icon}
+                      size={22}
+                      color={toneStyles.iconColor}
+                    />
                   </View>
-                  <Text style={styles.activityPrice}>{activity.price}</Text>
+                  <View style={styles.notificationTextContainer}>
+                    <Text style={styles.notificationTitle}>{item.title}</Text>
+                    <Text style={styles.notificationMessage}>{item.message}</Text>
+                    <Text style={styles.notificationTime}>{item.timeAgo}</Text>
+                  </View>
                 </View>
+                <View
+                  style={[
+                    styles.notificationDot,
+                    { backgroundColor: toneStyles.dotColor },
+                  ]}
+                />
               </View>
             );
           })}
@@ -161,10 +210,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 14,
+    backgroundColor: '#FFFFFF',
   },
   backButton: {
     width: 40,
@@ -172,81 +221,147 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  placeholder: {
+  backButtonPlaceholder: {
     width: 40,
+    height: 40,
+  },
+  headerTextGroup: {
+    flex: 1,
+    paddingHorizontal: 4,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  headerSubtitle: {
+    marginTop: 2,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  markAllReadText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2563EB',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
-  activitiesList: {
-    gap: 16,
+  banner: {
+    height: 120,
+    borderRadius: 18,
+    overflow: 'hidden',
+    marginBottom: 18,
+    justifyContent: 'flex-end',
   },
-  activityCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
+  bannerImage: {
+    borderRadius: 20,
+  },
+  bannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+  },
+  bannerContent: {
+    padding: 18,
+  },
+  bannerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 6,
+  },
+  bannerSubtitle: {
+    fontSize: 14,
+    color: '#E2E8F0',
+    lineHeight: 20,
+  },
+  notificationsList: {
+    gap: 14,
+  },
+  notificationCard: {
+    borderRadius: 16,
+    padding: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    alignItems: 'flex-start',
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  activityLeft: {
-    flex: 1,
+  cardSuccess: {
+    backgroundColor: '#F6FBF8',
+    borderColor: '#BBF7D0',
   },
-  activityCustomerName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
+  cardSuccessHighlight: {
+    backgroundColor: '#E8F9EF',
+    borderColor: '#4ADE80',
   },
-  activityCarModel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
+  cardInfo: {
+    backgroundColor: '#F3F7FF',
+    borderColor: '#BFDBFE',
   },
-  activityServiceType: {
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
-    marginBottom: 8,
+  cardInfoHighlight: {
+    backgroundColor: '#E7F1FF',
+    borderColor: '#60A5FA',
   },
-  activityTimeContainer: {
+  cardWarning: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FCD34D',
+  },
+  cardDanger: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  cardPromo: {
+    backgroundColor: '#F6F3FF',
+    borderColor: '#DDD6FE',
+  },
+  notificationLeft: {
     flexDirection: 'row',
+    flex: 1,
+    gap: 14,
+  },
+  notificationIconWrapper: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
   },
-  activityTime: {
-    fontSize: 12,
-    color: '#6B7280',
+  notificationTextContainer: {
+    flex: 1,
+    gap: 6,
   },
-  activityRight: {
-    alignItems: 'flex-end',
-  },
-  activityStatusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  activityStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  activityPrice: {
-    fontSize: 16,
+  notificationTitle: {
+    fontSize: 17,
     fontWeight: '700',
     color: '#111827',
+  },
+  notificationMessage: {
+    fontSize: 15,
+    color: '#4B5563',
+    lineHeight: 22,
+  },
+  notificationTime: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#94A3B8',
+  },
+  notificationDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginLeft: 16,
+    marginTop: 8,
   },
 });
 
 export default OwnerActivityScreen;
-

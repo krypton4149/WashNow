@@ -6,6 +6,8 @@ import OwnerDashboardScreen from '../screens/owner/OwnerDashboardScreen';
 import OwnerRequestsScreen from '../screens/owner/OwnerRequestsScreen';
 import OwnerActivityScreen from '../screens/owner/OwnerActivityScreen';
 import OwnerAccountScreen from '../screens/owner/OwnerAccountScreen';
+import OwnerSettingsScreen from '../screens/owner/OwnerSettingsScreen';
+import OwnerSupportScreen from '../screens/owner/OwnerSupportScreen';
 import { useTheme } from '../context/ThemeContext';
 
 type TabKey = 'home' | 'requests' | 'activity' | 'account';
@@ -26,6 +28,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [accountSubView, setAccountSubView] = useState<'profile' | 'settings' | 'support'>('profile');
 
   const renderContent = () => {
     switch (activeTab) {
@@ -51,13 +54,30 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
           />
         );
       case 'account':
-        return (
-          <OwnerAccountScreen
-            onBack={() => setActiveTab('home')}
-            onLogout={onLogout}
-            userData={userData}
-          />
-        );
+        switch (accountSubView) {
+          case 'settings':
+            return (
+              <OwnerSettingsScreen
+                onBack={() => setAccountSubView('profile')}
+              />
+            );
+          case 'support':
+            return (
+              <OwnerSupportScreen
+                onBack={() => setAccountSubView('profile')}
+              />
+            );
+          default:
+            return (
+              <OwnerAccountScreen
+                onBack={() => setActiveTab('home')}
+                userData={userData}
+                onEditProfile={() => console.log('Edit profile')}
+                onOpenSettings={() => setAccountSubView('settings')}
+                onOpenSupport={() => setAccountSubView('support')}
+              />
+            );
+        }
       default:
         return null;
     }
@@ -78,7 +98,10 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
   const bottomPadding = Math.max(8, Math.min(insets.bottom || 0, 18));
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background || '#FFFFFF' }]} edges={["bottom"]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background || '#FFFFFF' }]}
+      edges={['top', 'bottom']}
+    >
       <View style={styles.content}>{renderContent()}</View>
       <View style={[styles.tabBar, { paddingBottom: bottomPadding, backgroundColor: colors.card || '#FFFFFF', borderTopColor: colors.border || '#E5E7EB' }]}>
         <TabButton keyId="home" icon="home-outline" label="Home" />
@@ -114,4 +137,5 @@ const styles = StyleSheet.create({
 });
 
 export default OwnerTabs;
+
 
