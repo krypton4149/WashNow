@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   Switch,
   ImageBackground,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
+import { platformEdges } from '../../utils/responsive';
 
 interface OwnerSettingsScreenProps {
   onBack?: () => void;
@@ -77,7 +79,7 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={[styles.container, dynamicStyles.container]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, dynamicStyles.container]} edges={platformEdges as any}>
       <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={!onBack}>
           <Ionicons
@@ -221,8 +223,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E7EB',
@@ -234,7 +236,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: Platform.select({ ios: 21, android: 20 }),
     fontWeight: '700',
     color: '#111827',
   },
@@ -245,10 +247,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
-    paddingTop: 16,
-    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
-    gap: 20,
+    padding: Platform.select({ ios: 26, android: 24 }),
+    paddingTop: Platform.select({ ios: 18, android: 16 }),
+    paddingBottom: Platform.select({ ios: 60, android: 50 }),
+    gap: Platform.select({ ios: 22, android: 20 }),
   },
   heroCard: {
     height: 180,
@@ -291,19 +293,19 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: Platform.select({ ios: 26, android: 24 }),
+    padding: Platform.select({ ios: 22, android: 20 }),
     shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    shadowOpacity: Platform.select({ ios: 0.06, android: 0.05 }),
+    shadowRadius: Platform.select({ ios: 16, android: 14 }),
+    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
+    elevation: Platform.select({ ios: 0, android: 3 }),
   },
   sectionLabel: {
-    fontSize: 16,
+    fontSize: Platform.select({ ios: 17, android: 16 }),
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 16,
+    marginBottom: Platform.select({ ios: 18, android: 16 }),
   },
   settingRow: {
     flexDirection: 'row',
@@ -324,12 +326,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
+    fontSize: Platform.select({ ios: 17, android: 16 }),
     fontWeight: '600',
     color: '#111827',
   },
   settingSubtitle: {
-    fontSize: 13,
+    fontSize: Platform.select({ ios: 14, android: 13 }),
     color: '#6B7280',
     marginTop: 4,
   },

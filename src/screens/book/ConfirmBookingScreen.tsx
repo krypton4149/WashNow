@@ -8,9 +8,11 @@ import {
   Image,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
 import authService from '../../services/authService';
+import { platformEdges } from '../../utils/responsive';
 
 interface ConfirmBookingScreenProps {
   onBack: () => void;
@@ -237,7 +239,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>

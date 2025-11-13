@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   Dimensions,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { platformEdges } from '../../utils/responsive';
 
 const { width, height } = Dimensions.get('window');
 
@@ -65,7 +67,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   if (!isActive) return null;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       {/* Skip Button */}
       <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
         <Text style={styles.skipText}>Skip</Text>

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import OwnerEditProfileScreen from './OwnerEditProfileScreen';
 import { useTheme } from '../../context/ThemeContext';
+import { platformEdges } from '../../utils/responsive';
 
 interface OwnerAccountScreenProps {
   onBack?: () => void;
@@ -263,7 +264,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
@@ -406,8 +407,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#F3F4F6',
   },
@@ -418,7 +419,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: Platform.select({ ios: 21, android: 20 }),
     fontWeight: '700',
     color: '#111827',
   },
@@ -432,9 +433,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
-    paddingTop: 12,
+    paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
+    paddingBottom: Platform.select({ ios: 60, android: 50 }),
+    paddingTop: Platform.select({ ios: 16, android: 12 }),
   },
   loadingContainer: {
     marginBottom: 14,
@@ -453,17 +454,17 @@ const styles = StyleSheet.create({
   profileCard: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 18,
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    paddingVertical: Platform.select({ ios: 20, android: 18 }),
+    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-    marginBottom: 16,
+    shadowOpacity: Platform.select({ ios: 0.05, android: 0.04 }),
+    shadowRadius: Platform.select({ ios: 12, android: 10 }),
+    shadowOffset: { width: 0, height: Platform.select({ ios: 4, android: 3 }) || 3 },
+    elevation: Platform.select({ ios: 0, android: 1 }),
+    marginBottom: Platform.select({ ios: 18, android: 16 }),
   },
   avatar: {
     width: 72,
@@ -477,12 +478,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   businessName: {
-    fontSize: 24,
+    fontSize: Platform.select({ ios: 26, android: 24 }),
     fontWeight: '700',
     color: '#111827',
   },
   ownerName: {
-    fontSize: 16,
+    fontSize: Platform.select({ ios: 17, android: 16 }),
     fontWeight: '500',
     color: '#6B7280',
     marginBottom: 4,
@@ -511,16 +512,16 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    padding: Platform.select({ ios: 20, android: 18 }),
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-    marginBottom: 16,
+    shadowOpacity: Platform.select({ ios: 0.05, android: 0.04 }),
+    shadowRadius: Platform.select({ ios: 12, android: 10 }),
+    shadowOffset: { width: 0, height: Platform.select({ ios: 4, android: 3 }) || 3 },
+    elevation: Platform.select({ ios: 0, android: 1 }),
+    marginBottom: Platform.select({ ios: 18, android: 16 }),
   },
   infoRow: {
     flexDirection: 'row',
@@ -572,7 +573,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: Platform.select({ ios: 17, android: 16 }),
     fontWeight: '600',
     color: '#111827',
     marginLeft: 12,

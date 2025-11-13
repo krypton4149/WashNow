@@ -6,12 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import apiClient from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { platformEdges } from '../../utils/responsive';
 
 interface OwnerDashboardScreenProps {
   onLogout?: () => void;
@@ -266,7 +268,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={[styles.container, themeStyles.container]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, themeStyles.container]} edges={platformEdges as any}>
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, themeStyles.scrollContent]}
@@ -408,30 +410,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
+    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    paddingTop: Platform.select({ ios: 16, android: 12 }),
+    paddingBottom: Platform.select({ ios: 60, android: 50 }),
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 18,
+    marginBottom: Platform.select({ ios: 20, android: 18 }),
   },
   headerLeft: {
     flex: 1,
   },
   welcomeText: {
-    fontSize: 14,
+    fontSize: Platform.select({ ios: 15, android: 14 }),
     color: '#6B7280',
     fontWeight: '400',
     marginBottom: 4,
   },
   businessName: {
-    fontSize: 28,
+    fontSize: Platform.select({ ios: 30, android: 28 }),
     fontWeight: '700',
     color: '#111827',
-    letterSpacing: -0.5,
+    letterSpacing: Platform.select({ ios: -0.6, android: -0.5 }),
   },
   logoutButton: {
     width: 40,
@@ -451,8 +453,8 @@ const styles = StyleSheet.create({
   metricCard: {
     width: '48%',
     backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    padding: Platform.select({ ios: 16, android: 14 }),
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -460,37 +462,37 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   metricValue: {
-    fontSize: 24,
+    fontSize: Platform.select({ ios: 26, android: 24 }),
     fontWeight: '700',
     color: '#111827',
     marginBottom: 4,
   },
   metricLabel: {
-    fontSize: 12,
+    fontSize: Platform.select({ ios: 13, android: 12 }),
     color: '#6B7280',
     fontWeight: '400',
   },
   bookingRequestsBanner: {
     backgroundColor: '#000000',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    borderRadius: Platform.select({ ios: 16, android: 14 }),
+    paddingVertical: Platform.select({ ios: 18, android: 16 }),
+    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Platform.select({ ios: 22, android: 20 }),
   },
   bookingRequestsLeft: {
     flex: 1,
   },
   bookingRequestsTitle: {
-    fontSize: 18,
+    fontSize: Platform.select({ ios: 19, android: 18 }),
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   bookingRequestsSubtitle: {
-    fontSize: 14,
+    fontSize: Platform.select({ ios: 15, android: 14 }),
     color: '#FFFFFF',
     opacity: 0.8,
   },
@@ -531,8 +533,8 @@ const styles = StyleSheet.create({
   },
   activityCard: {
     backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    padding: Platform.select({ ios: 16, android: 14 }),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -543,13 +545,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activityCustomerName: {
-    fontSize: 16,
+    fontSize: Platform.select({ ios: 17, android: 16 }),
     fontWeight: '700',
     color: '#111827',
     marginBottom: 4,
   },
   activityCarModel: {
-    fontSize: 14,
+    fontSize: Platform.select({ ios: 15, android: 14 }),
     color: '#6B7280',
     marginBottom: 8,
   },

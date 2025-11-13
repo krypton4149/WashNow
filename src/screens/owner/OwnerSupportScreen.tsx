@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { platformEdges } from '../../utils/responsive';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -67,7 +68,7 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={!onBack}>
           <Ionicons
@@ -214,8 +215,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E7EB',
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: Platform.select({ ios: 21, android: 20 }),
     fontWeight: '700',
     color: '#111827',
   },
@@ -262,10 +263,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
-    paddingTop: 16,
-    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
-    gap: 20,
+    padding: Platform.select({ ios: 26, android: 24 }),
+    paddingTop: Platform.select({ ios: 18, android: 16 }),
+    paddingBottom: Platform.select({ ios: 60, android: 50 }),
+    gap: Platform.select({ ios: 22, android: 20 }),
   },
   heroCard: {
     height: 180,
@@ -301,14 +302,14 @@ const styles = StyleSheet.create({
   },
   faqList: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    borderRadius: Platform.select({ ios: 22, android: 20 }),
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000000',
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowOpacity: Platform.select({ ios: 0.05, android: 0.04 }),
+    shadowRadius: Platform.select({ ios: 14, android: 12 }),
+    shadowOffset: { width: 0, height: Platform.select({ ios: 5, android: 4 }) },
+    elevation: Platform.select({ ios: 0, android: 2 }),
   },
   faqItem: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -337,16 +338,16 @@ const styles = StyleSheet.create({
   },
   contactCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: Platform.select({ ios: 26, android: 24 }),
+    padding: Platform.select({ ios: 22, android: 20 }),
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-    gap: 18,
+    shadowOpacity: Platform.select({ ios: 0.06, android: 0.05 }),
+    shadowRadius: Platform.select({ ios: 16, android: 14 }),
+    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
+    elevation: Platform.select({ ios: 0, android: 3 }),
+    gap: Platform.select({ ios: 20, android: 18 }),
   },
   contactDescription: {
     fontSize: 14,

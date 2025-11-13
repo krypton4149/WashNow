@@ -14,6 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
+import { platformEdges } from '../../utils/responsive';
 
 interface PhoneOTPVerificationScreenProps {
   onBack: () => void;
@@ -142,7 +143,7 @@ const PhoneOTPVerificationScreen: React.FC<PhoneOTPVerificationScreenProps> = ({
   const isOtpComplete = otp.every(digit => digit !== '') && otp.join('').length === 6;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <View style={styles.touchableContainer}>
           <KeyboardAvoidingView

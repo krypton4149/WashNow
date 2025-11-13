@@ -7,9 +7,11 @@ import {
   Dimensions,
   Image,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { platformEdges } from '../../utils/responsive';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,7 +27,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
   const [customerHovered, setCustomerHovered] = useState(false);
   const [serviceOwnerHovered, setServiceOwnerHovered] = useState(false);
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

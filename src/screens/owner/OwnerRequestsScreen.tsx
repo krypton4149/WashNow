@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -16,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
 import apiClient from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
+import { platformEdges } from '../../utils/responsive';
 
 interface OwnerRequestsScreenProps {
   onBack?: () => void;
@@ -710,7 +712,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   }, [fetchBookings]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         {onBack && (
@@ -898,9 +900,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    paddingTop: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: Platform.select({ ios: 14, android: 12 }),
   },
   backButton: {
     width: 40,
@@ -913,13 +915,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: Platform.select({ ios: 26, android: 24 }),
     fontWeight: '700',
     color: '#0F172A',
   },
   headerSubtitle: {
     marginTop: 4,
-    fontSize: 14,
+    fontSize: Platform.select({ ios: 15, android: 14 }),
     color: '#6B7280',
   },
   placeholder: {
@@ -929,25 +931,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
+    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    paddingTop: Platform.select({ ios: 16, android: 12 }),
+    paddingBottom: Platform.select({ ios: 60, android: 50 }),
   },
   requestsList: {
     gap: 14,
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: Platform.select({ ios: 20, android: 18 }),
+    padding: Platform.select({ ios: 20, android: 18 }),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E7EB',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: 14,
+    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
+    shadowOpacity: Platform.select({ ios: 0.06, android: 0.05 }),
+    shadowRadius: Platform.select({ ios: 10, android: 8 }),
+    elevation: Platform.select({ ios: 0, android: 2 }),
+    gap: Platform.select({ ios: 16, android: 14 }),
   },
   cardHeader: {
     flexDirection: 'row',
@@ -955,7 +957,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   customerName: {
-    fontSize: 18,
+    fontSize: Platform.select({ ios: 19, android: 18 }),
     fontWeight: '700',
     color: '#111827',
   },

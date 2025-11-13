@@ -13,6 +13,7 @@ import {
   Keyboard,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
+import { platformEdges } from '../../utils/responsive';
 
 interface ForgotPasswordScreenProps {
   onBack: () => void;
@@ -39,7 +40,7 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
   const isSendEnabled = emailOrPhone.trim().length > 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <View style={styles.touchableContainer}>
           <KeyboardAvoidingView 
@@ -153,35 +154,35 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: Platform.OS === 'android' ? 20 : 0,
+    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
+    paddingBottom: Platform.select({ ios: 20, android: 20 }),
   },
   header: {
-    marginBottom: 32,
-    paddingTop: 8,
+    marginBottom: Platform.select({ ios: 36, android: 32 }),
+    paddingTop: Platform.select({ ios: 12, android: 8 }),
   },
   title: {
-    fontSize: 28,
+    fontSize: Platform.select({ ios: 30, android: 28 }),
     fontWeight: '700',
     color: '#000000',
     marginBottom: 8,
     fontFamily: 'System',
-    letterSpacing: -0.5,
-    lineHeight: 36,
+    letterSpacing: Platform.select({ ios: -0.6, android: -0.5 }),
+    lineHeight: Platform.select({ ios: 38, android: 36 }),
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Platform.select({ ios: 17, android: 16 }),
     color: '#666666',
     fontWeight: '400',
     fontFamily: 'System',
-    lineHeight: 22,
+    lineHeight: Platform.select({ ios: 24, android: 22 }),
   },
   methodContainer: {
     flexDirection: 'row',
     backgroundColor: '#F5F5F5',
-    borderRadius: 12,
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
     padding: 4,
-    marginBottom: 24,
+    marginBottom: Platform.select({ ios: 26, android: 24 }),
   },
   methodButton: {
     flex: 1,

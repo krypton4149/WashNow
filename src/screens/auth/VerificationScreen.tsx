@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
+import { platformEdges } from '../../utils/responsive';
 
 interface VerificationScreenProps {
   onBack: () => void;
@@ -82,7 +83,7 @@ const VerificationScreen: React.FC<VerificationScreenProps> = ({
   const isVerifyEnabled = code.every(digit => digit !== '') && code.join('').length === 6;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <View style={styles.content}>
         {/* Back Button */}
         <BackButton onPress={onBack} />

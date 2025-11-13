@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { platformEdges } from '../../utils/responsive';
 
 interface LoginScreenProps {
   onBack: () => void;
@@ -64,7 +65,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const isFormValid = email.trim().length > 0 && password.trim().length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -239,8 +240,8 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 50,
-    left: 20,
+    top: Platform.select({ ios: 54, android: 50 }),
+    left: Platform.select({ ios: 22, android: 20 }),
     zIndex: 10,
   },
   backButtonCircle: {
@@ -262,13 +263,13 @@ const styles = StyleSheet.create({
   logo: {
     width: 80,
     height: 80,
-    borderRadius: 16,
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: Platform.select({ ios: 5, android: 4 }) },
+    shadowOpacity: Platform.select({ ios: 0.35, android: 0.3 }),
+    shadowRadius: Platform.select({ ios: 10, android: 8 }),
+    elevation: Platform.select({ ios: 0, android: 8 }),
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
@@ -280,17 +281,17 @@ const styles = StyleSheet.create({
   bottomSection: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: Platform.select({ ios: 26, android: 24 }),
+    borderTopRightRadius: Platform.select({ ios: 26, android: 24 }),
     marginTop: -10,
-    paddingTop: 65,
+    paddingTop: Platform.select({ ios: 70, android: 65 }),
     zIndex: 10,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: Platform.select({ ios: 50, android: 40 }),
   },
   formContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
   },
   header: {
     marginBottom: 32,

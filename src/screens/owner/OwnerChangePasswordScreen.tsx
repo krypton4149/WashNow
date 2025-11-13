@@ -8,11 +8,13 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { platformEdges } from '../../utils/responsive';
 
 interface Props {
   onBack?: () => void;
@@ -168,7 +170,7 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -271,8 +273,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
+    paddingVertical: Platform.select({ ios: 12, android: 10 }),
     borderBottomWidth: 1,
   },
   backButton: {
@@ -283,11 +285,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: Platform.select({ ios: 19, android: 18 }),
     fontWeight: 'bold',
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: Platform.select({ ios: 15, android: 14 }),
     marginTop: 2,
   },
   inputContainer: {
@@ -302,9 +304,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderRadius: Platform.select({ ios: 10, android: 8 }),
+    paddingHorizontal: Platform.select({ ios: 14, android: 12 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
     gap: 12,
   },
   textInput: {
@@ -363,13 +365,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
+    paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
+    paddingTop: Platform.select({ ios: 18, android: 16 }),
+    paddingBottom: Platform.select({ ios: 60, android: 50 }),
   },
   updateButton: {
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    paddingVertical: Platform.select({ ios: 18, android: 16 }),
     alignItems: 'center',
     justifyContent: 'center',
   },

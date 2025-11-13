@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ImageBackground,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import axios from 'axios';
+import { platformEdges } from '../../utils/responsive';
 
 interface Props {
   onBack?: () => void;
@@ -218,7 +220,7 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color="#000" />

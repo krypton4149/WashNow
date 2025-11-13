@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { API_BASE_URL } from '../../services/api';
+import { platformEdges } from '../../utils/responsive';
 
 interface OwnerLoginScreenProps {
   onBack: () => void;
@@ -162,7 +163,7 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
   const isFormValid = email.trim().length > 0 && password.trim().length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

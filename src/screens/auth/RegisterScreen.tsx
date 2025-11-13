@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { validateRegistrationForm, FormErrors } from '../../utils/validation';
+import { platformEdges } from '../../utils/responsive';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -251,7 +252,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     agreeToTerms;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

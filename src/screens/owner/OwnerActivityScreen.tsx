@@ -6,10 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   ImageBackground,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
+import { platformEdges } from '../../utils/responsive';
 
 interface OwnerActivityScreenProps {
   onBack?: () => void;
@@ -119,7 +121,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         {onBack ? (
@@ -216,9 +218,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    paddingTop: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: Platform.select({ ios: 14, android: 12 }),
     backgroundColor: '#FFFFFF',
   },
   backButton: {
@@ -236,13 +238,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: Platform.select({ ios: 26, android: 24 }),
     fontWeight: '700',
     color: '#0F172A',
   },
   headerSubtitle: {
     marginTop: 2,
-    fontSize: 14,
+    fontSize: Platform.select({ ios: 15, android: 14 }),
     color: '#6B7280',
   },
   markAllReadText: {
@@ -254,9 +256,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
+    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    paddingTop: Platform.select({ ios: 16, android: 12 }),
+    paddingBottom: Platform.select({ ios: 60, android: 50 }),
   },
   banner: {
     height: 120,
@@ -290,17 +292,17 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   notificationCard: {
-    borderRadius: 16,
-    padding: 15,
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    padding: Platform.select({ ios: 17, android: 15 }),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     borderWidth: StyleSheet.hairlineWidth,
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
+    shadowOpacity: Platform.select({ ios: 0.07, android: 0.06 }),
+    shadowRadius: Platform.select({ ios: 12, android: 10 }),
+    elevation: Platform.select({ ios: 0, android: 3 }),
   },
   cardSuccess: {
     backgroundColor: '#F6FBF8',
@@ -347,14 +349,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   notificationTitle: {
-    fontSize: 17,
+    fontSize: Platform.select({ ios: 18, android: 17 }),
     fontWeight: '700',
     color: '#111827',
   },
   notificationMessage: {
-    fontSize: 15,
+    fontSize: Platform.select({ ios: 16, android: 15 }),
     color: '#4B5563',
-    lineHeight: 22,
+    lineHeight: Platform.select({ ios: 24, android: 22 }),
   },
   notificationTime: {
     fontSize: 13,

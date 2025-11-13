@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
+import { platformEdges } from '../../utils/responsive';
 
 interface CreateNewPasswordScreenProps {
   onBack: () => void;
@@ -73,7 +74,7 @@ const CreateNewPasswordScreen: React.FC<CreateNewPasswordScreenProps> = ({
   const maskedEmailOrPhone = emailOrPhone.replace(/(.{3}).*(.{4})/, '$1***$2');
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <View style={styles.touchableContainer}>
           <KeyboardAvoidingView 
