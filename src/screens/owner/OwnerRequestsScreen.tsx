@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,14 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
 import apiClient from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
 
 interface OwnerRequestsScreenProps {
   onBack?: () => void;
@@ -38,6 +41,9 @@ interface BookingRequestCard {
   notes?: string;
   amount: string;
 }
+
+const BOOKINGS_CACHE_KEY = 'owner_booking_requests_cache_v1';
+const BOOKINGS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 const ensureString = (fallback: string, ...candidates: any[]): string => {
   for (const candidate of candidates) {
@@ -201,8 +207,9 @@ const formatAmount = (booking: any): string => {
 
 const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
   const id = ensureString(`booking-${index}`,
-    booking?.id,
     booking?.booking_id,
+    booking?.bookingId,
+    booking?.id,
     booking?.reference,
     booking?.uuid
   );
@@ -212,7 +219,9 @@ const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
     booking?.customer_name,
     booking?.customer?.name,
     booking?.user?.name,
-    booking?.client?.name
+    booking?.client?.name,
+    booking?.visitor?.name,
+    booking?.visitor_name
   );
 
   const vehiclePlate = ensureString('Plate not provided',
@@ -300,6 +309,78 @@ const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
   };
 };
 
+const getBookingTimestamp = (booking: any): number => {
+  const ensureDateString = (...values: any[]): string => ensureString('', ...values);
+  const dateCandidates = [
+    ensureDateString(
+      booking?.scheduled_at,
+      booking?.scheduledAt,
+      booking?.booking_date,
+      booking?.bookingDate,
+      booking?.service_date,
+      booking?.date,
+    ),
+  ];
+
+  const timeCandidates = [
+    ensureDateString(
+      booking?.booking_time,
+      booking?.bookingTime,
+      booking?.slot_time,
+      booking?.time_slot,
+      booking?.time,
+    ),
+  ];
+
+  const parseWithTime = (dateValue: string, timeValue?: string): number => {
+    if (!dateValue) {
+      return Number.NaN;
+    }
+    let candidate = dateValue;
+    if (timeValue && !dateValue.includes('T')) {
+      candidate = `${dateValue} ${timeValue}`;
+    }
+    const parsed = new Date(candidate);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.getTime();
+    }
+
+    // Attempt fallback by constructing ISO string manually
+    if (timeValue) {
+      const isoCandidate = `${dateValue}T${timeValue}`;
+      const parsedIso = new Date(isoCandidate);
+      if (!Number.isNaN(parsedIso.getTime())) {
+        return parsedIso.getTime();
+      }
+    }
+
+    return Number.NaN;
+  };
+
+  for (const dateValue of dateCandidates) {
+    if (!dateValue) {
+      continue;
+    }
+    const timestamp = parseWithTime(dateValue, timeCandidates[0]);
+    if (!Number.isNaN(timestamp)) {
+      return timestamp;
+    }
+  }
+
+  const fallbackDate = ensureDateString(
+    booking?.created_at,
+    booking?.createdAt,
+    booking?.updated_at,
+    booking?.requested_at,
+  );
+  const fallbackParsed = new Date(fallbackDate);
+  if (!Number.isNaN(fallbackParsed.getTime())) {
+    return fallbackParsed.getTime();
+  }
+
+  return Number.NEGATIVE_INFINITY;
+};
+
 const extractBookingArray = (payload: any): any[] => {
   if (!payload) {
     return [];
@@ -372,17 +453,41 @@ const extractBookingArray = (payload: any): any[] => {
 const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   onBack,
 }) => {
+  const { colors } = useTheme();
   const [rawBookings, setRawBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [cancellationLoading, setCancellationLoading] = useState<Record<string, boolean>>({});
+  const hasHydratedCacheRef = useRef<boolean>(false);
+
+  const loadCachedBookings = useCallback(async () => {
+    try {
+      const cached = await AsyncStorage.getItem(BOOKINGS_CACHE_KEY);
+      if (!cached) {
+        return;
+      }
+      const parsed = JSON.parse(cached);
+      if (!parsed || !Array.isArray(parsed.data)) {
+        return;
+      }
+
+      setRawBookings(parsed.data);
+      hasHydratedCacheRef.current = true;
+      setIsLoading(false);
+    } catch (cacheError) {
+      console.error('[OwnerRequestsScreen] failed to load cached bookings', cacheError);
+    }
+  }, []);
 
   const fetchBookings = useCallback(async (isRefresh: boolean = false) => {
     try {
       if (isRefresh) {
         setIsRefreshing(true);
       } else {
-        setIsLoading(true);
+        if (!hasHydratedCacheRef.current) {
+          setIsLoading(true);
+        }
       }
       setError(null);
 
@@ -407,10 +512,41 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
       });
 
       setRawBookings(bookingsArray);
+      setCancellationLoading({});
+      hasHydratedCacheRef.current = true;
+      try {
+        await AsyncStorage.setItem(BOOKINGS_CACHE_KEY, JSON.stringify({
+          timestamp: Date.now(),
+          data: bookingsArray,
+        }));
+      } catch (cacheError) {
+        console.error('[OwnerRequestsScreen] failed to cache bookings', cacheError);
+      }
     } catch (fetchError: any) {
-      console.log('[OwnerRequestsScreen] failed to load bookings', fetchError);
-      setError(fetchError?.message || 'Failed to load booking requests.');
+      console.error('[OwnerRequestsScreen] failed to load bookings', {
+        message: fetchError?.message,
+        response: fetchError?.response?.data,
+        status: fetchError?.response?.status,
+        error: fetchError,
+      });
+
+      // Handle 401 Unauthorized errors specifically
+      if (fetchError?.status === 401 || fetchError?.response?.status === 401 || fetchError?.message === 'Unauthorized') {
+        const errorMessage = 'Your session has expired. Please log in again.';
+        setError(errorMessage);
+        // Clear token and user data on unauthorized
+        try {
+          await authService.removeToken();
+          await authService.removeUser();
+        } catch (clearError) {
+          console.error('[OwnerRequestsScreen] failed to clear auth data', clearError);
+        }
+      } else {
+        setError(fetchError?.message || 'Failed to load booking requests. Please try again.');
+      }
+      
       setRawBookings([]);
+      setCancellationLoading({});
     } finally {
       if (isRefresh) {
         setIsRefreshing(false);
@@ -421,12 +557,123 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   }, []);
 
   useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    let isMounted = true;
+    const hydrateAndFetch = async () => {
+      await loadCachedBookings();
+
+      if (!isMounted) {
+        return;
+      }
+
+      // Determine if cache is stale
+      try {
+        const cached = await AsyncStorage.getItem(BOOKINGS_CACHE_KEY);
+        let forceLoading = true;
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.timestamp && Date.now() - parsed.timestamp < BOOKINGS_CACHE_DURATION) {
+            forceLoading = false;
+          }
+        }
+        if (forceLoading) {
+          hasHydratedCacheRef.current = false;
+        }
+      } catch {
+        hasHydratedCacheRef.current = false;
+      }
+
+      await fetchBookings();
+    };
+
+    hydrateAndFetch();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchBookings, loadCachedBookings]);
 
   const requests = useMemo<BookingRequestCard[]>(() => {
-    return rawBookings.map(mapBookingToCard);
+    const sorted = [...rawBookings].sort((a, b) => {
+      const tsA = getBookingTimestamp(a);
+      const tsB = getBookingTimestamp(b);
+      return tsB - tsA;
+    });
+    return sorted.map(mapBookingToCard);
   }, [rawBookings]);
+
+  const setBookingActionLoading = useCallback((bookingId: string, loading: boolean) => {
+    setCancellationLoading((prev) => ({
+      ...prev,
+      [bookingId]: loading,
+    }));
+  }, []);
+
+  const handleCancelBooking = useCallback((bookingId: string) => {
+    if (!bookingId) {
+      return;
+    }
+
+    Alert.alert(
+      'Cancel Booking',
+      'Are you sure you want to cancel this booking request?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            setBookingActionLoading(bookingId, true);
+            try {
+              const result = await authService.cancelOwnerBooking(bookingId);
+              if (!result.success) {
+                Alert.alert('Error', result.error || 'Failed to cancel booking.');
+                return;
+              }
+              Alert.alert('Success', result.message || 'Booking cancelled successfully.');
+              await fetchBookings(true);
+            } catch (cancelError: any) {
+              Alert.alert('Error', cancelError?.message || 'Failed to cancel booking.');
+            } finally {
+              setBookingActionLoading(bookingId, false);
+            }
+          },
+        },
+      ],
+    );
+  }, [fetchBookings, setBookingActionLoading]);
+
+  const handleCompleteBooking = useCallback((bookingId: string) => {
+    if (!bookingId) {
+      return;
+    }
+
+    Alert.alert(
+      'Mark as Completed',
+      'Confirm that this booking has been completed?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Completed',
+          onPress: async () => {
+            setBookingActionLoading(bookingId, true);
+            try {
+              const result = await authService.completeOwnerBooking(bookingId);
+              if (!result.success) {
+                Alert.alert('Error', result.error || 'Failed to update booking status.');
+                return;
+              }
+              Alert.alert('Success', result.message || 'Booking marked as completed.');
+              await fetchBookings(true);
+            } catch (completeError: any) {
+              Alert.alert('Error', completeError?.message || 'Failed to update booking status.');
+            } finally {
+              setBookingActionLoading(bookingId, false);
+            }
+          },
+        },
+      ],
+    );
+  }, [fetchBookings, setBookingActionLoading]);
 
   const getStatusStyles = (status: StatusTone) => {
     if (status === 'accepted') {
@@ -463,150 +710,179 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   }, [fetchBookings]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         )}
         <View style={styles.headerTextGroup}>
-          <Text style={styles.headerTitle}>New Requests</Text>
-          <Text style={styles.headerSubtitle}>{headerSubtitle}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>New Requests</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{headerSubtitle}</Text>
         </View>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            tintColor="#111827"
-            colors={['#111827']}
+            tintColor={colors.text}
+            colors={[colors.text]}
           />
         }
       >
         {isLoading ? (
           <View style={styles.stateContainer}>
-            <ActivityIndicator size="small" color="#111827" />
-            <Text style={styles.stateDescription}>Loading booking requests...</Text>
+            <ActivityIndicator size="small" color={colors.text} />
+            <Text style={[styles.stateDescription, { color: colors.textSecondary }]}>Loading booking requests...</Text>
           </View>
         ) : error ? (
           <View style={styles.stateContainer}>
-            <Ionicons name="alert-circle-outline" size={34} color="#DC2626" style={styles.stateIcon} />
-            <Text style={styles.stateTitle}>Unable to load bookings</Text>
-            <Text style={styles.stateDescription}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} activeOpacity={0.85} onPress={() => fetchBookings()}>
-              <Ionicons name="refresh" size={16} color="#FFFFFF" />
-              <Text style={styles.retryButtonText}>Try Again</Text>
+            <Ionicons name="alert-circle-outline" size={34} color={colors.error} style={styles.stateIcon} />
+            <Text style={[styles.stateTitle, { color: colors.text }]}>Unable to load bookings</Text>
+            <Text style={[styles.stateDescription, { color: colors.textSecondary }]}>{error}</Text>
+            <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.button }]} activeOpacity={0.85} onPress={() => fetchBookings()}>
+              <Ionicons name="refresh" size={16} color={colors.buttonText} />
+              <Text style={[styles.retryButtonText, { color: colors.buttonText }]}>Try Again</Text>
             </TouchableOpacity>
           </View>
         ) : requests.length === 0 ? (
           <View style={styles.stateContainer}>
-            <Ionicons name="car-outline" size={38} color="#6B7280" style={styles.stateIcon} />
-            <Text style={styles.stateTitle}>No booking requests yet</Text>
-            <Text style={styles.stateDescription}>
+            <Ionicons name="car-outline" size={38} color={colors.textSecondary} style={styles.stateIcon} />
+            <Text style={[styles.stateTitle, { color: colors.text }]}>No booking requests yet</Text>
+            <Text style={[styles.stateDescription, { color: colors.textSecondary }]}>
               New booking requests from customers will appear here.
             </Text>
           </View>
         ) : (
-          <View style={styles.requestsList}>
-            {requests.map((request) => {
-              const statusStyles = getStatusStyles(request.status);
-              return (
-                <View key={request.id} style={styles.requestCard}>
-                  <View style={styles.cardHeader}>
-                    <View>
-                      <Text style={styles.customerName}>{request.customerName}</Text>
-                      <Text style={styles.timeAgo}>{request.timeAgo}</Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        { backgroundColor: statusStyles.bg },
-                      ]}
+        <View style={styles.requestsList}>
+          {requests.map((request) => {
+            const statusStyles = getStatusStyles(request.status);
+            return (
+              <View key={request.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
+                <View style={styles.cardHeader}>
+                  <View>
+                    <Text style={[styles.customerName, { color: colors.text }]}>{request.customerName}</Text>
+                    <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>{request.timeAgo}</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: statusStyles.bg },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.statusBadgeText, { color: statusStyles.text }]}
                     >
-                      <Text
-                        style={[styles.statusBadgeText, { color: statusStyles.text }]}
-                      >
-                        {statusStyles.label}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoIcon}>
-                      <Ionicons name="car-outline" size={20} color="#111827" />
-                    </View>
-                    <View style={styles.infoText}>
-                      <Text style={styles.infoLabel}>Vehicle</Text>
-                      <Text style={styles.infoValue}>{request.vehicle.primary}</Text>
-                      {request.vehicle.secondary ? (
-                        <Text style={styles.infoSubValue}>{request.vehicle.secondary}</Text>
-                      ) : null}
-                    </View>
-                  </View>
-
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoIcon}>
-                      <Ionicons name="location-outline" size={20} color="#111827" />
-                    </View>
-                    <View style={styles.infoText}>
-                      <Text style={styles.infoLabel}>Location</Text>
-                      <Text style={styles.infoValue}>{request.location.address}</Text>
-                      {request.location.distance ? (
-                        <View style={styles.infoSubRow}>
-                          <Ionicons name="navigate-outline" size={12} color="#6B7280" />
-                          <Text style={styles.infoSubValue}>{request.location.distance}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  </View>
-
-                  <View style={styles.metaRow}>
-                    <View style={styles.metaPill}>
-                      <Text style={styles.metaLabel}>Scheduled</Text>
-                      <Text style={styles.metaValue}>{request.scheduled}</Text>
-                    </View>
-                    <View style={styles.metaPill}>
-                      <Text style={styles.metaLabel}>Service</Text>
-                      <Text style={styles.metaValue}>{request.service}</Text>
-                    </View>
-                  </View>
-
-                  {request.notes ? (
-                    <View style={styles.notesContainer}>
-                      <Text style={styles.notesLabel}>Customer Notes</Text>
-                      <Text style={styles.notesValue}>{request.notes}</Text>
-                    </View>
-                  ) : null}
-
-                  <View style={styles.footerRow}>
-                    <View>
-                      <Text style={styles.amountLabel}>Amount</Text>
-                      <Text style={styles.amountValue}>{request.amount}</Text>
-                    </View>
-                    <View style={styles.footerActions}>
-                      <Pressable style={[styles.actionChip, styles.declineChip]}>
-                        <Ionicons name="close" size={16} color="#111827" />
-                        <Text style={styles.declineText}>Decline</Text>
-                      </Pressable>
-                      <Pressable style={[styles.actionChip, styles.acceptChip]}>
-                        <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                        <Text style={styles.acceptText}>Accept</Text>
-                      </Pressable>
-                    </View>
+                      {statusStyles.label}
+                    </Text>
                   </View>
                 </View>
-              );
-            })}
-          </View>
+
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIcon}>
+                    <Ionicons name="car-outline" size={20} color={colors.text} />
+                  </View>
+                  <View style={styles.infoText}>
+                      <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Vehicle</Text>
+                      <Text style={[styles.infoValue, { color: colors.text }]}>{request.vehicle.primary}</Text>
+                      {request.vehicle.secondary ? (
+                        <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.vehicle.secondary}</Text>
+                      ) : null}
+                  </View>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIcon}>
+                    <Ionicons name="location-outline" size={20} color={colors.text} />
+                  </View>
+                  <View style={styles.infoText}>
+                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Location</Text>
+                    <Text style={[styles.infoValue, { color: colors.text }]}>{request.location.address}</Text>
+                      {request.location.distance ? (
+                    <View style={styles.infoSubRow}>
+                      <Ionicons name="navigate-outline" size={12} color={colors.textSecondary} />
+                      <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.location.distance}</Text>
+                    </View>
+                      ) : null}
+                  </View>
+                </View>
+
+                <View style={styles.metaRow}>
+                  <View style={styles.metaPill}>
+                    <Text style={styles.metaLabel}>Scheduled</Text>
+                    <Text style={styles.metaValue}>{request.scheduled}</Text>
+                  </View>
+                  <View style={styles.metaPill}>
+                    <Text style={styles.metaLabel}>Service</Text>
+                    <Text style={styles.metaValue}>{request.service}</Text>
+                  </View>
+                </View>
+
+                {request.notes ? (
+                  <View style={[styles.notesContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Text style={[styles.notesLabel, { color: colors.text }]}>{'Customer Notes'}</Text>
+                    <Text style={[styles.notesValue, { color: colors.textSecondary }]}>{request.notes}</Text>
+                  </View>
+                ) : null}
+
+                <View style={styles.footerRow}>
+                  <View>
+                    <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>Amount</Text>
+                    <Text style={[styles.amountValue, { color: colors.text }]}>{request.amount}</Text>
+                  </View>
+                  <View style={styles.footerActions}>
+                    <Pressable
+                      style={[
+                        styles.actionChip,
+                        styles.declineChip,
+                        cancellationLoading[request.id] && styles.actionChipDisabled,
+                      ]}
+                      disabled={!!cancellationLoading[request.id]}
+                      onPress={() => handleCancelBooking(request.id)}
+                    >
+                      {cancellationLoading[request.id] ? (
+                        <ActivityIndicator size="small" color={colors.text} />
+                      ) : (
+                        <>
+                          <Ionicons name="close" size={16} color={colors.text} />
+                          <Text style={[styles.declineText, { color: colors.text }]}>{'Decline'}</Text>
+                        </>
+                      )}
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.actionChip,
+                        styles.acceptChip,
+                        cancellationLoading[request.id] && styles.actionChipDisabled,
+                        { backgroundColor: colors.button, borderColor: colors.button },
+                      ]}
+                      disabled={!!cancellationLoading[request.id]}
+                      onPress={() => handleCompleteBooking(request.id)}
+                    >
+                      {cancellationLoading[request.id] ? (
+                        <ActivityIndicator size="small" color={colors.buttonText} />
+                      ) : (
+                        <>
+                          <Ionicons name="checkmark" size={16} color={colors.buttonText} />
+                          <Text style={[styles.acceptText, { color: colors.buttonText }]}>{'Accept'}</Text>
+                        </>
+                      )}
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -623,8 +899,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 14,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   backButton: {
     width: 40,
@@ -654,8 +930,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingTop: 12,
+    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
   },
   requestsList: {
     gap: 14,
@@ -802,6 +1078,9 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     borderRadius: 14,
     borderWidth: 1,
+  },
+  actionChipDisabled: {
+    opacity: 0.6,
   },
   declineChip: {
     borderColor: '#E5E7EB',

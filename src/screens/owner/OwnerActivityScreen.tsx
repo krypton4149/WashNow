@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../../context/ThemeContext';
 
 interface OwnerActivityScreenProps {
   onBack?: () => void;
@@ -29,6 +30,7 @@ interface ActivityNotification {
 const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
   onBack,
 }) => {
+  const { colors } = useTheme();
   // Dummy data - in real app, this would come from API
   const notifications = useMemo<ActivityNotification[]>(() => [
     {
@@ -117,28 +119,28 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         {onBack ? (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         ) : (
           <View style={styles.backButtonPlaceholder} />
         )}
         <View style={styles.headerTextGroup}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          <Text style={styles.headerSubtitle}>2 unread notifications</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>2 unread notifications</Text>
         </View>
         <TouchableOpacity>
-          <Text style={styles.markAllReadText}>Mark all read</Text>
+          <Text style={[styles.markAllReadText, { color: colors.button }]}>{'Mark all read'}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
       >
@@ -165,7 +167,11 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
             return (
               <View
                 key={item.id}
-                style={[styles.notificationCard, toneStyles.container]}
+                style={[
+                  styles.notificationCard,
+                  toneStyles.container,
+                  { borderColor: colors.border, backgroundColor: colors.card },
+                ]}
               >
                 <View style={styles.notificationLeft}>
                   <View
@@ -181,9 +187,9 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
                     />
                   </View>
                   <View style={styles.notificationTextContainer}>
-                    <Text style={styles.notificationTitle}>{item.title}</Text>
-                    <Text style={styles.notificationMessage}>{item.message}</Text>
-                    <Text style={styles.notificationTime}>{item.timeAgo}</Text>
+                    <Text style={[styles.notificationTitle, { color: colors.text }]}>{item.title}</Text>
+                    <Text style={[styles.notificationMessage, { color: colors.textSecondary }]}>{item.message}</Text>
+                    <Text style={[styles.notificationTime, { color: colors.textSecondary }]}>{item.timeAgo}</Text>
                   </View>
                 </View>
                 <View
@@ -211,8 +217,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 14,
+    paddingTop: 8,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
   },
   backButton: {
@@ -249,8 +255,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingTop: 12,
+    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
   },
   banner: {
     height: 120,

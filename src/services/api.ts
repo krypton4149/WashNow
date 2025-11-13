@@ -35,27 +35,40 @@ apiClient.interceptors.response.use(
       // Server responded with error status
       const { status, data } = error.response;
       
-      switch (status) {
-        case 400:
-          throw new Error(data.message || 'Bad Request');
-        case 401:
-          throw new Error('Unauthorized');
-        case 422:
-          throw new Error(data.message || 'Validation Error');
-        case 500:
-          throw new Error('Internal Server Error');
-        default:
-          throw new Error(data.message || 'An error occurred');
-      }
+      // Create error with message but preserve original error structure
+      const customError: any = new Error(data?.message || getDefaultErrorMessage(status));
+      customError.response = error.response;
+      customError.status = status;
+      customError.data = data;
+      
+      return Promise.reject(customError);
     } else if (error.request) {
       // Request was made but no response received
-      throw new Error('Network Error - Please check your internet connection');
+      const networkError: any = new Error('Network Error - Please check your internet connection');
+      networkError.request = error.request;
+      return Promise.reject(networkError);
     } else {
       // Something else happened
-      throw new Error('An unexpected error occurred');
+      return Promise.reject(error);
     }
   }
 );
+
+// Helper function to get default error messages
+function getDefaultErrorMessage(status: number): string {
+  switch (status) {
+    case 400:
+      return 'Bad Request';
+    case 401:
+      return 'Unauthorized';
+    case 422:
+      return 'Validation Error';
+    case 500:
+      return 'Internal Server Error';
+    default:
+      return 'An error occurred';
+  }
+}
 
 export default apiClient;
 

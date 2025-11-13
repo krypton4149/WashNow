@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../../context/ThemeContext';
 
 interface OwnerSettingsScreenProps {
   onBack?: () => void;
@@ -30,25 +31,68 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
 }) => {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(initialPushNotificationsEnabled);
   const [promotionalAlertsEnabled, setPromotionalAlertsEnabled] = useState(initialPromotionalAlertsEnabled);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(initialDarkModeEnabled);
+  const { isDarkMode, toggleDarkMode, colors } = useTheme();
+  const [darkModeEnabled, setDarkModeEnabled] = useState(initialDarkModeEnabled || isDarkMode);
+
+  const dynamicStyles = useMemo(() => ({
+    container: {
+      backgroundColor: colors.background,
+    },
+    header: {
+      backgroundColor: colors.surface,
+      borderBottomColor: colors.border,
+    },
+    headerTitle: {
+      color: colors.text,
+    },
+    heroOverlay: {
+      backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.68)' : 'rgba(17, 24, 39, 0.45)',
+    },
+    scrollContent: {
+      backgroundColor: colors.background,
+    },
+    sectionCard: {
+      backgroundColor: colors.card,
+      shadowColor: isDarkMode ? '#020617' : '#000000',
+    },
+    sectionLabel: {
+      color: colors.text,
+    },
+    settingTitle: {
+      color: colors.text,
+    },
+    settingSubtitle: {
+      color: colors.textSecondary,
+    },
+    bookingBanner: {
+      backgroundColor: colors.button,
+    },
+  }), [colors, isDarkMode]);
+
+  const handleToggleDarkMode = async (value: boolean) => {
+    setDarkModeEnabled(value);
+    if (value !== isDarkMode) {
+      toggleDarkMode();
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, dynamicStyles.container]} edges={['bottom']}>
+      <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={!onBack}>
           <Ionicons
             name="arrow-back"
             size={24}
-            color={onBack ? '#111827' : '#D1D5DB'}
+            color={onBack ? colors.text : colors.textSecondary}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Settings</Text>
         <View style={styles.headerPlaceholder} />
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, dynamicStyles.scrollContent]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
       >
@@ -57,7 +101,7 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
           style={styles.heroCard}
           imageStyle={styles.heroImage}
         >
-          <View style={styles.heroOverlay} />
+          <View style={[styles.heroOverlay, dynamicStyles.heroOverlay]} />
           <View style={styles.heroContent}>
             <View style={styles.heroBadge}>
               <Text style={styles.heroBadgeText}>Preview</Text>
@@ -67,8 +111,8 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
           </View>
         </ImageBackground>
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionLabel}>Notifications</Text>
+        <View style={[styles.sectionCard, dynamicStyles.sectionCard]}>
+          <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Notifications</Text>
           <View style={styles.settingRow}>
             <View style={styles.settingIconWrapper}>
               <View style={[styles.settingIcon, { backgroundColor: '#2563EB' }]}>
@@ -76,8 +120,8 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
               </View>
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Push Notifications</Text>
-              <Text style={styles.settingSubtitle}>Receive booking updates</Text>
+              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Push Notifications</Text>
+              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>Receive booking updates</Text>
             </View>
             <Switch
               value={pushNotificationsEnabled}
@@ -94,8 +138,8 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
               </View>
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Promotional Alerts</Text>
-              <Text style={styles.settingSubtitle}>Special offers and discounts</Text>
+              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Promotional Alerts</Text>
+              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>Special offers and discounts</Text>
             </View>
             <Switch
               value={promotionalAlertsEnabled}
@@ -106,8 +150,8 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
           </View>
         </View>
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionLabel}>Preferences</Text>
+        <View style={[styles.sectionCard, dynamicStyles.sectionCard]}>
+          <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Preferences</Text>
           <TouchableOpacity
             style={styles.settingRow}
             onPress={onChangeLanguage}
@@ -119,10 +163,10 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
               </View>
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Language</Text>
-              <Text style={styles.settingSubtitle}>English (US)</Text>
+              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Language</Text>
+              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>English (US)</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
           <View style={styles.settingDivider} />
           <View style={styles.settingRow}>
@@ -132,20 +176,20 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
               </View>
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Dark Mode</Text>
-              <Text style={styles.settingSubtitle}>Switch to dark theme</Text>
+              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Dark Mode</Text>
+              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>Switch to dark theme</Text>
             </View>
             <Switch
               value={darkModeEnabled}
-              onValueChange={setDarkModeEnabled}
+              onValueChange={handleToggleDarkMode}
               trackColor={{ false: '#D1D5DB', true: '#6366F133' }}
               thumbColor={darkModeEnabled ? '#6366F1' : '#F4F5F7'}
             />
           </View>
         </View>
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionLabel}>Security</Text>
+        <View style={[styles.sectionCard, dynamicStyles.sectionCard]}>
+          <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Security</Text>
           <TouchableOpacity
             style={styles.settingRow}
             onPress={onChangePassword}
@@ -157,10 +201,10 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
               </View>
             </View>
             <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>Change Password</Text>
-              <Text style={styles.settingSubtitle}>Update your password</Text>
+              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Change Password</Text>
+              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>Update your password</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -178,7 +222,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingVertical: 18,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E7EB',
@@ -202,7 +246,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
-    paddingBottom: 48,
+    paddingTop: 16,
+    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
     gap: 20,
   },
   heroCard: {

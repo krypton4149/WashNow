@@ -660,7 +660,58 @@ class AuthService {
     }
   }
 
-  // Change Password API
+  // Owner logout API (service owner / user)
+  async logoutOwner(): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        await this.removeToken();
+        await AsyncStorage.removeItem(USER_KEY);
+        return { success: true, message: 'Logged out' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/logout`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        // ignore parse errors (empty body support)
+      }
+
+      const backendIndicatesSuccess =
+        data?.success === true ||
+        typeof data?.message === 'string';
+
+      if (response.ok || response.status === 401 || backendIndicatesSuccess) {
+        await this.removeToken();
+        await AsyncStorage.removeItem(USER_KEY);
+        return {
+          success: true,
+          message: (data && data.message) || 'Logged out successfully',
+        };
+      }
+
+      return {
+        success: false,
+        error: (data && (data.message || data.error)) || 'Failed to logout. Please try again.',
+      };
+    } catch (error) {
+      console.error('Owner logout error:', error);
+      return {
+        success: false,
+        error: 'Network error. Please check your internet connection and try again.',
+      };
+    }
+  }
+
+  // Change Password API (visitor default)
   async changePassword(currentPassword: string, newPassword: string, newPasswordConfirmation: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       const token = await this.getToken();
@@ -700,6 +751,67 @@ class AuthService {
       return {
         success: false,
         error: 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  async changeOwnerPassword(currentPassword: string, newPassword: string, newPasswordConfirmation: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to change password' };
+      }
+
+      const formData = new FormData();
+      formData.append('current_password', currentPassword);
+      formData.append('new_password', newPassword);
+      formData.append('new_password_confirmation', newPasswordConfirmation);
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/change-password`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData as any,
+      }, 10000);
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      console.log('[authService.changeOwnerPassword] response', {
+        status: response.status,
+        ok: response.ok,
+        data,
+        request: { current_password: '***', new_password: '***', new_password_confirmation: '***' }
+      });
+
+      if (response.ok && (data?.success !== false)) {
+        return {
+          success: true,
+          message: data?.message || 'Password changed successfully',
+        };
+      }
+
+      const errorMessage =
+        data?.message ||
+        data?.error ||
+        (data && typeof data === 'object' && JSON.stringify(data)) ||
+        'Failed to change password. Please try again.';
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    } catch (error: any) {
+      console.error('[authService.changeOwnerPassword] error', error);
+      return {
+        success: false,
+        error: error?.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }
@@ -817,6 +929,198 @@ class AuthService {
       return {
         success: false,
         error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  async cancelOwnerBooking(bookingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to cancel a booking' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/cancle-booking`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: (() => {
+          const form = new FormData();
+          form.append('booking_id', bookingId);
+          form.append('status', 'cancelled');
+          return form as any;
+        })(),
+      });
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      console.log('[authService.cancelOwnerBooking] response', {
+        status: response.status,
+        ok: response.ok,
+        data,
+        request: {
+          booking_id: bookingId,
+          status: 'cancelled',
+        },
+      });
+
+      if (response.ok && (data?.success !== false)) {
+        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        return {
+          success: true,
+          message: data?.message || 'Booking cancelled successfully',
+        };
+      }
+
+      const errorMessage =
+        data?.message ||
+        data?.error ||
+        (data && typeof data === 'object' && JSON.stringify(data)) ||
+        'Failed to cancel booking. Please try again.';
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || 'Network error. Please check your internet connection and try again.',
+      };
+    }
+  }
+
+  async completeOwnerBooking(bookingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to continue.' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/completed-booking`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: (() => {
+          const form = new FormData();
+          form.append('booking_id', bookingId);
+          form.append('status', 'completed');
+          return form as any;
+        })(),
+      });
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      console.log('[authService.completeOwnerBooking] response', {
+        status: response.status,
+        ok: response.ok,
+        data,
+        request: {
+          booking_id: bookingId,
+          status: 'completed',
+        },
+      });
+
+      if (response.ok && (data?.success !== false)) {
+        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        return {
+          success: true,
+          message: data?.message || 'Booking marked as completed successfully.',
+        };
+      }
+
+      const errorMessage =
+        data?.message ||
+        data?.error ||
+        (data && typeof data === 'object' && JSON.stringify(data)) ||
+        'Failed to mark booking as completed. Please try again.';
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || 'Network error. Please check your internet connection and try again.',
+      };
+    }
+  }
+
+  async completeOwnerBooking(bookingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to complete a booking' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/completed-booking`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: (() => {
+          const form = new FormData();
+          form.append('booking_id', bookingId);
+          form.append('status', 'completed');
+          return form as any;
+        })(),
+      });
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      console.log('[authService.completeOwnerBooking] response', {
+        status: response.status,
+        ok: response.ok,
+        data,
+        request: {
+          booking_id: bookingId,
+          status: 'completed',
+        },
+      });
+
+      if (response.ok && (data?.success !== false)) {
+        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        return {
+          success: true,
+          message: data?.message || 'Booking marked as completed.',
+        };
+      }
+
+      const errorMessage =
+        data?.message ||
+        data?.error ||
+        (data && typeof data === 'object' && JSON.stringify(data)) ||
+        'Failed to complete booking. Please try again.';
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || 'Network error. Please check your internet connection and try again.',
       };
     }
   }
@@ -949,6 +1253,120 @@ class AuthService {
       return {
         success: false,
         error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  async editOwnerProfile(name: string, phone: string): Promise<{ success: boolean; message?: string; user?: any; error?: string; validationErrors?: any; isAuthError?: boolean }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to edit your profile', isAuthError: true };
+      }
+
+      const trimmedName = (name || '').trim();
+      const trimmedPhone = (phone || '').trim();
+      const phoneDigits = trimmedPhone.replace(/\D/g, '');
+
+      const formData = new FormData();
+      formData.append('name', trimmedName);
+      formData.append('phone', phoneDigits);
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/editprofile`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData as any,
+      });
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      console.log('[authService.editOwnerProfile] response', {
+        status: response.status,
+        ok: response.ok,
+        data,
+      });
+
+      if (response.ok && data?.success !== false) {
+        const currentUser = await this.getUser();
+        const updatedRawUser = {
+          ...(currentUser?.rawUserData || {}),
+          ownerName: trimmedName,
+          owner_name: trimmedName,
+          contactName: trimmedName,
+          contact_name: trimmedName,
+          name: trimmedName,
+          phone: phoneDigits,
+          phoneNumber: phoneDigits,
+          phone_number: phoneDigits,
+        };
+
+        const updatedUserData = {
+          ...(currentUser?.userData || {}),
+          ownerName: trimmedName,
+          owner_name: trimmedName,
+          contactName: trimmedName,
+          contact_name: trimmedName,
+          name: trimmedName,
+          phone: phoneDigits,
+          phoneNumber: phoneDigits,
+          phone_number: phoneDigits,
+        };
+
+        const updatedUser = {
+          ...(currentUser || {}),
+          name: trimmedName,
+          ownerName: trimmedName,
+          owner_name: trimmedName,
+          fullName: trimmedName,
+          phone: phoneDigits,
+          phoneNumber: phoneDigits,
+          phone_number: phoneDigits,
+          rawUserData: updatedRawUser,
+          userData: updatedUserData,
+        };
+
+        await this.setUser(updatedUser);
+
+        return {
+          success: true,
+          message: data?.message || 'Profile updated successfully',
+          user: updatedUser,
+        };
+      }
+
+      const errors =
+        data?.errors ||
+        data?.data?.errors ||
+        data?.data?.data?.errors ||
+        (data && typeof data === 'object' && (data.validationErrors || data.error));
+
+      let errorMessage = data?.message || data?.error || 'Failed to update profile. Please try again.';
+      if (errors && typeof errors === 'object') {
+        const errorKeys = Object.keys(errors);
+        if (errorKeys.length > 0) {
+          const first = errors[errorKeys[0]];
+          errorMessage = Array.isArray(first) ? first[0] : String(first);
+        }
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        validationErrors: errors,
+        isAuthError: response.status === 401,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || 'Network error. Please check your internet connection and try again.',
       };
     }
   }

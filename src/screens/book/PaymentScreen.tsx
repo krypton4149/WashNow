@@ -172,11 +172,11 @@ const PaymentScreen: React.FC<Props> = ({
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top","bottom"]}>
-      <View style={[styles.header, { backgroundColor: colors.primary, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.background} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.background }]}>Payment</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Payment</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -202,101 +202,103 @@ const PaymentScreen: React.FC<Props> = ({
           </View>
         </View>
 
+        {/* Vehicle Details - Show for all payment methods */}
+        <View style={[styles.vehicleDetailsSection, { backgroundColor: colors.card }]}>
+          <Text style={[styles.serviceTitle, { color: colors.text }]}>Vehicle Details</Text>
+          <TextInput
+            style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
+            placeholder="Vehicle number (e.g., UP68 AB1234)"
+            placeholderTextColor={colors.textSecondary}
+            value={vehicleNumber}
+            onChangeText={setVehicleNumber}
+            autoCapitalize="characters"
+          />
+          <TextInput
+            style={[styles.input, { marginTop: 12, borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
+            placeholder="Notes (optional)"
+            placeholderTextColor={colors.textSecondary}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={3}
+          />
+        </View>
+
         {/* Payment Method Selection */}
         <View style={styles.paymentSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Payment Method</Text>
           
-          <TouchableOpacity 
-            style={[
-              styles.paymentMethod,
-              { backgroundColor: colors.card, borderColor: colors.border },
-              selectedPaymentMethod === 'card' && { borderColor: colors.button, backgroundColor: colors.surface }
-            ]}
-            onPress={() => setSelectedPaymentMethod('card')}
-          >
-            <View style={styles.paymentMethodLeft}>
-              <Ionicons name="card" size={24} color={colors.text} />
-              <Text style={[styles.paymentMethodText, { color: colors.text }]}>Credit/Debit Card</Text>
-            </View>
-            <View style={[
-              styles.radioButton,
-              { borderColor: colors.border },
-              selectedPaymentMethod === 'card' && { borderColor: colors.button }
-            ]}>
-              {selectedPaymentMethod === 'card' && (
-                <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
-              )}
-            </View>
-          </TouchableOpacity>
+          <View style={styles.paymentMethodsContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.paymentMethod,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                selectedPaymentMethod === 'card' && { borderColor: colors.button, backgroundColor: colors.surface }
+              ]}
+              onPress={() => setSelectedPaymentMethod('card')}
+            >
+              <View style={styles.paymentMethodLeft}>
+                <Ionicons name="card" size={24} color={colors.text} />
+                <Text style={[styles.paymentMethodText, { color: colors.text }]}>Credit/Debit Card</Text>
+              </View>
+              <View style={[
+                styles.radioButton,
+                { borderColor: colors.border },
+                selectedPaymentMethod === 'card' && { borderColor: colors.button }
+              ]}>
+                {selectedPaymentMethod === 'card' && (
+                  <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
+                )}
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[
-              styles.paymentMethod,
-              { backgroundColor: colors.card, borderColor: colors.border },
-              selectedPaymentMethod === 'wallet' && { borderColor: colors.button, backgroundColor: colors.surface }
-            ]}
-            onPress={() => setSelectedPaymentMethod('wallet')}
-          >
-            <View style={styles.paymentMethodLeft}>
-              <Ionicons name="wallet" size={24} color={colors.text} />
-              <Text style={[styles.paymentMethodText, { color: colors.text }]}>Digital Wallet</Text>
-            </View>
-            <View style={[
-              styles.radioButton,
-              { borderColor: colors.border },
-              selectedPaymentMethod === 'wallet' && { borderColor: colors.button }
-            ]}>
-              {selectedPaymentMethod === 'wallet' && (
-                <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
-              )}
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity 
+              style={[
+                styles.paymentMethod,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                selectedPaymentMethod === 'wallet' && { borderColor: colors.button, backgroundColor: colors.surface }
+              ]}
+              onPress={() => setSelectedPaymentMethod('wallet')}
+            >
+              <View style={styles.paymentMethodLeft}>
+                <Ionicons name="wallet" size={24} color={colors.text} />
+                <Text style={[styles.paymentMethodText, { color: colors.text }]}>Digital Wallet</Text>
+              </View>
+              <View style={[
+                styles.radioButton,
+                { borderColor: colors.border },
+                selectedPaymentMethod === 'wallet' && { borderColor: colors.button }
+              ]}>
+                {selectedPaymentMethod === 'wallet' && (
+                  <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
+                )}
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[
-              styles.paymentMethod,
-              { backgroundColor: colors.card, borderColor: colors.border },
-              selectedPaymentMethod === 'cash' && { borderColor: colors.button, backgroundColor: colors.surface }
-            ]}
-            onPress={() => setSelectedPaymentMethod('cash')}
-          >
-            <View style={styles.paymentMethodLeft}>
-              <Ionicons name="cash" size={24} color={colors.text} />
-              <Text style={[styles.paymentMethodText, { color: colors.text }]}>Cash</Text>
-            </View>
-            <View style={[
-              styles.radioButton,
-              { borderColor: colors.border },
-              selectedPaymentMethod === 'cash' && { borderColor: colors.button }
-            ]}>
-              {selectedPaymentMethod === 'cash' && (
-                <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Vehicle details for Cash */}
-        {selectedPaymentMethod === 'cash' && (
-          <View style={[styles.serviceCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.serviceTitle, { color: colors.text }]}>Vehicle Details</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
-              placeholder="Vehicle number (e.g., UP68 AB1234)"
-              placeholderTextColor={colors.textSecondary}
-              value={vehicleNumber}
-              onChangeText={setVehicleNumber}
-              autoCapitalize="characters"
-            />
-            <TextInput
-              style={[styles.input, { marginTop: 12, borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
-              placeholder="Notes (optional)"
-              placeholderTextColor={colors.textSecondary}
-              value={notes}
-              onChangeText={setNotes}
-            />
+            <TouchableOpacity 
+              style={[
+                styles.paymentMethod,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                selectedPaymentMethod === 'cash' && { borderColor: colors.button, backgroundColor: colors.surface }
+              ]}
+              onPress={() => setSelectedPaymentMethod('cash')}
+            >
+              <View style={styles.paymentMethodLeft}>
+                <Ionicons name="cash" size={24} color={colors.text} />
+                <Text style={[styles.paymentMethodText, { color: colors.text }]}>Cash</Text>
+              </View>
+              <View style={[
+                styles.radioButton,
+                { borderColor: colors.border },
+                selectedPaymentMethod === 'cash' && { borderColor: colors.button }
+              ]}>
+                {selectedPaymentMethod === 'cash' && (
+                  <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
+                )}
+              </View>
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
 
         {/* Payment Summary (hidden for Cash) */}
         {selectedPaymentMethod !== 'cash' && (
@@ -406,6 +408,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
+  paymentMethodsContainer: {
+    marginBottom: 0,
+  },
   paymentMethod: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -419,6 +424,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+  vehicleDetailsSection: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   paymentMethodSelected: {},
   paymentMethodLeft: {

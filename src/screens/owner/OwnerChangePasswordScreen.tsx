@@ -17,9 +17,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 interface Props {
   onBack?: () => void;
   onPasswordChanged?: () => void;
+  onLogout?: () => void;
 }
 
-const ChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged }) => {
+const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged, onLogout }) => {
   const { colors } = useTheme();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -78,11 +79,11 @@ const ChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged }) =>
       if (result.success) {
         Alert.alert(
           'Success',
-          result.message || 'Password updated successfully!',
+          result.message || 'Password changed successfully. Please log in again.',
           [
             {
               text: 'OK',
-              onPress: () => {
+              onPress: async () => {
                 // Clear form
                 setCurrentPassword('');
                 setNewPassword('');
@@ -93,7 +94,16 @@ const ChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged }) =>
                   hasLowercase: false,
                   hasNumber: false,
                 });
-                onPasswordChanged?.();
+                
+                // Logout the user after password change
+                try {
+                  await authService.logoutOwner();
+                } catch (logoutError) {
+                  console.error('[OwnerChangePasswordScreen] Logout error:', logoutError);
+                }
+                
+                // Call logout callback to navigate to login
+                onLogout?.();
               },
             },
           ]
@@ -101,9 +111,12 @@ const ChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged }) =>
       } else {
         Alert.alert('Error', result.error || 'Failed to change password. Please try again.');
       }
-    } catch (error) {
-      console.error('Change password error:', error);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } catch (error: any) {
+      console.error('[OwnerChangePasswordScreen] Change password error:', error);
+      Alert.alert(
+        'Error',
+        error?.message || 'An unexpected error occurred. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +159,7 @@ const ChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged }) =>
     <View key={text} style={styles.requirementRow}>
       <View style={[
         styles.requirementIcon,
-        { backgroundColor: isMet ? colors.success : colors.border }
+        { backgroundColor: isMet ? colors.success || '#10B981' : colors.border }
       ]}>
         {isMet && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
       </View>
@@ -155,7 +168,7 @@ const ChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged }) =>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -168,7 +181,12 @@ const ChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged }) =>
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
+      >
         {renderPasswordInput(
           'Current Password',
           'Enter current password',
@@ -210,36 +228,32 @@ const ChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged }) =>
         )}
 
         {/* Security Tip */}
-        <View style={[styles.securityTipContainer, { backgroundColor: '#EFF6FF' }]}>
-          <Ionicons name="information-circle-outline" size={20} color="#3B82F6" />
-          <Text style={styles.securityTipText}>
+        <View style={[styles.securityTipContainer, { backgroundColor: colors.surface }]}>
+          <Ionicons name="information-circle-outline" size={20} color={colors.primary || '#3B82F6'} />
+          <Text style={[styles.securityTipText, { color: colors.textSecondary }]}>
             Use a strong, unique password that you don't use for other accounts. Consider using a password manager.
           </Text>
         </View>
       </ScrollView>
 
       {/* Bottom Section */}
-      <View style={[styles.bottomContainer, { backgroundColor: colors.background }]}>
-        <View style={styles.previewContainer}>
-          <TouchableOpacity style={[styles.previewButton, { backgroundColor: colors.border }]}>
-            <Text style={[styles.previewButtonText, { color: colors.text }]}>Preview</Text>
-          </TouchableOpacity>
-        </View>
-        
+      <View style={[styles.bottomContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity
           style={[
             styles.updateButton,
-            { backgroundColor: (isFormValid() && !isLoading) ? colors.button : colors.border }
+            { 
+              backgroundColor: (isFormValid() && !isLoading) ? (colors.button || colors.primary || '#3B82F6') : colors.border 
+            }
           ]}
           onPress={handleUpdatePassword}
-          disabled={isLoading}
+          disabled={!isFormValid() || isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color={colors.buttonText} />
+            <ActivityIndicator color={colors.buttonText || '#FFFFFF'} />
           ) : (
             <Text style={[
               styles.updateButtonText,
-              { color: colors.buttonText }
+              { color: (isFormValid() && !isLoading) ? (colors.buttonText || '#FFFFFF') : colors.textSecondary }
             ]}>
               Update Password
             </Text>
@@ -258,7 +272,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
   },
   backButton: {
@@ -275,11 +289,6 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     marginTop: 2,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
   },
   inputContainer: {
     marginBottom: 20,
@@ -342,32 +351,27 @@ const styles = StyleSheet.create({
   securityTipText: {
     flex: 1,
     fontSize: 14,
-    color: '#3B82F6',
     lineHeight: 20,
   },
   bottomContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
   },
-  previewContainer: {
-    alignItems: 'flex-end',
-    marginBottom: 16,
+  scrollView: {
+    flex: 1,
   },
-  previewButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  previewButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
   },
   updateButton: {
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   updateButtonText: {
     fontSize: 16,
@@ -375,4 +379,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChangePasswordScreen;
+export default OwnerChangePasswordScreen;
+

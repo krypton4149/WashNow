@@ -134,6 +134,8 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
           '',
         rawUserData: userPayload,
         userData: userPayload,
+        bookingsList: payload?.bookingsList || userPayload?.bookingsList || null,
+        booking_status_totals: payload?.bookingsList?.booking_status_totals || userPayload?.bookingsList?.booking_status_totals || null,
         token: payload?.token || payload?.access_token || payload?.jwt || null,
       };
 

@@ -79,25 +79,25 @@ const SettingsScreen: React.FC<Props> = ({
             <Ionicons name={icon as any} size={20} color="#FFFFFF" />
           </View>
           <View style={styles.settingContent}>
-            <Text style={styles.settingTitle}>{title}</Text>
-            {description && <Text style={styles.settingDescription}>{description}</Text>}
+            <Text style={[styles.settingTitle, { color: colors.text }]}>{title}</Text>
+            {description && <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>{description}</Text>}
           </View>
         </View>
         {rightComponent || (
-          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         )}
       </TouchableOpacity>
-      {showDivider && <View style={styles.divider} />}
+      {showDivider && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
     </>
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
+      <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000000" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -119,8 +119,8 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Notifications Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {renderSettingItem(
               '#3366FF',
               'notifications-outline',
@@ -130,8 +130,8 @@ const SettingsScreen: React.FC<Props> = ({
               <Switch
                 value={pushNotifications}
                 onValueChange={setPushNotifications}
-                trackColor={{ false: '#E5E7EB', true: '#000000' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: colors.border, true: colors.primary + '33' }}
+                thumbColor={pushNotifications ? colors.primary : colors.surface}
               />
             )}
             {renderSettingItem(
@@ -143,8 +143,8 @@ const SettingsScreen: React.FC<Props> = ({
               <Switch
                 value={promotionalAlerts}
                 onValueChange={setPromotionalAlerts}
-                trackColor={{ false: '#E5E7EB', true: '#000000' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: colors.border, true: colors.primary + '33' }}
+                thumbColor={promotionalAlerts ? colors.primary : colors.surface}
               />,
               false
             )}
@@ -153,8 +153,8 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {renderSettingItem(
               '#4CAF50',
               'globe-outline',
@@ -171,8 +171,8 @@ const SettingsScreen: React.FC<Props> = ({
               <Switch
                 value={isDarkMode}
                 onValueChange={handleDarkModeChange}
-                trackColor={{ false: '#E5E7EB', true: '#000000' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: colors.border, true: colors.primary + '33' }}
+                thumbColor={isDarkMode ? colors.primary : colors.surface}
               />,
               false
             )}
@@ -181,8 +181,8 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Security Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Security</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Security</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {renderSettingItem(
               '#DC2626',
               'lock-closed-outline',
@@ -197,8 +197,8 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Support Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Support</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {renderSettingItem(
               '#F97316',
               'help-circle-outline',
@@ -213,7 +213,7 @@ const SettingsScreen: React.FC<Props> = ({
 
         {/* Version Info */}
         <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>Version 1.0.0</Text>
+          <Text style={[styles.versionText, { color: colors.textSecondary }]}>Version 1.0.0</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -223,7 +223,6 @@ const SettingsScreen: React.FC<Props> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -231,7 +230,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
   },
   backButton: {
     padding: 4,
@@ -239,7 +237,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
   },
   content: {
     flex: 1,
@@ -283,13 +280,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 12,
-    color: '#000000',
   },
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -324,15 +318,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
-    color: '#000000',
   },
   settingDescription: {
     fontSize: 14,
-    color: '#6B7280',
   },
   divider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
     marginLeft: 68,
     marginRight: 16,
   },
@@ -343,7 +334,6 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 14,
-    color: '#9CA3AF',
   },
 });
 

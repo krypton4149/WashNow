@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
+import OwnerEditProfileScreen from './OwnerEditProfileScreen';
+import { useTheme } from '../../context/ThemeContext';
 
 interface OwnerAccountScreenProps {
   onBack?: () => void;
@@ -19,8 +21,10 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   onOpenSettings,
   onOpenSupport,
 }) => {
+  const { colors } = useTheme();
   const [storedOwnerData, setStoredOwnerData] = useState<any | null>(userData ?? null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -238,135 +242,154 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
     });
   }
 
+  const handleEditProfilePress = () => {
+    setIsEditingProfile(true);
+    onEditProfile?.();
+  };
+
+  const handleProfileSaved = (updatedOwner: any) => {
+    setStoredOwnerData(updatedOwner);
+    setIsEditingProfile(false);
+  };
+
+  if (isEditingProfile) {
+    return (
+      <OwnerEditProfileScreen
+        ownerData={storedOwnerData}
+        onBack={() => setIsEditingProfile(false)}
+        onSave={handleProfileSaved}
+      />
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color="#111827" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         )}
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
         <TouchableOpacity
           style={styles.editButton}
-          onPress={onEditProfile}
-          disabled={!onEditProfile}
+          onPress={handleEditProfilePress}
         >
           <Ionicons
             name="pencil-outline"
             size={22}
-            color={onEditProfile ? '#111827' : '#D1D5DB'}
+            color={colors.text}
           />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
       >
         {isLoading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#111827" />
-            <Text style={styles.loadingText}>Loading profile...</Text>
+          <View style={[styles.loadingContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <ActivityIndicator size="small" color={colors.text} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading profile...</Text>
           </View>
         )}
 
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
           <View style={styles.avatar}>
-            <Ionicons name="storefront-outline" size={36} color="#6B7280" />
+            <Ionicons name="storefront-outline" size={36} color={colors.textSecondary} />
           </View>
-          <Text style={styles.businessName}>{business.name}</Text>
-          <Text style={styles.ownerName}>{business.ownerName}</Text>
+          <Text style={[styles.businessName, { color: colors.text }]}>{business.name}</Text>
+          <Text style={[styles.ownerName, { color: colors.textSecondary }]}>{business.ownerName}</Text>
           <View style={styles.ratingRow}>
             <Ionicons name="star" size={16} color="#F59E0B" />
-            <Text style={styles.ratingText}>{business.rating.toFixed(1)}</Text>
+            <Text style={[styles.ratingText, { color: colors.text }]}>{business.rating.toFixed(1)}</Text>
             <View style={styles.separatorDot} />
-            <Text style={styles.bookingCount}>{`${business.totalBookings} bookings`}</Text>
+            <Text style={[styles.bookingCount, { color: colors.textSecondary }]}>{`${business.totalBookings} bookings`}</Text>
           </View>
         </View>
 
-        <View style={styles.sectionCard}>
+        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
           {contactDetails.map((detail, index) => (
             <View key={detail.id}>
               <View style={styles.infoRow}>
                 <View style={styles.infoIcon}>
-                  <Ionicons name={detail.icon} size={20} color="#111827" />
+                  <Ionicons name={detail.icon} size={20} color={colors.text} />
                 </View>
                 <View style={styles.infoTextContainer}>
-                  <Text style={styles.infoLabel}>{detail.label}</Text>
-                  <Text style={styles.infoValue}>{detail.value}</Text>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{detail.label}</Text>
+                  <Text style={[styles.infoValue, { color: colors.text }]}>{detail.value}</Text>
                 </View>
               </View>
-              {index < contactDetails.length - 1 && <View style={styles.divider} />}
+              {index < contactDetails.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
             </View>
           ))}
         </View>
 
-        <View style={styles.sectionCard}>
+        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <View style={styles.sectionIcon}>
-                <Ionicons name="time-outline" size={18} color="#111827" />
+                <Ionicons name="time-outline" size={18} color={colors.text} />
               </View>
-              <Text style={styles.sectionTitle}>Working Hours</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{'Working Hours'}</Text>
             </View>
             <View style={styles.previewPill}>
               <Text style={styles.previewText}>Preview</Text>
             </View>
           </View>
           <View style={styles.hoursRow}>
-            <Text style={styles.hoursDays}>{business.hours.days}</Text>
-            <Text style={styles.hoursTime}>{`${business.hours.open} - ${business.hours.close}`}</Text>
+            <Text style={[styles.hoursDays, { color: colors.textSecondary }]}>{business.hours.days}</Text>
+            <Text style={[styles.hoursTime, { color: colors.text }]}>{`${business.hours.open} - ${business.hours.close}`}</Text>
           </View>
         </View>
 
-        <View style={styles.sectionCard}>
+        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
           <View style={styles.sectionTitleRow}>
             <View style={styles.sectionIcon}>
-              <Ionicons name="briefcase-outline" size={18} color="#111827" />
+              <Ionicons name="briefcase-outline" size={18} color={colors.text} />
             </View>
-            <Text style={styles.sectionTitle}>Services Offered</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{'Services Offered'}</Text>
           </View>
           <View style={styles.servicesContainer}>
             {business.services.map((service: string) => (
-              <View key={service} style={styles.serviceChip}>
-                <Text style={styles.serviceText}>{service}</Text>
+              <View key={service} style={[styles.serviceChip, { borderColor: colors.border }]}>
+                <Text style={[styles.serviceText, { color: colors.text }]}>{service}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        <View style={styles.actionCard}>
+        <View style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
           <TouchableOpacity
-            style={[styles.actionItem, styles.actionItemTop]}
+            style={[styles.actionItem, styles.actionItemTop, { backgroundColor: colors.surface }]}
             activeOpacity={0.7}
             onPress={onOpenSettings}
             disabled={!onOpenSettings}
           >
             <View style={styles.actionItemLeft}>
               <View style={styles.actionIcon}>
-                <Ionicons name="settings-outline" size={20} color="#111827" />
+                <Ionicons name="settings-outline" size={20} color={colors.text} />
               </View>
-              <Text style={styles.actionLabel}>Settings</Text>
+              <Text style={[styles.actionLabel, { color: colors.text }]}>{'Settings'}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
-          <View style={styles.actionDivider} />
+          <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
           <TouchableOpacity
-            style={[styles.actionItem, styles.actionItemBottom]}
+            style={[styles.actionItem, styles.actionItemBottom, { backgroundColor: colors.surface }]}
             activeOpacity={0.7}
             onPress={onOpenSupport}
             disabled={!onOpenSupport}
           >
             <View style={styles.actionItemLeft}>
               <View style={styles.actionIcon}>
-                <Ionicons name="help-circle-outline" size={20} color="#111827" />
+                <Ionicons name="help-circle-outline" size={20} color={colors.text} />
               </View>
-              <Text style={styles.actionLabel}>Help & Support</Text>
+              <Text style={[styles.actionLabel, { color: colors.text }]}>{'Help & Support'}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -384,7 +407,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#F3F4F6',
   },
@@ -410,8 +433,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 36,
-    paddingTop: 18,
+    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
+    paddingTop: 12,
   },
   loadingContainer: {
     marginBottom: 14,

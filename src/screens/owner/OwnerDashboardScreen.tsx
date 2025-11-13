@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
+import apiClient from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
 
 interface OwnerDashboardScreenProps {
   onLogout?: () => void;
@@ -33,7 +35,17 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   onBookingRequestPress,
   businessName: businessNameProp = 'Premium Auto Wash',
 }) => {
+  const { colors } = useTheme();
   const [resolvedBusinessName, setResolvedBusinessName] = useState<string>(businessNameProp);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+  const [metrics, setMetrics] = useState({
+    todayBookings: 0,
+    activeNow: 0,
+    completed: 0,
+    todayRevenue: 0,
+    pending: 0,
+    cancelled: 0,
+  });
 
   useEffect(() => {
     setResolvedBusinessName(businessNameProp);
@@ -42,17 +54,21 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   useEffect(() => {
     let isMounted = true;
 
-    const loadBusinessName = async () => {
+    const loadOwnerDashboardData = async () => {
       try {
         const storedUser = await authService.getUser();
         if (!isMounted || !storedUser) {
           return;
         }
 
+        console.log('[OwnerDashboardScreen] stored user', storedUser);
+
         const profile =
           storedUser?.rawUserData ||
           storedUser?.userData ||
           storedUser;
+
+        console.log('[OwnerDashboardScreen] resolved profile', profile);
 
         const nameCandidate =
           profile?.businessName ||
@@ -65,27 +81,95 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         if (typeof nameCandidate === 'string' && nameCandidate.trim().length > 0) {
           setResolvedBusinessName(nameCandidate.trim());
         }
+
+        const bookingTotals =
+          profile?.bookingsList?.booking_status_totals ||
+          storedUser?.bookingsList?.booking_status_totals ||
+          storedUser?.booking_status_totals ||
+          storedUser?.bookingsList ||
+          storedUser?.bookings_list ||
+          storedUser?.bookingList ||
+          (profile?.bookingsList && typeof profile.bookingsList === 'object' ? profile.bookingsList : {}) ||
+          {};
+
+        console.log('[OwnerDashboardScreen] booking totals raw', bookingTotals);
+
+        const pending =
+          Number(bookingTotals.Pending ?? bookingTotals.pending ?? bookingTotals['Pending'] ?? bookingTotals['pending'] ?? 0) || 0;
+        const completed =
+          Number(bookingTotals.completed ?? bookingTotals.Completed ?? bookingTotals['completed'] ?? bookingTotals['Completed'] ?? 0) || 0;
+        const cancelled =
+          Number(bookingTotals.cancelled ?? bookingTotals.Cancelled ?? bookingTotals['cancelled'] ?? bookingTotals['Cancelled'] ?? 0) || 0;
+        const total = pending + completed + cancelled;
+
+        setMetrics({
+          todayBookings: total,
+          activeNow: pending,
+          completed,
+          todayRevenue: storedUser?.todayRevenue ??
+            storedUser?.today_revenue ??
+            profile?.todayRevenue ??
+            profile?.today_revenue ??
+            0,
+          pending,
+          cancelled,
+        });
       } catch (error) {
-        // Swallow error silently; keep existing business name fallback
+        console.log('[OwnerDashboardScreen] failed to load owner dashboard data', error);
       }
     };
 
-    loadBusinessName();
+    loadOwnerDashboardData();
+
+    const loadBookingSummaryFromApi = async () => {
+      try {
+        const token = await authService.getToken();
+        if (!token || !isMounted) {
+          return;
+        }
+
+        const response = await apiClient.get('/user/bookings', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const summary =
+          response.data?.data?.bookingsList?.booking_status_totals ||
+          response.data?.data?.booking_status_totals ||
+          response.data?.booking_status_totals ||
+          {};
+
+        console.log('[OwnerDashboardScreen] booking totals api', summary);
+
+        const pending =
+          Number(summary.Pending ?? summary.pending ?? summary['Pending'] ?? summary['pending'] ?? metrics.pending) || 0;
+        const completed =
+          Number(summary.completed ?? summary.Completed ?? summary['completed'] ?? summary['Completed'] ?? metrics.completed) || 0;
+        const cancelled =
+          Number(summary.cancelled ?? summary.Cancelled ?? summary['cancelled'] ?? summary['Cancelled'] ?? metrics.cancelled) || 0;
+        const total = pending + completed + cancelled;
+
+        if (isMounted) {
+          setMetrics((prev) => ({
+            ...prev,
+            todayBookings: total,
+            pending,
+            completed,
+            cancelled,
+          }));
+        }
+      } catch (error) {
+        console.log('[OwnerDashboardScreen] failed to fetch booking summary from API', error);
+      }
+    };
+
+    loadBookingSummaryFromApi();
 
     return () => {
       isMounted = false;
     };
   }, []);
-
-  // Dummy data - in real app, this would come from API
-  const [metrics] = useState({
-    todayBookings: 12,
-    activeNow: 5,
-    completed: 7,
-    todayRevenue: 340,
-  });
-
-  const [newBookingRequests] = useState(3);
 
   const [recentActivities] = useState<RecentActivity[]>([
     {
@@ -106,6 +190,29 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
     },
   ]);
 
+  const pendingSummary = metrics.pending > 0
+    ? `${metrics.pending} customers waiting for response`
+    : 'No pending booking requests';
+
+  const themeStyles = useMemo(() => ({
+    container: { backgroundColor: colors.background },
+    scrollContent: { backgroundColor: colors.background },
+    headerText: { color: colors.text },
+    metricCard: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' },
+    metricLabel: { color: colors.textSecondary },
+    metricValue: { color: colors.text },
+    banner: { backgroundColor: colors.button },
+    bannerTitle: { color: colors.buttonText },
+    bannerSubtitle: { color: colors.buttonText + 'CC' },
+    bannerBadge: { backgroundColor: colors.surface },
+    bannerBadgeText: { color: colors.text },
+    sectionTitle: { color: colors.text },
+    seeAll: { color: colors.textSecondary },
+    activityCard: { backgroundColor: colors.card, borderColor: colors.border },
+    activityText: { color: colors.text },
+    activitySub: { color: colors.textSecondary },
+  }), [colors]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pending':
@@ -119,34 +226,63 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
     }
   };
 
+  const performLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+    setIsLoggingOut(true);
+    try {
+      const result = await authService.logoutOwner();
+      if (!result.success) {
+        Alert.alert('Logout Failed', result.error || 'Unable to logout. Please try again.');
+        return;
+      }
+
+      if (onLogout) {
+        onLogout();
+        return;
+      }
+
+      Alert.alert('Logged Out', result.message || 'You have been logged out.');
+    } catch (error: any) {
+      Alert.alert('Logout Failed', error?.message || 'Unable to logout. Please try again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   const handleLogout = () => {
+    if (isLoggingOut) {
+      return;
+    }
     Alert.alert(
       'Logout',
       'Are you sure you want to log out?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: onLogout },
+        { text: 'Logout', style: 'destructive', onPress: () => { void performLogout(); } },
       ]
     );
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, themeStyles.container]} edges={['bottom']}>
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, themeStyles.scrollContent]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
       >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.businessName}>{resolvedBusinessName}</Text>
+            <Text style={[styles.welcomeText, themeStyles.headerText]}>Welcome back,</Text>
+            <Text style={[styles.businessName, themeStyles.headerText]}>{resolvedBusinessName}</Text>
           </View>
           <TouchableOpacity 
-            style={styles.logoutButton}
+            style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
             onPress={handleLogout}
+            disabled={isLoggingOut}
           >
             <Ionicons name="exit-outline" size={24} color="#111827" />
           </TouchableOpacity>
@@ -154,66 +290,66 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
 
         {/* Metrics Cards */}
         <View style={styles.metricsContainer}>
-          {/* Today's Bookings */}
-          <View style={styles.metricCard}>
+          {/* Total / Today's Bookings */}
+          <View style={[styles.metricCard, themeStyles.metricCard]}>
             <View style={styles.metricIconContainer}>
               <Ionicons name="calendar-outline" size={24} color="#111827" />
             </View>
-            <Text style={styles.metricValue}>{metrics.todayBookings}</Text>
-            <Text style={styles.metricLabel}>Today's Bookings</Text>
+            <Text style={[styles.metricValue, themeStyles.metricValue]}>{metrics.todayBookings}</Text>
+            <Text style={[styles.metricLabel, themeStyles.metricLabel]}>Total Bookings</Text>
           </View>
 
-          {/* Active Now */}
-          <View style={styles.metricCard}>
+          {/* Pending (Active Now) */}
+          <View style={[styles.metricCard, themeStyles.metricCard]}>
             <View style={styles.metricIconContainer}>
               <Ionicons name="time-outline" size={24} color="#111827" />
             </View>
-            <Text style={styles.metricValue}>{metrics.activeNow}</Text>
-            <Text style={styles.metricLabel}>Active Now</Text>
+            <Text style={[styles.metricValue, themeStyles.metricValue]}>{metrics.pending}</Text>
+            <Text style={[styles.metricLabel, themeStyles.metricLabel]}>Pending</Text>
           </View>
 
           {/* Completed */}
-          <View style={styles.metricCard}>
+          <View style={[styles.metricCard, themeStyles.metricCard]}>
             <View style={styles.metricIconContainer}>
               <Ionicons name="checkmark-circle-outline" size={24} color="#111827" />
             </View>
-            <Text style={styles.metricValue}>{metrics.completed}</Text>
-            <Text style={styles.metricLabel}>Completed</Text>
+            <Text style={[styles.metricValue, themeStyles.metricValue]}>{metrics.completed}</Text>
+            <Text style={[styles.metricLabel, themeStyles.metricLabel]}>Completed</Text>
           </View>
 
-          {/* Today's Revenue */}
-          <View style={styles.metricCard}>
+          {/* Cancelled */}
+          <View style={[styles.metricCard, themeStyles.metricCard]}>
             <View style={styles.metricIconContainer}>
-              <Ionicons name="cash-outline" size={24} color="#111827" />
+              <Ionicons name="close-circle-outline" size={24} color="#111827" />
             </View>
-            <Text style={styles.metricValue}>${metrics.todayRevenue}</Text>
-            <Text style={styles.metricLabel}>Today's Revenue</Text>
+            <Text style={[styles.metricValue, themeStyles.metricValue]}>{metrics.cancelled}</Text>
+            <Text style={[styles.metricLabel, themeStyles.metricLabel]}>Cancelled</Text>
           </View>
         </View>
 
         {/* New Booking Requests Banner */}
         <TouchableOpacity 
-          style={styles.bookingRequestsBanner}
+          style={[styles.bookingRequestsBanner, themeStyles.banner]}
           onPress={onBookingRequestPress}
           activeOpacity={0.8}
         >
           <View style={styles.bookingRequestsLeft}>
-            <Text style={styles.bookingRequestsTitle}>New Booking Requests</Text>
-            <Text style={styles.bookingRequestsSubtitle}>
-              {newBookingRequests} customers waiting for response
+            <Text style={[styles.bookingRequestsTitle, themeStyles.bannerTitle]}>New Booking Requests</Text>
+            <Text style={[styles.bookingRequestsSubtitle, themeStyles.bannerSubtitle]}>
+              {pendingSummary}
             </Text>
           </View>
-          <View style={styles.bookingRequestsBadge}>
-            <Text style={styles.bookingRequestsBadgeText}>{newBookingRequests}</Text>
+          <View style={[styles.bookingRequestsBadge, themeStyles.bannerBadge]}>
+            <Text style={[styles.bookingRequestsBadgeText, themeStyles.bannerBadgeText]}>{metrics.pending}</Text>
           </View>
         </TouchableOpacity>
 
         {/* Recent Activity Section */}
         <View style={styles.recentActivitySection}>
           <View style={styles.recentActivityHeader}>
-            <Text style={styles.recentActivityTitle}>Recent Activity</Text>
+            <Text style={[styles.recentActivityTitle, themeStyles.sectionTitle]}>Recent Activity</Text>
             <TouchableOpacity onPress={onViewAllActivity}>
-              <Text style={styles.seeAllText}>See all &gt;</Text>
+              <Text style={[styles.seeAllText, themeStyles.seeAll]}>See all &gt;</Text>
             </TouchableOpacity>
           </View>
 
@@ -222,17 +358,17 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
             {recentActivities.map((activity) => {
               const statusColors = getStatusColor(activity.status);
               return (
-                <View key={activity.id} style={styles.activityCard}>
+                <View key={activity.id} style={[styles.activityCard, themeStyles.activityCard]}>
                   <View style={styles.activityLeft}>
-                    <Text style={styles.activityCustomerName}>
+                    <Text style={[styles.activityCustomerName, themeStyles.activityText]}>
                       {activity.customerName}
                     </Text>
-                    <Text style={styles.activityCarModel}>
+                    <Text style={[styles.activityCarModel, themeStyles.activitySub]}>
                       {activity.carModel}
                     </Text>
                     <View style={styles.activityTimeContainer}>
-                      <Ionicons name="time-outline" size={14} color="#6B7280" />
-                      <Text style={styles.activityTime}>{activity.time}</Text>
+                      <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                      <Text style={[styles.activityTime, themeStyles.activitySub]}>{activity.time}</Text>
                     </View>
                   </View>
                   <View style={styles.activityRight}>
@@ -273,8 +409,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 18,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingTop: 12,
+    paddingBottom: 50, // Increased for all screen sizes (5.4", 6.1", 6.4", 6.7", etc.)
   },
   header: {
     flexDirection: 'row',
@@ -302,6 +438,9 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logoutButtonDisabled: {
+    opacity: 0.5,
   },
   metricsContainer: {
     flexDirection: 'row',

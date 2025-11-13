@@ -8,6 +8,7 @@ import OwnerActivityScreen from '../screens/owner/OwnerActivityScreen';
 import OwnerAccountScreen from '../screens/owner/OwnerAccountScreen';
 import OwnerSettingsScreen from '../screens/owner/OwnerSettingsScreen';
 import OwnerSupportScreen from '../screens/owner/OwnerSupportScreen';
+import OwnerChangePasswordScreen from '../screens/owner/OwnerChangePasswordScreen';
 import { useTheme } from '../context/ThemeContext';
 
 type TabKey = 'home' | 'requests' | 'activity' | 'account';
@@ -28,7 +29,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('home');
-  const [accountSubView, setAccountSubView] = useState<'profile' | 'settings' | 'support'>('profile');
+  const [accountSubView, setAccountSubView] = useState<'profile' | 'settings' | 'support' | 'password'>('profile');
 
   const renderContent = () => {
     switch (activeTab) {
@@ -59,12 +60,23 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
             return (
               <OwnerSettingsScreen
                 onBack={() => setAccountSubView('profile')}
+                onChangePassword={() => setAccountSubView('password')}
               />
             );
           case 'support':
             return (
               <OwnerSupportScreen
                 onBack={() => setAccountSubView('profile')}
+              />
+            );
+          case 'password':
+            return (
+              <OwnerChangePasswordScreen
+                onBack={() => setAccountSubView('settings')}
+                onPasswordChanged={() => {
+                  setAccountSubView('profile');
+                }}
+                onLogout={onLogout}
               />
             );
           default:
@@ -86,7 +98,9 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
   const TabButton = ({ keyId, icon, label }: { keyId: TabKey; icon: string; label: string }) => {
     const isActive = activeTab === keyId;
     const iconName = isActive ? (icon.replace('-outline', '') as any) : (icon as any);
-    const color = isActive ? '#000000' : '#6B7280';
+    const activeColor = colors.button;
+    const inactiveColor = colors.textSecondary;
+    const color = isActive ? activeColor : inactiveColor;
     return (
       <TouchableOpacity style={styles.tab} onPress={() => setActiveTab(keyId)}>
         <Ionicons name={iconName} size={24} color={color} />
