@@ -30,7 +30,7 @@ const lightColors = {
   textSecondary: '#6B7280',
   border: '#E5E7EB',
   card: '#FFFFFF',
-  button: '#1F2937',
+  button: '#2563EB',
   buttonText: '#FFFFFF',
   error: '#DC2626',
   success: '#10B981',

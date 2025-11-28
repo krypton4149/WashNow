@@ -76,9 +76,9 @@ const BookingConfirmedScreen: React.FC<Props> = ({
       <View style={styles.content}>
         {/* Match Found Banner */}
         <View style={[styles.matchFoundBanner,{ backgroundColor: theme.card }]}>
-          <View style={styles.matchIcon}>
+          <View style={[styles.matchIcon, { backgroundColor: theme.accent }]}>
             <Ionicons name="checkmark" size={16} color={colors.buttonText} />
-            <View style={styles.clockIcon}>
+            <View style={[styles.clockIcon, { backgroundColor: theme.accent }]}>
               <Ionicons name="time" size={8} color={colors.buttonText} />
             </View>
           </View>
@@ -90,7 +90,7 @@ const BookingConfirmedScreen: React.FC<Props> = ({
 
         {/* Booking Confirmed */}
         <View style={styles.confirmationSection}>
-          <View style={[styles.confirmationIcon,{ backgroundColor: theme.accent }]}>
+          <View style={[styles.confirmationIcon, { backgroundColor: theme.accent }]}>
             <Ionicons name="checkmark" size={48} color={colors.buttonText} />
           </View>
           <Text style={[styles.confirmationTitle,{color: theme.textPrimary}]}>Booking Confirmed!</Text>
@@ -123,8 +123,8 @@ const BookingConfirmedScreen: React.FC<Props> = ({
 
       {/* Proceed to Payment Button */}
       <View style={[styles.bottomContainer,{ backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-        <TouchableOpacity style={styles.paymentButton} onPress={() => onProceedToPayment?.(instantBookingData)}>
-          <Text style={styles.paymentButtonText}>Proceed to Payment</Text>
+        <TouchableOpacity style={[styles.paymentButton, { backgroundColor: theme.accent }]} onPress={() => onProceedToPayment?.(instantBookingData)}>
+          <Text style={[styles.paymentButtonText, { color: colors.buttonText }]}>Proceed to Payment</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -177,7 +177,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -190,7 +189,6 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -215,7 +213,6 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#D1FAE5',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -283,7 +280,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   paymentButton: {
-    backgroundColor: '#000000',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -291,7 +287,6 @@ const styles = StyleSheet.create({
   paymentButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
 });
 

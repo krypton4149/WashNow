@@ -17,8 +17,8 @@ const CACHE_DURATION = {
   ALERTS: 30000, // 30 seconds
 };
 
-// Request timeout (5 seconds for faster response)
-const REQUEST_TIMEOUT = 5000;
+// Request timeout (15 seconds for better reliability)
+const REQUEST_TIMEOUT = 15000;
 
 class AuthService {
   // Store authentication token
@@ -146,11 +146,24 @@ class AuthService {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      
+      // Check if response is valid (status 0 usually means network error)
+      if (!response || response.status === 0) {
+        throw new Error('Network Error - Please check your internet connection');
+      }
+      
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
         throw new Error('Request timeout. Please check your internet connection.');
+      }
+      // Handle network errors (no response, connection refused, etc.)
+      if (error.message && error.message.includes('Network')) {
+        throw error;
+      }
+      if (!error.response && !error.status) {
+        throw new Error('Network Error - Please check your internet connection');
       }
       throw error;
     }
@@ -1548,6 +1561,118 @@ class AuthService {
       return {
         success: false,
         error: 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Get FAQ List API (for owner/user)
+  async getFaqList(): Promise<{ success: boolean; faqs?: any[]; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to view FAQs' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/faqlist`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      console.log('[authService.getFaqList] API response status:', response.status, 'ok:', response.ok);
+      console.log('[authService.getFaqList] API response data:', JSON.stringify(data, null, 2));
+
+      // Check if response is successful (either HTTP 200-299 or success: true in data)
+      const isSuccess = (response.ok || response.status === 200) && data.success === true;
+      
+      console.log('[authService.getFaqList] Response check:', {
+        status: response.status,
+        ok: response.ok,
+        dataSuccess: data.success,
+        isSuccess
+      });
+
+      if (isSuccess) {
+        // Handle different possible response structures
+        let faqsArray = [];
+        
+        // Check for data.data.faqslist first (most common structure based on API response)
+        if (data.data && data.data.faqslist && Array.isArray(data.data.faqslist)) {
+          faqsArray = data.data.faqslist;
+          console.log('[authService.getFaqList] Found FAQs in data.data.faqslist:', faqsArray.length);
+        } else if (data.data && data.data.faqlist && Array.isArray(data.data.faqlist)) {
+          faqsArray = data.data.faqlist;
+          console.log('[authService.getFaqList] Found FAQs in data.data.faqlist:', faqsArray.length);
+        } else if (data.data && Array.isArray(data.data)) {
+          faqsArray = data.data;
+          console.log('[authService.getFaqList] Found FAQs in data.data (direct array):', faqsArray.length);
+        } else if (data.faqslist && Array.isArray(data.faqslist)) {
+          faqsArray = data.faqslist;
+          console.log('[authService.getFaqList] Found FAQs in data.faqslist:', faqsArray.length);
+        } else if (data.faqlist && Array.isArray(data.faqlist)) {
+          faqsArray = data.faqlist;
+          console.log('[authService.getFaqList] Found FAQs in data.faqlist:', faqsArray.length);
+        } else if (data.data && data.data.list && Array.isArray(data.data.list)) {
+          faqsArray = data.data.list;
+          console.log('[authService.getFaqList] Found FAQs in data.data.list:', faqsArray.length);
+        } else if (Array.isArray(data)) {
+          faqsArray = data;
+          console.log('[authService.getFaqList] Found FAQs in root data:', faqsArray.length);
+        } else {
+          console.warn('[authService.getFaqList] No FAQs array found in response structure');
+          console.log('[authService.getFaqList] Available keys in data:', Object.keys(data));
+          if (data.data) {
+            console.log('[authService.getFaqList] Available keys in data.data:', Object.keys(data.data));
+          }
+        }
+        
+        console.log('[authService.getFaqList] Final parsed FAQs array:', faqsArray.length, 'items');
+        
+        if (faqsArray.length === 0) {
+          console.warn('[authService.getFaqList] No FAQs found in response');
+        }
+        
+        return {
+          success: true,
+          faqs: faqsArray
+        };
+      } else {
+        console.error('[authService.getFaqList] API call failed:', {
+          status: response.status,
+          ok: response.ok,
+          success: data.success,
+          message: data.message || data.error
+        });
+        return {
+          success: false,
+          error: data.message || data.error || 'Failed to fetch FAQs. Please try again.'
+        };
+      }
+    } catch (error: any) {
+      console.error('[authService.getFaqList] Error:', error);
+      
+      // Handle network errors specifically
+      if (error.message && error.message.includes('Network Error')) {
+        return {
+          success: false,
+          error: 'Network Error - Please check your internet connection'
+        };
+      }
+      
+      if (error.message && error.message.includes('timeout')) {
+        return {
+          success: false,
+          error: 'Request timeout. Please check your internet connection and try again.'
+        };
+      }
+      
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }

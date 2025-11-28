@@ -13,6 +13,7 @@ import {
 import BackButton from '../../components/ui/BackButton';
 import authService from '../../services/authService';
 import { platformEdges } from '../../utils/responsive';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ConfirmBookingScreenProps {
   onBack: () => void;
@@ -55,6 +56,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
   onSendRequestToCenters,
   bookingData,
 }) => {
+  const { colors } = useTheme();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('credit-card');
   const [isBooking, setIsBooking] = useState<boolean>(false);
 
@@ -311,11 +313,15 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
       {/* Pay Now Button */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
-          style={[styles.confirmButton, isBooking && styles.confirmButtonDisabled]} 
+          style={[
+            styles.confirmButton, 
+            { backgroundColor: colors.button },
+            isBooking && [styles.confirmButtonDisabled, { backgroundColor: colors.border }]
+          ]} 
           onPress={handleConfirmBooking}
           disabled={isBooking}
         >
-          <Text style={styles.confirmButtonText}>
+          <Text style={[styles.confirmButtonText, { color: colors.buttonText }]}>
             {isBooking ? 'Sending Request...' : 'Pay Now'}
           </Text>
         </TouchableOpacity>
@@ -488,19 +494,16 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   confirmButton: {
-    backgroundColor: '#000000',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   confirmButtonDisabled: {
-    backgroundColor: '#6B7280',
     opacity: 0.7,
   },
   confirmButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
 });
 

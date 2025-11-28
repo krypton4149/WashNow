@@ -6,7 +6,7 @@ export const API_BASE_URL = 'https://carwashapp.shoppypie.in/api/v1';
 // Create axios instance with default configuration
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 5000, // Reduced from 10s to 5s for faster response
+  timeout: 15000, // Increased to 15s for better reliability
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,12 @@ import {
   Platform,
   UIManager,
   ImageBackground,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { platformEdges } from '../../utils/responsive';
+import authService from '../../services/authService';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -31,36 +33,79 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'faqs' | 'contact'>('faqs');
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+  const [faqs, setFaqs] = useState<any[]>([]);
+  const [isLoadingFaqs, setIsLoadingFaqs] = useState<boolean>(true);
+  const [faqError, setFaqError] = useState<string | null>(null);
 
-  const faqs = useMemo(
-    () => [
-      {
-        id: 'faq-1',
-        question: 'How do I book a car wash?',
-        answer:
-          'You can accept new requests from the Requests tab. Customers can also schedule directly and you will receive a notification instantly.',
-      },
-      {
-        id: 'faq-2',
-        question: 'Can I cancel my booking?',
-        answer:
-          'Yes, go to the booking details screen and choose Cancel Booking. Please provide a quick note so the customer is informed.',
-      },
-      {
-        id: 'faq-3',
-        question: 'What payment methods are accepted?',
-        answer:
-          'WashNow supports card payments, Apple Pay, and Google Pay. You can enable cash payments from the Payments settings page.',
-      },
-      {
-        id: 'faq-4',
-        question: 'How do I track my service status?',
-        answer:
-          'Service status is shown on the Requests and Activity tabs. Updates are sent automatically as you progress through each step.',
-      },
-    ],
-    []
-  );
+  // Clear FAQs when switching away from FAQs tab
+  useEffect(() => {
+    if (activeTab !== 'faqs') {
+      setFaqs([]);
+      setFaqError(null);
+      setIsLoadingFaqs(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFaqs = async () => {
+      if (activeTab !== 'faqs') {
+        return;
+      }
+
+      setIsLoadingFaqs(true);
+      setFaqError(null);
+
+      try {
+        console.log('[OwnerSupportScreen] Loading FAQs...');
+        const result = await authService.getFaqList();
+        
+        if (!isMounted) return;
+
+        console.log('[OwnerSupportScreen] FAQ result:', JSON.stringify(result, null, 2));
+
+        if (result.success && result.faqs && Array.isArray(result.faqs) && result.faqs.length > 0) {
+          // Map API response to expected format
+          const mappedFaqs = result.faqs.map((faq: any, index: number) => ({
+            id: faq.id?.toString() || faq.faq_id?.toString() || `faq-${index}`,
+            question: faq.question || faq.title || 'Question',
+            answer: faq.answer || faq.description || 'Answer not available',
+          }));
+          console.log('[OwnerSupportScreen] Mapped FAQs:', mappedFaqs.length, 'items', mappedFaqs);
+          setFaqs(mappedFaqs);
+        } else {
+          console.log('[OwnerSupportScreen] FAQ error or empty:', result.error, 'faqs:', result.faqs);
+          setFaqError(result.error || 'No FAQs available');
+          setFaqs([]);
+        }
+      } catch (error: any) {
+        console.error('[OwnerSupportScreen] FAQ load error:', error);
+        if (!isMounted) return;
+        
+        // Handle network errors specifically
+        let errorMessage = 'Failed to load FAQs';
+        if (error.message && (error.message.includes('Network Error') || error.message.includes('timeout'))) {
+          errorMessage = 'Network Error - Please check your internet connection and try again.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        setFaqError(errorMessage);
+        setFaqs([]);
+      } finally {
+        if (isMounted) {
+          setIsLoadingFaqs(false);
+        }
+      }
+    };
+
+    loadFaqs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab]);
 
   const handleToggleQuestion = (id: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -125,30 +170,73 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
         {activeTab === 'faqs' ? (
           <>
             <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-            <View style={styles.faqList}>
-              {faqs.map((faq) => {
-                const expanded = faq.id === expandedQuestion;
-                return (
-                  <View key={faq.id} style={styles.faqItem}>
-                    <TouchableOpacity
-                      style={styles.faqHeader}
-                      onPress={() => handleToggleQuestion(faq.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.faqQuestion}>{faq.question}</Text>
-                      <Ionicons
-                        name={expanded ? 'chevron-up' : 'chevron-down'}
-                        size={18}
-                        color="#6B7280"
-                      />
-                    </TouchableOpacity>
-                    {expanded && (
-                      <Text style={styles.faqAnswer}>{faq.answer}</Text>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
+            {isLoadingFaqs ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#111827" />
+                <Text style={styles.loadingText}>Loading FAQs...</Text>
+              </View>
+            ) : faqError ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle-outline" size={24} color="#EF4444" />
+                <Text style={styles.errorText}>{faqError}</Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => {
+                    setFaqError(null);
+                    setIsLoadingFaqs(true);
+                    authService.getFaqList().then((result) => {
+                      if (result.success && result.faqs) {
+                        const mappedFaqs = result.faqs.map((faq: any, index: number) => ({
+                          id: faq.id?.toString() || faq.faq_id?.toString() || `faq-${index}`,
+                          question: faq.question || faq.title || 'Question',
+                          answer: faq.answer || faq.description || 'Answer not available',
+                        }));
+                        setFaqs(mappedFaqs);
+                        setFaqError(null);
+                      } else {
+                        setFaqError(result.error || 'Failed to load FAQs');
+                      }
+                      setIsLoadingFaqs(false);
+                    }).catch((error: any) => {
+                      setFaqError(error.message || 'Failed to load FAQs');
+                      setIsLoadingFaqs(false);
+                    });
+                  }}
+                >
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : faqs.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="document-text-outline" size={48} color="#9CA3AF" />
+                <Text style={styles.emptyText}>No FAQs available</Text>
+              </View>
+            ) : (
+              <View style={styles.faqList}>
+                {faqs.map((faq) => {
+                  const expanded = faq.id === expandedQuestion;
+                  return (
+                    <View key={faq.id} style={styles.faqItem}>
+                      <TouchableOpacity
+                        style={styles.faqHeader}
+                        onPress={() => handleToggleQuestion(faq.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.faqQuestion}>{faq.question}</Text>
+                        <Ionicons
+                          name={expanded ? 'chevron-up' : 'chevron-down'}
+                          size={18}
+                          color="#6B7280"
+                        />
+                      </TouchableOpacity>
+                      {expanded && (
+                        <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </>
         ) : (
           <View style={styles.contactCard}>
@@ -276,7 +364,7 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     borderRadius: 20,
-  },
+  } as any,
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(17, 24, 39, 0.45)',
@@ -308,7 +396,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000000',
     shadowOpacity: Platform.select({ ios: 0.05, android: 0.04 }),
     shadowRadius: Platform.select({ ios: 14, android: 12 }),
-    shadowOffset: { width: 0, height: Platform.select({ ios: 5, android: 4 }) },
+    shadowOffset: { width: 0, height: Platform.select({ ios: 5, android: 4 }) || 4 },
     elevation: Platform.select({ ios: 0, android: 2 }),
   },
   faqItem: {
@@ -345,9 +433,9 @@ const styles = StyleSheet.create({
     shadowColor: '#000000',
     shadowOpacity: Platform.select({ ios: 0.06, android: 0.05 }),
     shadowRadius: Platform.select({ ios: 16, android: 14 }),
-    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
+    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) || 6 },
     elevation: Platform.select({ ios: 0, android: 3 }),
-    gap: Platform.select({ ios: 20, android: 18 }),
+    gap: Platform.select({ ios: 20, android: 18 }) || 18,
   },
   contactDescription: {
     fontSize: 14,
@@ -415,6 +503,62 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  loadingContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Platform.select({ ios: 22, android: 20 }),
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  errorContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Platform.select({ ios: 22, android: 20 }),
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    gap: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#EF4444',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#111827',
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  emptyContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Platform.select({ ios: 22, android: 20 }),
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
 });
 

@@ -5,11 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  SafeAreaView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { platformEdges } from '../../utils/responsive';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,29 +37,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   onSkip,
   onPreview,
 }) => {
-  const renderPagination = () => {
-    const indicators = [];
-    for (let i = 0; i < totalScreens; i++) {
-      if (i === currentIndex) {
-        // First screen: black dash, other screens: solid black circle
-        if (currentIndex === 0) {
-          indicators.push(
-            <View key={i} style={styles.activeIndicatorDash} />
-          );
-        } else {
-          indicators.push(
-            <View key={i} style={styles.activeIndicatorCircle} />
-          );
-        }
-      } else {
-        // Inactive: grey outline circles
-        indicators.push(
-          <View key={i} style={styles.inactiveIndicator} />
-        );
-      }
-    }
-    return <View style={styles.pagination}>{indicators}</View>;
-  };
+  const { colors } = useTheme();
 
   const isLastScreen = currentIndex === totalScreens - 1;
   const buttonText = isLastScreen ? 'Get Started' : 'Next';
@@ -76,10 +55,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       {/* Main Content */}
       <View style={styles.content}>
         {/* Icon with Gradient Background */}
-        <View style={styles.iconContainer}>
-          <View style={styles.gradientTop} />
-          <View style={styles.gradientMiddle} />
-          <Ionicons name={icon as any} size={56} color="#FFFFFF" style={styles.icon} />
+        <View style={[styles.iconContainer, { backgroundColor: colors.button }]}>
+          <View style={[styles.gradientTop, { backgroundColor: colors.button }]} />
+          <View style={[styles.gradientMiddle, { backgroundColor: colors.button }]} />
+          <Ionicons name={icon as any} size={56} color={colors.buttonText} style={styles.icon} />
         </View>
 
         {/* Title */}
@@ -90,14 +69,34 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       </View>
 
       {/* Pagination */}
-      {renderPagination()}
+      <View style={styles.pagination}>
+        {Array.from({ length: totalScreens }).map((_, i) => {
+          if (i === currentIndex) {
+            // First screen: blue dash, other screens: solid blue circle
+            if (currentIndex === 0) {
+              return (
+                <View key={i} style={[styles.activeIndicatorDash, { backgroundColor: colors.button }]} />
+              );
+            } else {
+              return (
+                <View key={i} style={[styles.activeIndicatorCircle, { backgroundColor: colors.button }]} />
+              );
+            }
+          } else {
+            // Inactive: grey outline circles
+            return (
+              <View key={i} style={styles.inactiveIndicator} />
+            );
+          }
+        })}
+      </View>
 
       {/* Action Buttons Container */}
       <View style={styles.buttonContainer}>
         {/* Next Button */}
-        <TouchableOpacity style={styles.actionButton} onPress={onNext}>
-          <Text style={styles.actionButtonText}>{buttonText}</Text>
-          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" style={styles.arrowIcon} />
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.button }]} onPress={onNext}>
+          <Text style={[styles.actionButtonText, { color: colors.buttonText }]}>{buttonText}</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.buttonText} style={styles.arrowIcon} />
         </TouchableOpacity>
 
         {/* Preview Button (only on second screen) */}
@@ -138,7 +137,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 40,
-    backgroundColor: '#000000',
     overflow: 'hidden',
     position: 'relative',
   },
@@ -148,7 +146,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-    backgroundColor: '#4A4A4A',
   },
   gradientMiddle: {
     position: 'absolute',
@@ -156,7 +153,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '20%',
-    backgroundColor: '#2A2A2A',
   },
   icon: {
     zIndex: 1,
@@ -190,13 +186,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#000000',
   },
   activeIndicatorCircle: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#000000',
   },
   inactiveIndicator: {
     width: 10,
@@ -212,7 +206,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
   },
   actionButton: {
-    backgroundColor: '#1F1F1F',
     paddingVertical: 18,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -222,7 +215,6 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   actionButtonText: {
-    color: '#FFFFFF',
     fontSize: 17,
     fontWeight: '600',
     fontFamily: 'System',
@@ -235,7 +227,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#2F2F2F',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -243,7 +234,6 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
   },
   previewButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'System',

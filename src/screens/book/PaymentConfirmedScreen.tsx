@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
   onBack?: () => void;
@@ -60,13 +61,14 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
   };
   
   const displayTime = bookingData?.time ? formatTimeForDisplay(bookingData.time) : 'Now';
+  const { colors } = useTheme();
 
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <View style={styles.content}>
         {/* Confirmation Icon */}
-        <View style={styles.confirmationIcon}>
-          <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+        <View style={[styles.confirmationIcon, { backgroundColor: colors.button }]}>
+          <Ionicons name="checkmark" size={48} color={colors.buttonText} />
         </View>
         
         <Text style={styles.confirmationTitle}>Booking Confirmed!</Text>
@@ -137,7 +139,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
       {/* Action Buttons */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={styles.viewStatusButton}
+          style={[styles.viewStatusButton, { backgroundColor: colors.button }]}
           onPress={() => {
             try {
               const destination = encodeURIComponent(acceptedCenter?.address || acceptedCenter?.name || 'Car Wash Center');
@@ -154,11 +156,11 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
             }
           }}
         >
-          <Text style={styles.viewStatusButtonText}>Get Directions</Text>
+          <Text style={[styles.viewStatusButtonText, { color: colors.buttonText }]}>Get Directions</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.backToHomeButton} onPress={onBackToHome}>
-          <Text style={styles.backToHomeButtonText}>Back to Home</Text>
+        <TouchableOpacity style={[styles.backToHomeButton, { borderColor: colors.button }]} onPress={onBackToHome}>
+          <Text style={[styles.backToHomeButtonText, { color: colors.button }]}>Back to Home</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -180,7 +182,6 @@ const styles = StyleSheet.create({
     width: moderateScale(120),
     height: moderateScale(120),
     borderRadius: moderateScale(60),
-    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: moderateScale(24),
@@ -296,7 +297,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   viewStatusButton: {
-    backgroundColor: '#000000',
     borderRadius: moderateScale(12),
     paddingVertical: moderateScale(16),
     alignItems: 'center',
@@ -305,12 +305,10 @@ const styles = StyleSheet.create({
   viewStatusButtonText: {
     fontSize: moderateScale(16),
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   backToHomeButton: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#000000',
     borderRadius: moderateScale(12),
     paddingVertical: moderateScale(16),
     alignItems: 'center',
@@ -318,7 +316,6 @@ const styles = StyleSheet.create({
   backToHomeButtonText: {
     fontSize: moderateScale(16),
     fontWeight: '600',
-    color: '#000000',
   },
 });
 

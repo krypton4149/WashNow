@@ -200,7 +200,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
     container: { backgroundColor: colors.background },
     scrollContent: { backgroundColor: colors.background },
     headerText: { color: colors.text },
-    metricCard: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' },
+    metricCard: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' },
     metricLabel: { color: colors.textSecondary },
     metricValue: { color: colors.text },
     banner: { backgroundColor: colors.button },

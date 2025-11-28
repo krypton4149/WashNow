@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
   },
   primaryButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#2563EB',
   },
   secondaryButton: {
     backgroundColor: '#F2F2F7',

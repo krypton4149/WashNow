@@ -279,7 +279,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
             <View style={styles.logoContainer}>
               <View style={styles.logo}>
                 <Image
-                  source={require('../../assets/images/logo.png')}
+                  source={require('../../assets/images/logo.jpg')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />

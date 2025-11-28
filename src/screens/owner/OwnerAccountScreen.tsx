@@ -297,7 +297,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           </View>
         )}
 
-        <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
+        <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
           <View style={styles.avatar}>
             <Ionicons name="storefront-outline" size={36} color={colors.textSecondary} />
           </View>
@@ -311,7 +311,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           </View>
         </View>
 
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
+        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
           {contactDetails.map((detail, index) => (
             <View key={detail.id}>
               <View style={styles.infoRow}>
@@ -328,7 +328,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           ))}
         </View>
 
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
+        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <View style={styles.sectionIcon}>
@@ -346,7 +346,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           </View>
         </View>
 
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
+        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
           <View style={styles.sectionTitleRow}>
             <View style={styles.sectionIcon}>
               <Ionicons name="briefcase-outline" size={18} color={colors.text} />
@@ -362,7 +362,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           </View>
         </View>
 
-        <View style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
+        <View style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
           <TouchableOpacity
             style={[styles.actionItem, styles.actionItemTop, { backgroundColor: colors.surface }]}
             activeOpacity={0.7}

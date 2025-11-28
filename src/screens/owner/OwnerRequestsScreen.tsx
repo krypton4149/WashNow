@@ -529,8 +529,16 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         message: fetchError?.message,
         response: fetchError?.response?.data,
         status: fetchError?.response?.status,
+        request: fetchError?.request,
         error: fetchError,
       });
+
+      // Handle network errors (no response, timeout, connection issues)
+      if (!fetchError?.response && (fetchError?.message?.includes('Network') || fetchError?.message?.includes('timeout') || fetchError?.code === 'ECONNABORTED')) {
+        const errorMessage = 'Network Error - Please check your internet connection and try again.';
+        setError(errorMessage);
+        return;
+      }
 
       // Handle 401 Unauthorized errors specifically
       if (fetchError?.status === 401 || fetchError?.response?.status === 401 || fetchError?.message === 'Unauthorized') {
@@ -769,7 +777,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
           {requests.map((request) => {
             const statusStyles = getStatusStyles(request.status);
             return (
-              <View key={request.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
+              <View key={request.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
                 <View style={styles.cardHeader}>
                   <View>
                     <Text style={[styles.customerName, { color: colors.text }]}>{request.customerName}</Text>
