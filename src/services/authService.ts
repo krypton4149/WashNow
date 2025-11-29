@@ -946,6 +946,112 @@ class AuthService {
     }
   }
 
+  // Get Owner Bookings List API
+  async getOwnerBookings(forceRefresh: boolean = false): Promise<{ success: boolean; bookings?: any[]; bookingStatusTotals?: any; error?: string }> {
+    try {
+      const token = await this.getToken();
+      
+      if (!token) {
+        return { success: false, error: 'Please login to view your bookings' };
+      }
+
+      // Check cache first
+      if (!forceRefresh) {
+        const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.BOOKINGS)) {
+          return {
+            success: true,
+            bookings: cached.data?.bookings || cached.data || [],
+            bookingStatusTotals: cached.data?.bookingStatusTotals,
+          };
+        }
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/bookings`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      console.log('[authService.getOwnerBookings] API response:', JSON.stringify(data, null, 2));
+
+      if (response.ok && data.success) {
+        // Handle the response structure: data.bookingsList.bookings
+        let bookings = [];
+        let bookingStatusTotals = null;
+
+        if (data.data?.bookingsList) {
+          if (Array.isArray(data.data.bookingsList.bookings)) {
+            bookings = data.data.bookingsList.bookings;
+          } else if (Array.isArray(data.data.bookingsList)) {
+            bookings = data.data.bookingsList;
+          }
+          
+          if (data.data.bookingsList.booking_status_totals) {
+            bookingStatusTotals = data.data.bookingsList.booking_status_totals;
+          }
+        } else if (Array.isArray(data.data?.bookings)) {
+          bookings = data.data.bookings;
+        } else if (Array.isArray(data.data)) {
+          bookings = data.data;
+        } else if (Array.isArray(data.bookings)) {
+          bookings = data.bookings;
+        }
+
+        console.log('[authService.getOwnerBookings] Parsed bookings:', bookings.length);
+        console.log('[authService.getOwnerBookings] Booking status totals:', bookingStatusTotals);
+        
+        // Cache the result
+        const cacheData = {
+          bookings,
+          bookingStatusTotals,
+        };
+        await this.setCachedData(CACHE_KEYS.BOOKINGS, cacheData);
+        
+        return { 
+          success: true, 
+          bookings: bookings,
+          bookingStatusTotals: bookingStatusTotals,
+        };
+      } else {
+        // Try to return cached data on API error
+        const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+        if (cached) {
+          return {
+            success: true,
+            bookings: cached.data?.bookings || cached.data || [],
+            bookingStatusTotals: cached.data?.bookingStatusTotals,
+          };
+        }
+        
+        return {
+          success: false,
+          error: data.message || data.error || 'Failed to fetch bookings. Please try again.'
+        };
+      }
+    } catch (error: any) {
+      console.error('[authService.getOwnerBookings] Error:', error);
+      // Try to return cached data on network error
+      const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+      if (cached) {
+        return {
+          success: true,
+          bookings: cached.data?.bookings || cached.data || [],
+          bookingStatusTotals: cached.data?.bookingStatusTotals,
+        };
+      }
+      
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
   async cancelOwnerBooking(bookingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       const token = await this.getToken();
@@ -1561,6 +1667,202 @@ class AuthService {
       return {
         success: false,
         error: 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Get Owner Alerts/Notifications API with caching
+  async getOwnerAlerts(forceRefresh: boolean = false): Promise<{ success: boolean; alerts?: any[]; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to view notifications' };
+      }
+
+      // Check cache first
+      if (!forceRefresh) {
+        const cached = await this.getCachedData(CACHE_KEYS.ALERTS);
+        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.ALERTS)) {
+          return {
+            success: true,
+            alerts: cached.data,
+          };
+        }
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/alerts`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      console.log('[authService.getOwnerAlerts] API response:', JSON.stringify(data, null, 2));
+
+      if (response.ok && data.success) {
+        let alertsArray = [];
+        
+        if (data.data && Array.isArray(data.data.alertslist)) {
+          alertsArray = data.data.alertslist;
+          console.log('[authService.getOwnerAlerts] Found alerts in data.data.alertslist');
+        } else if (data.data && Array.isArray(data.data)) {
+          alertsArray = data.data;
+          console.log('[authService.getOwnerAlerts] Found alerts in data.data');
+        } else if (data.data && Array.isArray(data.data.alerts)) {
+          alertsArray = data.data.alerts;
+          console.log('[authService.getOwnerAlerts] Found alerts in data.data.alerts');
+        } else if (Array.isArray(data.alertslist)) {
+          alertsArray = data.alertslist;
+          console.log('[authService.getOwnerAlerts] Found alerts in data.alertslist');
+        } else if (Array.isArray(data.alerts)) {
+          alertsArray = data.alerts;
+          console.log('[authService.getOwnerAlerts] Found alerts in data.alerts');
+        } else if (Array.isArray(data)) {
+          alertsArray = data;
+          console.log('[authService.getOwnerAlerts] Found alerts in root data');
+        }
+        
+        console.log('[authService.getOwnerAlerts] Parsed alerts array:', alertsArray.length, 'items');
+        
+        // Cache the result
+        await this.setCachedData(CACHE_KEYS.ALERTS, alertsArray);
+        
+        return {
+          success: true,
+          alerts: alertsArray
+        };
+      } else {
+        // Try to return cached data on error
+        const cached = await this.getCachedData(CACHE_KEYS.ALERTS);
+        if (cached) {
+          return {
+            success: true,
+            alerts: cached.data,
+          };
+        }
+        
+        return {
+          success: false,
+          error: data.message || data.error || 'Failed to fetch notifications. Please try again.'
+        };
+      }
+    } catch (error: any) {
+      console.error('[authService.getOwnerAlerts] Error:', error);
+      // Try to return cached data on network error
+      const cached = await this.getCachedData(CACHE_KEYS.ALERTS);
+      if (cached) {
+        return {
+          success: true,
+          alerts: cached.data,
+        };
+      }
+      
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Mark Owner Alert as Read API
+  async markOwnerAlertAsRead(alertId: string | number): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to mark notification as read' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/alerts/${alertId}/read`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      console.log('[authService.markOwnerAlertAsRead] API response:', JSON.stringify(data, null, 2));
+
+      if (response.ok && data.success) {
+        // Invalidate alerts cache
+        await AsyncStorage.removeItem(CACHE_KEYS.ALERTS);
+        return {
+          success: true,
+          message: data.message || 'Notification marked as read'
+        };
+      } else {
+        // Handle the specific error case where alert might not exist
+        const errorMessage = data.message || data.error || 'Failed to mark notification as read. Please try again.';
+        
+        // If alert doesn't exist, we can still treat it as success (optimistic update)
+        if (errorMessage.includes('No query results') || errorMessage.includes('not found')) {
+          // Invalidate alerts cache
+          await AsyncStorage.removeItem(CACHE_KEYS.ALERTS);
+          return {
+            success: true,
+            message: 'Notification marked as read'
+          };
+        }
+        
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
+    } catch (error: any) {
+      console.error('[authService.markOwnerAlertAsRead] Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Mark All Owner Alerts as Read API
+  async markAllOwnerAlertsAsRead(): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to mark all notifications as read' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/alerts/read-all`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      console.log('[authService.markAllOwnerAlertsAsRead] API response:', JSON.stringify(data, null, 2));
+
+      if (response.ok && data.success) {
+        // Invalidate alerts cache
+        await AsyncStorage.removeItem(CACHE_KEYS.ALERTS);
+        return {
+          success: true,
+          message: data.message || 'All notifications marked as read'
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || data.error || 'Failed to mark all notifications as read. Please try again.'
+        };
+      }
+    } catch (error: any) {
+      console.error('[authService.markAllOwnerAlertsAsRead] Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.'
       };
     }
   }

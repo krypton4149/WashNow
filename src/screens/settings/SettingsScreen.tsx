@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  Alert,
   ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,7 +17,6 @@ interface Props {
   onBack?: () => void;
   onHelpCenter?: () => void;
   onChangePassword?: () => void;
-  onLanguageChange?: (language: string) => void;
   onDarkModeChange?: (isDarkMode: boolean) => void;
   onLogout?: () => void;
 }
@@ -27,14 +25,11 @@ const SettingsScreen: React.FC<Props> = ({
   onBack,
   onHelpCenter,
   onChangePassword,
-  onLanguageChange,
   onDarkModeChange,
   onLogout,
 }) => {
   const { isDarkMode, colors, toggleDarkMode } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(true);
-  const [promotionalAlerts, setPromotionalAlerts] = useState(true);
-  const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
 
   // Logout removed from Settings
 
@@ -42,20 +37,6 @@ const SettingsScreen: React.FC<Props> = ({
   const handleDarkModeChange = (value: boolean) => {
     toggleDarkMode();
     onDarkModeChange?.(value);
-  };
-
-  const handleLanguageChange = () => {
-    Alert.alert(
-      'Select Language',
-      'Choose your preferred language',
-      [
-        { text: 'English (US)', onPress: () => setSelectedLanguage('English (US)') },
-        { text: 'Spanish', onPress: () => setSelectedLanguage('Spanish') },
-        { text: 'French', onPress: () => setSelectedLanguage('French') },
-        { text: 'German', onPress: () => setSelectedLanguage('German') },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
   };
 
   const renderSettingItem = (
@@ -132,19 +113,6 @@ const SettingsScreen: React.FC<Props> = ({
                 onValueChange={setPushNotifications}
                 trackColor={{ false: colors.border, true: colors.primary + '33' }}
                 thumbColor={pushNotifications ? colors.primary : colors.surface}
-              />
-            )}
-            {renderSettingItem(
-              '#8B5CF6',
-              'notifications-outline',
-              'Promotional Alerts',
-              'Special offers and discounts',
-              undefined,
-              <Switch
-                value={promotionalAlerts}
-                onValueChange={setPromotionalAlerts}
-                trackColor={{ false: colors.border, true: colors.primary + '33' }}
-                thumbColor={promotionalAlerts ? colors.primary : colors.surface}
               />,
               false
             )}
@@ -155,13 +123,6 @@ const SettingsScreen: React.FC<Props> = ({
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {renderSettingItem(
-              '#4CAF50',
-              'globe-outline',
-              'Language',
-              selectedLanguage,
-              handleLanguageChange
-            )}
             {renderSettingItem(
               '#8B5CF6',
               'moon-outline',

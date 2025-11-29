@@ -26,6 +26,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   const [storedOwnerData, setStoredOwnerData] = useState<any | null>(userData ?? null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
+  const [totalBookings, setTotalBookings] = useState<number>(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -35,16 +36,15 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
         if (userData) {
           setStoredOwnerData(userData);
           console.log('[OwnerAccountScreen] using prop userData:', userData);
-          return;
+        } else {
+          setIsLoading(true);
+          const savedUser = await authService.getUser();
+          if (!isMounted) {
+            return;
+          }
+          console.log('[OwnerAccountScreen] fetched user from storage:', savedUser);
+          setStoredOwnerData(savedUser ?? null);
         }
-
-        setIsLoading(true);
-        const savedUser = await authService.getUser();
-        if (!isMounted) {
-          return;
-        }
-        console.log('[OwnerAccountScreen] fetched user from storage:', savedUser);
-        setStoredOwnerData(savedUser ?? null);
       } catch (error) {
         console.log('[OwnerAccountScreen] failed to load user:', error);
         if (isMounted) {
@@ -57,7 +57,25 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       }
     };
 
+    const loadBookings = async () => {
+      try {
+        const result = await authService.getOwnerBookings();
+        if (result.success && Array.isArray(result.bookings)) {
+          const count = result.bookings.length;
+          console.log('[OwnerAccountScreen] Total bookings count:', count);
+          setTotalBookings(count);
+        } else {
+          console.log('[OwnerAccountScreen] Failed to load bookings:', result.error);
+          setTotalBookings(0);
+        }
+      } catch (error) {
+        console.error('[OwnerAccountScreen] Error loading bookings:', error);
+        setTotalBookings(0);
+      }
+    };
+
     loadOwnerData();
+    loadBookings();
 
     return () => {
       isMounted = false;
@@ -141,8 +159,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       storedOwnerData?.owner_name,
       profile?.name
     ),
-    rating: getNumber(4.9, profile?.rating, profile?.avg_rating),
-    totalBookings: getNumber(1234, profile?.totalBookings, profile?.total_bookings),
+    totalBookings: totalBookings,
     phone: getString('Not provided',
       profile?.phone,
       profile?.phoneNumber,
@@ -304,9 +321,6 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           <Text style={[styles.businessName, { color: colors.text }]}>{business.name}</Text>
           <Text style={[styles.ownerName, { color: colors.textSecondary }]}>{business.ownerName}</Text>
           <View style={styles.ratingRow}>
-            <Ionicons name="star" size={16} color="#F59E0B" />
-            <Text style={[styles.ratingText, { color: colors.text }]}>{business.rating.toFixed(1)}</Text>
-            <View style={styles.separatorDot} />
             <Text style={[styles.bookingCount, { color: colors.textSecondary }]}>{`${business.totalBookings} bookings`}</Text>
           </View>
         </View>
@@ -491,24 +505,12 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-    marginLeft: 6,
-  },
-  separatorDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#D1D5DB',
-    marginHorizontal: 6,
+    justifyContent: 'center',
+    marginTop: 4,
   },
   bookingCount: {
     fontSize: 14,
     color: '#6B7280',
-    marginLeft: 6,
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',

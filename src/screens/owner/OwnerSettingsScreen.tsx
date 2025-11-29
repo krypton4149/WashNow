@@ -16,23 +16,18 @@ import { platformEdges } from '../../utils/responsive';
 
 interface OwnerSettingsScreenProps {
   onBack?: () => void;
-  onChangeLanguage?: () => void;
   onChangePassword?: () => void;
   initialPushNotificationsEnabled?: boolean;
-  initialPromotionalAlertsEnabled?: boolean;
   initialDarkModeEnabled?: boolean;
 }
 
 const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
   onBack,
-  onChangeLanguage,
   onChangePassword,
   initialPushNotificationsEnabled = true,
-  initialPromotionalAlertsEnabled = true,
   initialDarkModeEnabled = false,
 }) => {
   const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(initialPushNotificationsEnabled);
-  const [promotionalAlertsEnabled, setPromotionalAlertsEnabled] = useState(initialPromotionalAlertsEnabled);
   const { isDarkMode, toggleDarkMode, colors } = useTheme();
   const [darkModeEnabled, setDarkModeEnabled] = useState(initialDarkModeEnabled || isDarkMode);
 
@@ -132,45 +127,10 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
               thumbColor={pushNotificationsEnabled ? '#2563EB' : '#F4F5F7'}
             />
           </View>
-          <View style={styles.settingDivider} />
-          <View style={styles.settingRow}>
-            <View style={styles.settingIconWrapper}>
-              <View style={[styles.settingIcon, { backgroundColor: '#8B5CF6' }]}>
-                <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
-              </View>
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Promotional Alerts</Text>
-              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>Special offers and discounts</Text>
-            </View>
-            <Switch
-              value={promotionalAlertsEnabled}
-              onValueChange={setPromotionalAlertsEnabled}
-              trackColor={{ false: '#D1D5DB', true: '#8B5CF633' }}
-              thumbColor={promotionalAlertsEnabled ? '#8B5CF6' : '#F4F5F7'}
-            />
-          </View>
         </View>
 
         <View style={[styles.sectionCard, dynamicStyles.sectionCard]}>
           <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Preferences</Text>
-          <TouchableOpacity
-            style={styles.settingRow}
-            onPress={onChangeLanguage}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingIconWrapper}>
-              <View style={[styles.settingIcon, { backgroundColor: '#10B981' }]}>
-                <Ionicons name="language" size={20} color="#FFFFFF" />
-              </View>
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Language</Text>
-              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>English (US)</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-          <View style={styles.settingDivider} />
           <View style={styles.settingRow}>
             <View style={styles.settingIconWrapper}>
               <View style={[styles.settingIcon, { backgroundColor: '#6366F1' }]}>

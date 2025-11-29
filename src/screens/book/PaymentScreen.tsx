@@ -33,6 +33,7 @@ const PaymentScreen: React.FC<Props> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [notes, setNotes] = useState('');
+  const [vehicleNumberError, setVehicleNumberError] = useState('');
   const { colors } = useTheme();
 
   const formatDate = (d: Date) => {
@@ -73,8 +74,24 @@ const PaymentScreen: React.FC<Props> = ({
     return timeStr;
   };
 
+  const validateVehicleNumber = (): boolean => {
+    if (!vehicleNumber.trim()) {
+      setVehicleNumberError('Vehicle number is required');
+      return false;
+    }
+    setVehicleNumberError('');
+    return true;
+  };
+
   const handlePayment = async () => {
     if (isProcessing) return;
+    
+    // Validate vehicle number for all payment methods
+    if (!validateVehicleNumber()) {
+      Alert.alert('Validation Required', 'Please enter your vehicle number to proceed with payment.');
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
@@ -82,11 +99,6 @@ const PaymentScreen: React.FC<Props> = ({
         // Validate required inputs
         if (!acceptedCenter?.id) {
           Alert.alert('Error', 'Service center is missing.');
-          setIsProcessing(false);
-          return;
-        }
-        if (!vehicleNumber.trim()) {
-          Alert.alert('Validation', 'Please enter your vehicle number.');
           setIsProcessing(false);
           return;
         }
@@ -135,6 +147,13 @@ const PaymentScreen: React.FC<Props> = ({
           setIsProcessing(false);
         }
       } else {
+        // Validate vehicle number for card/wallet payment
+        if (!vehicleNumber.trim()) {
+          Alert.alert('Validation Required', 'Please enter your vehicle number to proceed with payment.');
+          setIsProcessing(false);
+          return;
+        }
+
         // Simulate card / wallet payment
         const isScheduledBooking = bookingData?.date && bookingData?.time;
         
@@ -207,13 +226,28 @@ const PaymentScreen: React.FC<Props> = ({
         <View style={[styles.vehicleDetailsSection, { backgroundColor: colors.card }]}>
           <Text style={[styles.serviceTitle, { color: colors.text }]}>Vehicle Details</Text>
           <TextInput
-            style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
+            style={[
+              styles.input, 
+              { 
+                borderColor: vehicleNumberError ? '#EF4444' : colors.border, 
+                color: colors.text, 
+                backgroundColor: colors.surface 
+              }
+            ]}
             placeholder="Vehicle number (e.g., UP68 AB1234)"
             placeholderTextColor={colors.textSecondary}
             value={vehicleNumber}
-            onChangeText={setVehicleNumber}
+            onChangeText={(text) => {
+              setVehicleNumber(text);
+              if (vehicleNumberError && text.trim()) {
+                setVehicleNumberError('');
+              }
+            }}
             autoCapitalize="characters"
           />
+          {vehicleNumberError ? (
+            <Text style={styles.errorText}>{vehicleNumberError}</Text>
+          ) : null}
           <TextInput
             style={[styles.input, { marginTop: 12, borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
             placeholder="Notes (optional)"
@@ -328,9 +362,13 @@ const PaymentScreen: React.FC<Props> = ({
       {/* Pay Button */}
       <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity 
-          style={[styles.payButton, { backgroundColor: colors.button }, isProcessing && styles.payButtonDisabled]} 
+          style={[
+            styles.payButton, 
+            { backgroundColor: colors.button }, 
+            (isProcessing || !vehicleNumber.trim()) && styles.payButtonDisabled
+          ]} 
           onPress={handlePayment}
-          disabled={isProcessing}
+          disabled={isProcessing || !vehicleNumber.trim()}
         >
           {isProcessing ? (
             <Text style={[styles.payButtonText, { color: colors.buttonText }]}>Processing...</Text>
@@ -474,6 +512,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 4,
   },
   summaryTitle: {
     fontSize: 16,
