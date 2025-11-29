@@ -385,7 +385,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           >
             <View style={styles.actionItemLeft}>
               <View style={styles.actionIcon}>
-                <Ionicons name="settings-outline" size={20} color={colors.text} />
+                <Ionicons name="settings-outline" size={18} color={colors.text} />
               </View>
               <Text style={[styles.actionLabel, { color: colors.text }]}>{'Settings'}</Text>
             </View>
@@ -400,7 +400,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           >
             <View style={styles.actionItemLeft}>
               <View style={styles.actionIcon}>
-                <Ionicons name="help-circle-outline" size={20} color={colors.text} />
+                <Ionicons name="help-circle-outline" size={18} color={colors.text} />
               </View>
               <Text style={[styles.actionLabel, { color: colors.text }]}>{'Help & Support'}</Text>
             </View>
@@ -433,8 +433,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 21, android: 20 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 18, android: 17 }),
+    fontWeight: '600',
     color: '#111827',
   },
   editButton: {
@@ -448,8 +448,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
-    paddingBottom: Platform.select({ ios: 60, android: 50 }),
-    paddingTop: Platform.select({ ios: 16, android: 12 }),
+    paddingTop: Platform.select({ ios: 12, android: 10 }),
+    paddingBottom: Platform.select({ 
+      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
+      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+    }),
   },
   loadingContainer: {
     marginBottom: 14,
@@ -468,39 +471,39 @@ const styles = StyleSheet.create({
   profileCard: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
-    paddingVertical: Platform.select({ ios: 20, android: 18 }),
-    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    paddingHorizontal: Platform.select({ ios: 16, android: 14 }),
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000000',
-    shadowOpacity: Platform.select({ ios: 0.05, android: 0.04 }),
-    shadowRadius: Platform.select({ ios: 12, android: 10 }),
-    shadowOffset: { width: 0, height: Platform.select({ ios: 4, android: 3 }) || 3 },
+    shadowOpacity: Platform.select({ ios: 0.04, android: 0.03 }),
+    shadowRadius: Platform.select({ ios: 8, android: 6 }),
+    shadowOffset: { width: 0, height: Platform.select({ ios: 3, android: 2 }) || 2 },
     elevation: Platform.select({ ios: 0, android: 1 }),
-    marginBottom: Platform.select({ ios: 18, android: 16 }),
+    marginBottom: Platform.select({ ios: 14, android: 12 }),
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#E5E7EB',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   businessName: {
-    fontSize: Platform.select({ ios: 26, android: 24 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 20, android: 18 }),
+    fontWeight: '600',
     color: '#111827',
   },
   ownerName: {
-    fontSize: Platform.select({ ios: 17, android: 16 }),
-    fontWeight: '500',
+    fontSize: Platform.select({ ios: 15, android: 14 }),
+    fontWeight: '400',
     color: '#6B7280',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -514,16 +517,16 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
-    padding: Platform.select({ ios: 20, android: 18 }),
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    padding: Platform.select({ ios: 14, android: 12 }),
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000000',
-    shadowOpacity: Platform.select({ ios: 0.05, android: 0.04 }),
-    shadowRadius: Platform.select({ ios: 12, android: 10 }),
-    shadowOffset: { width: 0, height: Platform.select({ ios: 4, android: 3 }) || 3 },
+    shadowOpacity: Platform.select({ ios: 0.04, android: 0.03 }),
+    shadowRadius: Platform.select({ ios: 8, android: 6 }),
+    shadowOffset: { width: 0, height: Platform.select({ ios: 3, android: 2 }) || 2 },
     elevation: Platform.select({ ios: 0, android: 1 }),
-    marginBottom: Platform.select({ ios: 18, android: 16 }),
+    marginBottom: Platform.select({ ios: 14, android: 12 }),
   },
   infoRow: {
     flexDirection: 'row',
@@ -543,13 +546,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
     marginBottom: 2,
   },
   infoValue: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '400',
     color: '#111827',
   },
   divider: {
@@ -575,8 +578,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: Platform.select({ ios: 17, android: 16 }),
-    fontWeight: '600',
+    fontSize: Platform.select({ ios: 15, android: 14 }),
+    fontWeight: '500',
     color: '#111827',
     marginLeft: 12,
   },
@@ -601,8 +604,8 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   hoursTime: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: '#111827',
   },
   servicesContainer: {
@@ -610,39 +613,39 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   serviceChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
-    marginRight: 12,
-    marginBottom: 12,
+    marginRight: 10,
+    marginBottom: 10,
   },
   serviceText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '400',
     color: '#111827',
   },
   actionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#F3F4F6',
     shadowColor: '#000000',
     shadowOpacity: 0.03,
-    shadowRadius: 8,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
     overflow: 'hidden',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   actionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: '#F9FAFB',
   },
   actionItemTop: {
@@ -659,19 +662,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
     borderWidth: 1,
     borderColor: '#EEF2F7',
   },
   actionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: '#111827',
   },
 });

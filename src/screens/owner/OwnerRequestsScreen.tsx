@@ -923,13 +923,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 26, android: 24 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 20, android: 18 }),
+    fontWeight: '600',
     color: '#0F172A',
   },
   headerSubtitle: {
-    marginTop: 4,
-    fontSize: Platform.select({ ios: 15, android: 14 }),
+    marginTop: 3,
+    fontSize: Platform.select({ ios: 13, android: 12 }),
     color: '#6B7280',
   },
   placeholder: {
@@ -940,24 +940,27 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 16, android: 12 }),
-    paddingBottom: Platform.select({ ios: 60, android: 50 }),
+    paddingTop: Platform.select({ ios: 12, android: 10 }),
+    paddingBottom: Platform.select({ 
+      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
+      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+    }),
   },
   requestsList: {
     gap: 14,
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.select({ ios: 20, android: 18 }),
-    padding: Platform.select({ ios: 20, android: 18 }),
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    padding: Platform.select({ ios: 14, android: 12 }),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E7EB',
     shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
-    shadowOpacity: Platform.select({ ios: 0.06, android: 0.05 }),
-    shadowRadius: Platform.select({ ios: 10, android: 8 }),
-    elevation: Platform.select({ ios: 0, android: 2 }),
-    gap: Platform.select({ ios: 16, android: 14 }),
+    shadowOffset: { width: 0, height: Platform.select({ ios: 4, android: 3 }) },
+    shadowOpacity: Platform.select({ ios: 0.04, android: 0.03 }),
+    shadowRadius: Platform.select({ ios: 8, android: 6 }),
+    elevation: Platform.select({ ios: 0, android: 1 }),
+    gap: Platform.select({ ios: 12, android: 10 }),
   },
   cardHeader: {
     flexDirection: 'row',
@@ -965,23 +968,23 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   customerName: {
-    fontSize: Platform.select({ ios: 19, android: 18 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 16, android: 15 }),
+    fontWeight: '600',
     color: '#111827',
   },
   timeAgo: {
-    marginTop: 4,
-    fontSize: 13,
+    marginTop: 3,
+    fontSize: 12,
     color: '#6B7280',
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 999,
   },
   statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
   },
   infoRow: {
     flexDirection: 'row',
@@ -1007,12 +1010,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   infoValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
   },
   infoSubValue: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
   },
   infoSubRow: {
@@ -1038,28 +1041,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   metaValue: {
-    marginTop: 4,
-    fontSize: 15,
+    marginTop: 3,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1F2937',
   },
   notesContainer: {
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#BFDBFE',
     backgroundColor: '#EFF6FF',
-    padding: 14,
-    gap: 6,
+    padding: 12,
+    gap: 5,
   },
   notesLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#1D4ED8',
   },
   notesValue: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#1E3A8A',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   footerRow: {
     flexDirection: 'row',
@@ -1072,8 +1075,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   amountValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#0F172A',
   },
   footerActions: {
@@ -1084,9 +1087,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 12,
     borderWidth: 1,
   },
   actionChipDisabled: {
@@ -1101,13 +1104,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   declineText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: '#111827',
   },
   acceptText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: '#FFFFFF',
   },
   stateContainer: {

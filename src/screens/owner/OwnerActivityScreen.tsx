@@ -231,9 +231,9 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
     if (tone === 'success') {
       return {
         container: highlight ? styles.cardSuccessHighlight : styles.cardSuccess,
-        iconBackground: '#DCFCE7',
-        iconColor: '#16A34A',
-        dotColor: highlight ? '#16A34A' : '#22C55E',
+        iconBackground: '#D1FAE5',
+        iconColor: '#10B981',
+        dotColor: '#2563EB',
       };
     }
     if (tone === 'info') {
@@ -241,7 +241,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
         container: highlight ? styles.cardInfoHighlight : styles.cardInfo,
         iconBackground: '#DBEAFE',
         iconColor: '#2563EB',
-        dotColor: highlight ? '#2563EB' : '#3B82F6',
+        dotColor: '#2563EB',
       };
     }
     if (tone === 'danger') {
@@ -249,7 +249,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
         container: styles.cardDanger,
         iconBackground: '#FEE2E2',
         iconColor: '#DC2626',
-        dotColor: '#EF4444',
+        dotColor: '#2563EB',
       };
     }
     if (tone === 'warning') {
@@ -257,14 +257,14 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
         container: styles.cardWarning,
         iconBackground: '#FEF3C7',
         iconColor: '#F59E0B',
-        dotColor: '#F59E0B',
+        dotColor: '#2563EB',
       };
     }
     return {
       container: styles.cardPromo,
       iconBackground: '#EDE9FE',
       iconColor: '#7C3AED',
-      dotColor: '#7C3AED',
+      dotColor: '#2563EB',
     };
   };
 
@@ -371,7 +371,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
                   >
                     <Ionicons
                         name={item.icon as any}
-                      size={22}
+                      size={20}
                       color={toneStyles.iconColor}
                     />
                   </View>
@@ -381,14 +381,14 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
                     <Text style={[styles.notificationTime, { color: colors.textSecondary }]}>{item.timeAgo}</Text>
                   </View>
                 </View>
-                  {!item.isRead && (
-                <View
-                  style={[
-                    styles.notificationDot,
-                    { backgroundColor: toneStyles.dotColor },
-                  ]}
-                />
-                  )}
+                {!item.isRead && (
+                  <View
+                    style={[
+                      styles.notificationDot,
+                      { backgroundColor: '#2563EB' },
+                    ]}
+                  />
+                )}
                 </TouchableOpacity>
             );
           })}
@@ -428,18 +428,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 26, android: 24 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 20, android: 18 }),
+    fontWeight: '600',
     color: '#0F172A',
   },
   headerSubtitle: {
-    marginTop: 2,
-    fontSize: Platform.select({ ios: 15, android: 14 }),
+    marginTop: 3,
+    fontSize: Platform.select({ ios: 13, android: 12 }),
     color: '#6B7280',
   },
   markAllReadText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     color: '#2563EB',
   },
   scrollView: {
@@ -447,118 +447,126 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 16, android: 12 }),
-    paddingBottom: Platform.select({ ios: 60, android: 50 }),
+    paddingTop: Platform.select({ ios: 12, android: 10 }),
+    paddingBottom: Platform.select({ 
+      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
+      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+    }),
   },
   banner: {
-    height: 120,
-    borderRadius: 18,
+    height: 100,
+    borderRadius: 14,
     overflow: 'hidden',
-    marginBottom: 18,
+    marginBottom: 16,
     justifyContent: 'flex-end',
   },
   bannerImage: {
-    borderRadius: 20,
+    borderRadius: 14,
   },
   bannerOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(15, 23, 42, 0.35)',
   },
   bannerContent: {
-    padding: 18,
+    padding: 14,
   },
   bannerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
     color: '#FFFFFF',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   bannerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#E2E8F0',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   notificationsList: {
-    gap: 14,
+    gap: 10,
   },
   notificationCard: {
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
-    padding: Platform.select({ ios: 17, android: 15 }),
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    padding: Platform.select({ ios: 16, android: 14 }),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
-    shadowOpacity: Platform.select({ ios: 0.07, android: 0.06 }),
-    shadowRadius: Platform.select({ ios: 12, android: 10 }),
-    elevation: Platform.select({ ios: 0, android: 3 }),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    position: 'relative',
   },
   cardSuccess: {
-    backgroundColor: '#F6FBF8',
-    borderColor: '#BBF7D0',
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
   },
   cardSuccessHighlight: {
-    backgroundColor: '#E8F9EF',
-    borderColor: '#4ADE80',
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
   },
   cardInfo: {
-    backgroundColor: '#F3F7FF',
-    borderColor: '#BFDBFE',
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
   },
   cardInfoHighlight: {
-    backgroundColor: '#E7F1FF',
-    borderColor: '#60A5FA',
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
   },
   cardWarning: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FCD34D',
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
   },
   cardDanger: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FCA5A5',
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
   },
   cardPromo: {
-    backgroundColor: '#F6F3FF',
-    borderColor: '#DDD6FE',
+    backgroundColor: '#F9FAFB',
+    borderColor: '#E5E7EB',
   },
   notificationLeft: {
     flexDirection: 'row',
     flex: 1,
-    gap: 14,
+    gap: 12,
   },
   notificationIconWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
   notificationTextContainer: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   notificationTitle: {
-    fontSize: Platform.select({ ios: 18, android: 17 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 16, android: 15 }),
+    fontWeight: '600',
     color: '#111827',
+    marginBottom: 2,
   },
   notificationMessage: {
-    fontSize: Platform.select({ ios: 16, android: 15 }),
-    color: '#4B5563',
-    lineHeight: Platform.select({ ios: 24, android: 22 }),
+    fontSize: Platform.select({ ios: 14, android: 13 }),
+    color: '#6B7280',
+    lineHeight: Platform.select({ ios: 20, android: 18 }),
+    marginBottom: 4,
   },
   notificationTime: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#94A3B8',
+    fontWeight: '400',
+    color: '#9CA3AF',
   },
   notificationDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginLeft: 16,
-    marginTop: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    position: 'absolute',
+    top: 12,
+    right: 12,
   },
   loadingContainer: {
     flex: 1,

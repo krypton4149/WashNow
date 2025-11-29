@@ -208,8 +208,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Platform.select({ ios: 26, android: 24 }),
-    paddingTop: Platform.select({ ios: 18, android: 16 }),
-    paddingBottom: Platform.select({ ios: 60, android: 50 }),
+    paddingTop: Platform.select({ ios: 16, android: 14 }),
+    paddingBottom: Platform.select({ 
+      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
+      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+    }),
     gap: Platform.select({ ios: 22, android: 20 }),
   },
   heroCard: {

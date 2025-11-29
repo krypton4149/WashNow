@@ -492,8 +492,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
-    paddingTop: Platform.select({ ios: 16, android: 12 }),
-    paddingBottom: Platform.select({ ios: 60, android: 50 }),
+    paddingTop: Platform.select({ ios: 14, android: 12 }),
+    paddingBottom: Platform.select({ 
+      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
+      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+    }),
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',

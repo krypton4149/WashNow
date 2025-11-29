@@ -27,8 +27,7 @@ interface RecentActivity {
   customerName: string;
   carModel: string;
   time: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  price: string;
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
 }
 
 const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
@@ -48,6 +47,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
     pending: 0,
     cancelled: 0,
   });
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
   useEffect(() => {
     setResolvedBusinessName(businessNameProp);
@@ -173,24 +173,92 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
     };
   }, []);
 
-  const [recentActivities] = useState<RecentActivity[]>([
-    {
-      id: '1',
-      customerName: 'John Smith',
-      carModel: 'Tesla Model 3',
-      time: '10:30 AM',
-      status: 'Pending',
-      price: '$25',
-    },
-    {
-      id: '2',
-      customerName: 'Sarah Johnson',
-      carModel: 'Honda Civic',
-      time: '11:00 AM',
-      status: 'In Progress',
-      price: '$25',
-    },
-  ]);
+  // Helper function to format time from 24-hour to 12-hour format
+  const formatTime = (time24: string): string => {
+    try {
+      const [hours, minutes] = time24.split(':');
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${minutes} ${ampm}`;
+    } catch {
+      return time24;
+    }
+  };
+
+  // Helper function to map API status to display status
+  const mapStatus = (status: string): 'Pending' | 'In Progress' | 'Completed' | 'Cancelled' => {
+    const statusLower = status.toLowerCase();
+    if (statusLower === 'pending') return 'Pending';
+    if (statusLower === 'completed') return 'Completed';
+    if (statusLower === 'cancelled' || statusLower === 'canceled') return 'Cancelled';
+    if (statusLower === 'in progress' || statusLower === 'in_progress') return 'In Progress';
+    return 'Pending';
+  };
+
+  // Fetch recent bookings from API
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRecentBookings = async () => {
+      try {
+        const token = await authService.getToken();
+        if (!token || !isMounted) {
+          return;
+        }
+
+        const response = await apiClient.get('/user/bookings', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const bookings = 
+          response.data?.data?.bookingsList?.bookings ||
+          response.data?.data?.bookings ||
+          response.data?.bookings ||
+          [];
+
+        if (!isMounted || !Array.isArray(bookings)) {
+          return;
+        }
+
+        // Transform bookings to RecentActivity format
+        const activities: RecentActivity[] = bookings
+          .slice(0, 4) // Take first 4 bookings
+          .map((booking: any) => {
+            const customerName = booking?.visitor?.name || 'Unknown Customer';
+            const vehicleNo = booking?.vehicle_no || booking?.vehicleNo || 'N/A';
+            const bookingTime = booking?.booking_time || booking?.bookingTime || '';
+            const status = mapStatus(booking?.status || 'Pending');
+            
+            return {
+              id: booking?.id?.toString() || booking?.booking_id || Math.random().toString(),
+              customerName: customerName,
+              carModel: vehicleNo,
+              time: formatTime(bookingTime),
+              status: status,
+            };
+          });
+
+        if (isMounted) {
+          setRecentActivities(activities);
+        }
+      } catch (error) {
+        console.log('[OwnerDashboardScreen] failed to fetch recent bookings', error);
+        // Keep empty array on error
+        if (isMounted) {
+          setRecentActivities([]);
+        }
+      }
+    };
+
+    loadRecentBookings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const pendingSummary = metrics.pending > 0
     ? `${metrics.pending} customers waiting for response`
@@ -223,6 +291,8 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         return { bg: 'rgba(59, 130, 246, 0.15)', text: '#3B82F6' };
       case 'Completed':
         return { bg: 'rgba(16, 185, 129, 0.15)', text: '#10B981' };
+      case 'Cancelled':
+        return { bg: 'rgba(239, 68, 68, 0.15)', text: '#EF4444' };
       default:
         return { bg: 'rgba(107, 114, 128, 0.15)', text: '#6B7280' };
     }
@@ -286,7 +356,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
             onPress={handleLogout}
             disabled={isLoggingOut}
           >
-            <Ionicons name="exit-outline" size={24} color="#111827" />
+            <Ionicons name="exit-outline" size={20} color="#111827" />
           </TouchableOpacity>
         </View>
 
@@ -295,7 +365,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
           {/* Total / Today's Bookings */}
           <View style={[styles.metricCard, themeStyles.metricCard]}>
             <View style={styles.metricIconContainer}>
-              <Ionicons name="calendar-outline" size={24} color="#111827" />
+              <Ionicons name="calendar-outline" size={20} color="#111827" />
             </View>
             <Text style={[styles.metricValue, themeStyles.metricValue]}>{metrics.todayBookings}</Text>
             <Text style={[styles.metricLabel, themeStyles.metricLabel]}>Total Bookings</Text>
@@ -304,7 +374,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
           {/* Pending (Active Now) */}
           <View style={[styles.metricCard, themeStyles.metricCard]}>
             <View style={styles.metricIconContainer}>
-              <Ionicons name="time-outline" size={24} color="#111827" />
+              <Ionicons name="time-outline" size={20} color="#111827" />
             </View>
             <Text style={[styles.metricValue, themeStyles.metricValue]}>{metrics.pending}</Text>
             <Text style={[styles.metricLabel, themeStyles.metricLabel]}>Pending</Text>
@@ -313,7 +383,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
           {/* Completed */}
           <View style={[styles.metricCard, themeStyles.metricCard]}>
             <View style={styles.metricIconContainer}>
-              <Ionicons name="checkmark-circle-outline" size={24} color="#111827" />
+              <Ionicons name="checkmark-circle-outline" size={20} color="#111827" />
             </View>
             <Text style={[styles.metricValue, themeStyles.metricValue]}>{metrics.completed}</Text>
             <Text style={[styles.metricLabel, themeStyles.metricLabel]}>Completed</Text>
@@ -322,7 +392,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
           {/* Cancelled */}
           <View style={[styles.metricCard, themeStyles.metricCard]}>
             <View style={styles.metricIconContainer}>
-              <Ionicons name="close-circle-outline" size={24} color="#111827" />
+              <Ionicons name="close-circle-outline" size={20} color="#111827" />
             </View>
             <Text style={[styles.metricValue, themeStyles.metricValue]}>{metrics.cancelled}</Text>
             <Text style={[styles.metricLabel, themeStyles.metricLabel]}>Cancelled</Text>
@@ -389,7 +459,6 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
                         {activity.status}
                       </Text>
                     </View>
-                    <Text style={styles.activityPrice}>{activity.price}</Text>
                   </View>
                 </View>
               );
@@ -411,33 +480,36 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 16, android: 12 }),
-    paddingBottom: Platform.select({ ios: 60, android: 50 }),
+    paddingTop: Platform.select({ ios: 12, android: 10 }),
+    paddingBottom: Platform.select({ 
+      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
+      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+    }),
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: Platform.select({ ios: 20, android: 18 }),
+    marginBottom: Platform.select({ ios: 16, android: 14 }),
   },
   headerLeft: {
     flex: 1,
   },
   welcomeText: {
-    fontSize: Platform.select({ ios: 15, android: 14 }),
+    fontSize: Platform.select({ ios: 13, android: 12 }),
     color: '#6B7280',
     fontWeight: '400',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   businessName: {
-    fontSize: Platform.select({ ios: 30, android: 28 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 22, android: 20 }),
+    fontWeight: '600',
     color: '#111827',
-    letterSpacing: Platform.select({ ios: -0.6, android: -0.5 }),
+    letterSpacing: Platform.select({ ios: -0.4, android: -0.3 }),
   },
   logoutButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -447,94 +519,94 @@ const styles = StyleSheet.create({
   metricsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 18,
-    gap: 10,
+    marginBottom: 16,
+    gap: 8,
   },
   metricCard: {
     width: '48%',
     backgroundColor: '#F9FAFB',
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    padding: Platform.select({ ios: 16, android: 14 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    padding: Platform.select({ ios: 12, android: 10 }),
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   metricIconContainer: {
-    marginBottom: 10,
+    marginBottom: 8,
   },
   metricValue: {
-    fontSize: Platform.select({ ios: 26, android: 24 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 20, android: 18 }),
+    fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   metricLabel: {
-    fontSize: Platform.select({ ios: 13, android: 12 }),
+    fontSize: Platform.select({ ios: 12, android: 11 }),
     color: '#6B7280',
     fontWeight: '400',
   },
   bookingRequestsBanner: {
     backgroundColor: '#000000',
-    borderRadius: Platform.select({ ios: 16, android: 14 }),
-    paddingVertical: Platform.select({ ios: 18, android: 16 }),
-    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    paddingHorizontal: Platform.select({ ios: 16, android: 14 }),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Platform.select({ ios: 22, android: 20 }),
+    marginBottom: Platform.select({ ios: 18, android: 16 }),
   },
   bookingRequestsLeft: {
     flex: 1,
   },
   bookingRequestsTitle: {
-    fontSize: Platform.select({ ios: 19, android: 18 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 16, android: 15 }),
+    fontWeight: '600',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   bookingRequestsSubtitle: {
-    fontSize: Platform.select({ ios: 15, android: 14 }),
+    fontSize: Platform.select({ ios: 13, android: 12 }),
     color: '#FFFFFF',
     opacity: 0.8,
   },
   bookingRequestsBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#374151',
     justifyContent: 'center',
     alignItems: 'center',
   },
   bookingRequestsBadgeText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   recentActivitySection: {
-    marginBottom: 18,
+    marginBottom: 16,
   },
   recentActivityHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   recentActivityTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 16, android: 15 }),
+    fontWeight: '600',
     color: '#111827',
   },
   seeAllText: {
-    fontSize: 14,
+    fontSize: Platform.select({ ios: 13, android: 12 }),
     color: '#6B7280',
     fontWeight: '500',
   },
   activityList: {
-    gap: 10,
+    gap: 8,
   },
   activityCard: {
     backgroundColor: '#F9FAFB',
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    padding: Platform.select({ ios: 16, android: 14 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    padding: Platform.select({ ios: 12, android: 10 }),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -545,15 +617,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activityCustomerName: {
-    fontSize: Platform.select({ ios: 17, android: 16 }),
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: 15, android: 14 }),
+    fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   activityCarModel: {
-    fontSize: Platform.select({ ios: 15, android: 14 }),
+    fontSize: Platform.select({ ios: 13, android: 12 }),
     color: '#6B7280',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   activityTimeContainer: {
     flexDirection: 'row',
@@ -561,26 +633,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   activityTime: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B7280',
   },
   activityRight: {
     alignItems: 'flex-end',
   },
   activityStatusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   activityStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  activityPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 11,
+    fontWeight: '500',
   },
 });
 

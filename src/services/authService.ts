@@ -9,16 +9,20 @@ const CACHE_KEYS = {
   BOOKINGS: 'cached_bookings',
   SERVICE_CENTERS: 'cached_service_centers',
   ALERTS: 'cached_alerts',
+  OWNER_BOOKINGS: 'cached_owner_bookings',
+  LOGIN_RESPONSE: 'cached_login_response',
 };
 
 const CACHE_DURATION = {
-  BOOKINGS: 30000, // 30 seconds
-  SERVICE_CENTERS: 60000, // 1 minute
-  ALERTS: 30000, // 30 seconds
+  BOOKINGS: 120000, // 2 minutes - increased for faster response
+  SERVICE_CENTERS: 300000, // 5 minutes - increased for faster response
+  ALERTS: 120000, // 2 minutes - increased for faster response
+  OWNER_BOOKINGS: 120000, // 2 minutes - increased for faster response
+  LOGIN_RESPONSE: 300000, // 5 minutes - cache login response
 };
 
-// Request timeout (15 seconds for better reliability)
-const REQUEST_TIMEOUT = 15000;
+// Request timeout (reduced for faster failures and retries)
+const REQUEST_TIMEOUT = 10000; // 10 seconds
 
 class AuthService {
   // Store authentication token
@@ -177,6 +181,19 @@ class AuthService {
       
       const { data, timestamp } = JSON.parse(cached);
       return { data, timestamp };
+    } catch {
+      return null;
+    }
+  }
+
+  // Helper method to get cached data immediately (even if stale)
+  private async getCachedDataImmediate(key: string): Promise<any | null> {
+    try {
+      const cached = await AsyncStorage.getItem(key);
+      if (!cached) return null;
+      
+      const { data } = JSON.parse(cached);
+      return data; // Return data immediately, even if stale
     } catch {
       return null;
     }
@@ -539,8 +556,11 @@ class AuthService {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Invalidate booking cache
-        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        // Invalidate booking caches
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        ]);
         
         return { 
           success: true, 
@@ -560,7 +580,7 @@ class AuthService {
     }
   }
 
-  // Service Centers API with caching
+  // Service Centers API with caching - optimized for fast response
   async getServiceCenters(forceRefresh: boolean = false): Promise<{ success: boolean; serviceCenters?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
@@ -568,8 +588,38 @@ class AuthService {
         return { success: false, error: 'Please login to view service centers' };
       }
 
-      // Check cache first
+      // Return cached data immediately if available (stale-while-revalidate pattern)
       if (!forceRefresh) {
+        const cachedData = await this.getCachedDataImmediate(CACHE_KEYS.SERVICE_CENTERS);
+        if (cachedData) {
+          // Return cached data immediately, then refresh in background
+          this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/servicecentrelist`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          }).then(async (response) => {
+            try {
+              const data = await response.json();
+              if (response.ok && data.success) {
+                const serviceCenters = data.data?.list || [];
+                await this.setCachedData(CACHE_KEYS.SERVICE_CENTERS, serviceCenters);
+              }
+            } catch (e) {
+              // Ignore background refresh errors
+            }
+          }).catch(() => {
+            // Ignore background refresh errors
+          });
+
+          return {
+            success: true,
+            serviceCenters: cachedData,
+          };
+        }
+
+        // Check if cache is still valid
         const cached = await this.getCachedData(CACHE_KEYS.SERVICE_CENTERS);
         if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.SERVICE_CENTERS)) {
           return {
@@ -600,18 +650,27 @@ class AuthService {
           serviceCenters: serviceCenters
         };
       } else {
+        // Try to return cached data on API error
+        const cached = await this.getCachedDataImmediate(CACHE_KEYS.SERVICE_CENTERS);
+        if (cached) {
+          return {
+            success: true,
+            serviceCenters: cached,
+          };
+        }
+        
         return {
           success: false,
           error: data.message || data.error || 'Failed to fetch service centers. Please try again.'
         };
       }
     } catch (error: any) {
-      // Try to return cached data on error
-      const cached = await this.getCachedData(CACHE_KEYS.SERVICE_CENTERS);
+      // Try to return cached data on network error
+      const cached = await this.getCachedDataImmediate(CACHE_KEYS.SERVICE_CENTERS);
       if (cached) {
         return {
           success: true,
-          serviceCenters: cached.data,
+          serviceCenters: cached,
         };
       }
       
@@ -622,104 +681,100 @@ class AuthService {
     }
   }
 
-  // Logout API
+  // Logout API - optimized for fast response
   async logout(): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       const token = await this.getToken();
+      
+      // Clear local data immediately for fast response
+      await Promise.all([
+        this.removeToken(),
+        this.removeUser(),
+        AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+        AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        AsyncStorage.removeItem(CACHE_KEYS.SERVICE_CENTERS),
+        AsyncStorage.removeItem(CACHE_KEYS.ALERTS),
+        AsyncStorage.removeItem(CACHE_KEYS.LOGIN_RESPONSE),
+      ]);
+
       if (!token) {
-        // Treat as already logged out locally
-        await this.removeToken();
-        await AsyncStorage.removeItem(USER_KEY);
         return { success: true, message: 'Logged out' };
       }
 
-      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/logout`, {
+      // Fire logout request in background (don't wait for response)
+      this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/logout`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+      }).catch(() => {
+        // Ignore errors - we've already cleared local data
       });
 
-      let data: any = null;
-      try {
-        data = await response.json();
-      } catch (_) {
-        // no-op: some backends return empty body
-      }
-
-      const backendIndicatesSuccess = data?.success === true || typeof data?.message === 'string';
-
-      if (response.ok || response.status === 401 || backendIndicatesSuccess) {
-        // Treat 2xx and 401 (already invalid/expired) as success locally
-        await this.removeToken();
-        await AsyncStorage.removeItem(USER_KEY);
-        return {
-          success: true,
-          message: (data && data.message) || 'Logged out successfully'
-        };
-      }
-
       return {
-        success: false,
-        error: (data && (data.message || data.error)) || 'Failed to logout. Please try again.'
+        success: true,
+        message: 'Logged out successfully'
       };
     } catch (error) {
       console.error('Logout error:', error);
+      // Even on error, clear local data
+      await Promise.all([
+        this.removeToken().catch(() => {}),
+        this.removeUser().catch(() => {}),
+      ]);
       return {
-        success: false,
-        error: 'Network error. Please check your internet connection and try again.'
+        success: true,
+        message: 'Logged out'
       };
     }
   }
 
-  // Owner logout API (service owner / user)
+  // Owner logout API (service owner / user) - optimized for fast response
   async logoutOwner(): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       const token = await this.getToken();
+      
+      // Clear local data immediately for fast response
+      await Promise.all([
+        this.removeToken(),
+        this.removeUser(),
+        AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+        AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        AsyncStorage.removeItem(CACHE_KEYS.SERVICE_CENTERS),
+        AsyncStorage.removeItem(CACHE_KEYS.ALERTS),
+        AsyncStorage.removeItem(CACHE_KEYS.LOGIN_RESPONSE),
+      ]);
+
       if (!token) {
-        await this.removeToken();
-        await AsyncStorage.removeItem(USER_KEY);
         return { success: true, message: 'Logged out' };
       }
 
-      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/logout`, {
+      // Fire logout request in background (don't wait for response)
+      this.fetchWithTimeout(`${BASE_URL}/api/v1/user/logout`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+      }).catch(() => {
+        // Ignore errors - we've already cleared local data
       });
 
-      let data: any = null;
-      try {
-        data = await response.json();
-      } catch (_) {
-        // ignore parse errors (empty body support)
-      }
-
-      const backendIndicatesSuccess =
-        data?.success === true ||
-        typeof data?.message === 'string';
-
-      if (response.ok || response.status === 401 || backendIndicatesSuccess) {
-        await this.removeToken();
-        await AsyncStorage.removeItem(USER_KEY);
-        return {
-          success: true,
-          message: (data && data.message) || 'Logged out successfully',
-        };
-      }
-
       return {
-        success: false,
-        error: (data && (data.message || data.error)) || 'Failed to logout. Please try again.',
+        success: true,
+        message: 'Logged out successfully',
       };
     } catch (error) {
       console.error('Owner logout error:', error);
+      // Even on error, clear local data
+      await Promise.all([
+        this.removeToken().catch(() => {}),
+        this.removeUser().catch(() => {}),
+      ]);
       return {
-        success: false,
-        error: 'Network error. Please check your internet connection and try again.',
+        success: true,
+        message: 'Logged out'
       };
     }
   }
@@ -829,7 +884,7 @@ class AuthService {
     }
   }
 
-  // Booking List API with caching
+  // Booking List API with caching - optimized for fast response
   async getBookingList(forceRefresh: boolean = false): Promise<{ success: boolean; bookings?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
@@ -838,8 +893,38 @@ class AuthService {
         return { success: false, error: 'Please login to view your bookings' };
       }
 
-      // Check cache first
+      // Return cached data immediately if available (stale-while-revalidate pattern)
       if (!forceRefresh) {
+        const cachedData = await this.getCachedDataImmediate(CACHE_KEYS.BOOKINGS);
+        if (cachedData) {
+          // Return cached data immediately, then refresh in background
+          this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/bookinglist`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          }).then(async (response) => {
+            try {
+              const data = await response.json();
+              if (response.ok && data.success) {
+                const bookings = data.data?.bookinglist || [];
+                await this.setCachedData(CACHE_KEYS.BOOKINGS, bookings);
+              }
+            } catch (e) {
+              // Ignore background refresh errors
+            }
+          }).catch(() => {
+            // Ignore background refresh errors
+          });
+
+          return {
+            success: true,
+            bookings: cachedData,
+          };
+        }
+
+        // Check if cache is still valid
         const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
         if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.BOOKINGS)) {
           return {
@@ -871,11 +956,11 @@ class AuthService {
         };
       } else {
         // Try to return cached data on API error
-        const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+        const cached = await this.getCachedDataImmediate(CACHE_KEYS.BOOKINGS);
         if (cached) {
           return {
             success: true,
-            bookings: cached.data,
+            bookings: cached,
           };
         }
         
@@ -886,11 +971,11 @@ class AuthService {
       }
     } catch (error: any) {
       // Try to return cached data on network error
-      const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+      const cached = await this.getCachedDataImmediate(CACHE_KEYS.BOOKINGS);
       if (cached) {
         return {
           success: true,
-          bookings: cached.data,
+          bookings: cached,
         };
       }
       
@@ -925,8 +1010,11 @@ class AuthService {
       const data = await response.json();
 
       if (response.ok) {
-        // Invalidate booking cache
-        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        // Invalidate booking caches
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        ]);
         
         return {
           success: true,
@@ -946,7 +1034,7 @@ class AuthService {
     }
   }
 
-  // Get Owner Bookings List API
+  // Get Owner Bookings List API - optimized for fast response
   async getOwnerBookings(forceRefresh: boolean = false): Promise<{ success: boolean; bookings?: any[]; bookingStatusTotals?: any; error?: string }> {
     try {
       const token = await this.getToken();
@@ -955,10 +1043,62 @@ class AuthService {
         return { success: false, error: 'Please login to view your bookings' };
       }
 
-      // Check cache first
+      // Return cached data immediately if available (stale-while-revalidate pattern)
       if (!forceRefresh) {
-        const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
-        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.BOOKINGS)) {
+        const cachedData = await this.getCachedDataImmediate(CACHE_KEYS.OWNER_BOOKINGS);
+        if (cachedData) {
+          // Return cached data immediately, then refresh in background
+          this.fetchWithTimeout(`${BASE_URL}/api/v1/user/bookings`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          }).then(async (response) => {
+            try {
+              const data = await response.json();
+              if (response.ok && data.success) {
+                let bookings = [];
+                let bookingStatusTotals = null;
+
+                if (data.data?.bookingsList) {
+                  if (Array.isArray(data.data.bookingsList.bookings)) {
+                    bookings = data.data.bookingsList.bookings;
+                  } else if (Array.isArray(data.data.bookingsList)) {
+                    bookings = data.data.bookingsList;
+                  }
+                  
+                  if (data.data.bookingsList.booking_status_totals) {
+                    bookingStatusTotals = data.data.bookingsList.booking_status_totals;
+                  }
+                } else if (Array.isArray(data.data?.bookings)) {
+                  bookings = data.data.bookings;
+                } else if (Array.isArray(data.data)) {
+                  bookings = data.data;
+                }
+
+                await this.setCachedData(CACHE_KEYS.OWNER_BOOKINGS, {
+                  bookings,
+                  bookingStatusTotals,
+                });
+              }
+            } catch (e) {
+              // Ignore background refresh errors
+            }
+          }).catch(() => {
+            // Ignore background refresh errors
+          });
+
+          return {
+            success: true,
+            bookings: cachedData?.bookings || cachedData || [],
+            bookingStatusTotals: cachedData?.bookingStatusTotals,
+          };
+        }
+
+        // Check if cache is still valid
+        const cached = await this.getCachedData(CACHE_KEYS.OWNER_BOOKINGS);
+        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.OWNER_BOOKINGS)) {
           return {
             success: true,
             bookings: cached.data?.bookings || cached.data || [],
@@ -1010,7 +1150,7 @@ class AuthService {
           bookings,
           bookingStatusTotals,
         };
-        await this.setCachedData(CACHE_KEYS.BOOKINGS, cacheData);
+        await this.setCachedData(CACHE_KEYS.OWNER_BOOKINGS, cacheData);
         
         return { 
           success: true, 
@@ -1019,12 +1159,12 @@ class AuthService {
         };
       } else {
         // Try to return cached data on API error
-        const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+        const cached = await this.getCachedDataImmediate(CACHE_KEYS.OWNER_BOOKINGS);
         if (cached) {
           return {
             success: true,
-            bookings: cached.data?.bookings || cached.data || [],
-            bookingStatusTotals: cached.data?.bookingStatusTotals,
+            bookings: cached?.bookings || cached || [],
+            bookingStatusTotals: cached?.bookingStatusTotals,
           };
         }
         
@@ -1034,16 +1174,16 @@ class AuthService {
         };
       }
     } catch (error: any) {
-      console.error('[authService.getOwnerBookings] Error:', error);
       // Try to return cached data on network error
-      const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
+      const cached = await this.getCachedDataImmediate(CACHE_KEYS.OWNER_BOOKINGS);
       if (cached) {
         return {
           success: true,
-          bookings: cached.data?.bookings || cached.data || [],
-          bookingStatusTotals: cached.data?.bookingStatusTotals,
+          bookings: cached?.bookings || cached || [],
+          bookingStatusTotals: cached?.bookingStatusTotals,
         };
       }
+      console.error('[authService.getOwnerBookings] Error:', error);
       
       return {
         success: false,
@@ -1091,7 +1231,11 @@ class AuthService {
       });
 
       if (response.ok && (data?.success !== false)) {
-        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        // Invalidate booking caches
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        ]);
         return {
           success: true,
           message: data?.message || 'Booking cancelled successfully',
@@ -1155,7 +1299,11 @@ class AuthService {
       });
 
       if (response.ok && (data?.success !== false)) {
-        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        // Invalidate booking caches
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        ]);
         return {
           success: true,
           message: data?.message || 'Booking marked as completed successfully.',
@@ -1219,7 +1367,11 @@ class AuthService {
       });
 
       if (response.ok && (data?.success !== false)) {
-        await AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS);
+        // Invalidate booking caches
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        ]);
         return {
           success: true,
           message: data?.message || 'Booking marked as completed.',
