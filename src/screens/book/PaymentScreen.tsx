@@ -5,6 +5,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface Props {
   onBack?: () => void;
@@ -194,7 +197,7 @@ const PaymentScreen: React.FC<Props> = ({
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={24} color={BLUE_COLOR} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Payment</Text>
         <View style={{ width: 24 }} />
@@ -205,15 +208,15 @@ const PaymentScreen: React.FC<Props> = ({
         <View style={[styles.serviceCard, { backgroundColor: colors.card }]}>
           <Text style={[styles.serviceTitle, { color: colors.text }]}>Service Details</Text>
           <View style={styles.serviceRow}>
-            <Ionicons name="car" size={20} color={colors.text} />
+            <Ionicons name="car" size={20} color={BLUE_COLOR} />
             <Text style={[styles.serviceText, { color: colors.textSecondary }]}>Car Wash Service</Text>
           </View>
           <View style={styles.serviceRow}>
-            <Ionicons name="location" size={20} color={colors.text} />
+            <Ionicons name="location" size={20} color={BLUE_COLOR} />
             <Text style={[styles.serviceText, { color: colors.textSecondary }]}>{acceptedCenter.name}</Text>
           </View>
           <View style={styles.serviceRow}>
-            <Ionicons name="time" size={20} color={colors.text} />
+            <Ionicons name="time" size={20} color={BLUE_COLOR} />
             <Text style={[styles.serviceText, { color: colors.textSecondary }]}>
               {bookingData?.date && bookingData?.time
                 ? `${new Date(bookingData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${bookingData.time}`
@@ -229,7 +232,7 @@ const PaymentScreen: React.FC<Props> = ({
             style={[
               styles.input, 
               { 
-                borderColor: vehicleNumberError ? '#EF4444' : colors.border, 
+                borderColor: vehicleNumberError ? '#EF4444' : BLUE_COLOR + '50', 
                 color: colors.text, 
                 backgroundColor: colors.surface 
               }
@@ -249,7 +252,7 @@ const PaymentScreen: React.FC<Props> = ({
             <Text style={styles.errorText}>{vehicleNumberError}</Text>
           ) : null}
           <TextInput
-            style={[styles.input, { marginTop: 12, borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
+            style={[styles.input, { marginTop: 12, borderColor: BLUE_COLOR + '50', color: colors.text, backgroundColor: colors.surface }]}
             placeholder="Notes (optional)"
             placeholderTextColor={colors.textSecondary}
             value={notes}
@@ -267,22 +270,22 @@ const PaymentScreen: React.FC<Props> = ({
             <TouchableOpacity 
               style={[
                 styles.paymentMethod,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                selectedPaymentMethod === 'card' && { borderColor: colors.button, backgroundColor: colors.surface }
+                { backgroundColor: colors.card, borderColor: BLUE_COLOR + '50' },
+                selectedPaymentMethod === 'card' && { borderColor: BLUE_COLOR, backgroundColor: colors.surface }
               ]}
               onPress={() => setSelectedPaymentMethod('card')}
             >
               <View style={styles.paymentMethodLeft}>
-                <Ionicons name="card" size={24} color={colors.text} />
+                <Ionicons name="card" size={24} color={BLUE_COLOR} />
                 <Text style={[styles.paymentMethodText, { color: colors.text }]}>Credit/Debit Card</Text>
               </View>
               <View style={[
                 styles.radioButton,
-                { borderColor: colors.border },
-                selectedPaymentMethod === 'card' && { borderColor: colors.button }
+                { borderColor: BLUE_COLOR + '50' },
+                selectedPaymentMethod === 'card' && { borderColor: BLUE_COLOR }
               ]}>
                 {selectedPaymentMethod === 'card' && (
-                  <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
+                  <View style={[styles.radioButtonInner, { backgroundColor: BLUE_COLOR }]} />
                 )}
               </View>
             </TouchableOpacity>
@@ -290,22 +293,22 @@ const PaymentScreen: React.FC<Props> = ({
             <TouchableOpacity 
               style={[
                 styles.paymentMethod,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                selectedPaymentMethod === 'wallet' && { borderColor: colors.button, backgroundColor: colors.surface }
+                { backgroundColor: colors.card, borderColor: BLUE_COLOR + '50' },
+                selectedPaymentMethod === 'wallet' && { borderColor: BLUE_COLOR, backgroundColor: colors.surface }
               ]}
               onPress={() => setSelectedPaymentMethod('wallet')}
             >
               <View style={styles.paymentMethodLeft}>
-                <Ionicons name="wallet" size={24} color={colors.text} />
+                <Ionicons name="wallet" size={24} color={BLUE_COLOR} />
                 <Text style={[styles.paymentMethodText, { color: colors.text }]}>Digital Wallet</Text>
               </View>
               <View style={[
                 styles.radioButton,
-                { borderColor: colors.border },
-                selectedPaymentMethod === 'wallet' && { borderColor: colors.button }
+                { borderColor: BLUE_COLOR + '50' },
+                selectedPaymentMethod === 'wallet' && { borderColor: BLUE_COLOR }
               ]}>
                 {selectedPaymentMethod === 'wallet' && (
-                  <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
+                  <View style={[styles.radioButtonInner, { backgroundColor: BLUE_COLOR }]} />
                 )}
               </View>
             </TouchableOpacity>
@@ -313,22 +316,22 @@ const PaymentScreen: React.FC<Props> = ({
             <TouchableOpacity 
               style={[
                 styles.paymentMethod,
-                { backgroundColor: colors.card, borderColor: colors.border },
-                selectedPaymentMethod === 'cash' && { borderColor: colors.button, backgroundColor: colors.surface }
+                { backgroundColor: colors.card, borderColor: BLUE_COLOR + '50' },
+                selectedPaymentMethod === 'cash' && { borderColor: BLUE_COLOR, backgroundColor: colors.surface }
               ]}
               onPress={() => setSelectedPaymentMethod('cash')}
             >
               <View style={styles.paymentMethodLeft}>
-                <Ionicons name="cash" size={24} color={colors.text} />
+                <Ionicons name="cash" size={24} color={BLUE_COLOR} />
                 <Text style={[styles.paymentMethodText, { color: colors.text }]}>Cash</Text>
               </View>
               <View style={[
                 styles.radioButton,
-                { borderColor: colors.border },
-                selectedPaymentMethod === 'cash' && { borderColor: colors.button }
+                { borderColor: BLUE_COLOR + '50' },
+                selectedPaymentMethod === 'cash' && { borderColor: BLUE_COLOR }
               ]}>
                 {selectedPaymentMethod === 'cash' && (
-                  <View style={[styles.radioButtonInner, { backgroundColor: colors.button }]} />
+                  <View style={[styles.radioButtonInner, { backgroundColor: BLUE_COLOR }]} />
                 )}
               </View>
             </TouchableOpacity>
@@ -360,20 +363,20 @@ const PaymentScreen: React.FC<Props> = ({
       </ScrollView>
 
       {/* Pay Button */}
-      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: colors.border }]}>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: BLUE_COLOR + '30' }]}>
         <TouchableOpacity 
           style={[
             styles.payButton, 
-            { backgroundColor: colors.button }, 
+            { backgroundColor: BLUE_COLOR }, 
             (isProcessing || !vehicleNumber.trim()) && styles.payButtonDisabled
           ]} 
           onPress={handlePayment}
           disabled={isProcessing || !vehicleNumber.trim()}
         >
           {isProcessing ? (
-            <Text style={[styles.payButtonText, { color: colors.buttonText }]}>Processing...</Text>
+            <Text style={[styles.payButtonText, { color: '#FFFFFF' }]}>Processing...</Text>
           ) : (
-            <Text style={[styles.payButtonText, { color: colors.buttonText }]}>
+            <Text style={[styles.payButtonText, { color: '#FFFFFF' }]}>
               {selectedPaymentMethod === 'cash' ? 'Confirm Cash Payment' : 'Pay $27.50'}
             </Text>
           )}
@@ -404,8 +407,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   content: {
     flex: 1,
@@ -426,9 +431,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   serviceTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '700',
     marginBottom: 12,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   serviceRow: {
     flexDirection: 'row',
@@ -437,15 +443,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   serviceText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   paymentSection: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '700',
     marginBottom: 12,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   paymentMethodsContainer: {
     marginBottom: 0,
@@ -481,7 +489,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   paymentMethodText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   radioButton: {
     width: 20,
@@ -511,18 +520,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   errorText: {
     color: '#EF4444',
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     marginTop: 6,
     marginLeft: 4,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   summaryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '700',
     marginBottom: 12,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -531,23 +543,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   summaryLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   summaryValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   summaryDivider: {
     height: 1,
     marginVertical: 8,
   },
   summaryTotalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
   },
   summaryTotalValue: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.NUMBER_SMALL,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
   },
   bottomContainer: {
     padding: 16,
@@ -567,8 +583,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   payButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: 0.5,
   },
 });
 

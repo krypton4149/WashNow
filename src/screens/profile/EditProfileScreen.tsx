@@ -15,6 +15,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import BottomTabBar from '../../components/BottomTabBar';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { platformEdges } from '../../utils/responsive';
+
+const BLUE_COLOR = '#0358a8';
 
 interface UserData {
   id: string;
@@ -379,15 +383,16 @@ const EditProfileScreen: React.FC<Props> = ({
   return (
     <SafeAreaView 
       style={[styles.container, { backgroundColor: colors.background }]} 
-      edges={['top', 'bottom']}
+      edges={platformEdges as any}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Profile</Text>
-        <View style={{ width: 44 }} />
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Profile</Text>
+        </View>
       </View>
 
       <ScrollView 
@@ -398,44 +403,36 @@ const EditProfileScreen: React.FC<Props> = ({
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Photo Section */}
-        <View style={styles.profilePhotoSection}>
-          <View style={[styles.profilePhotoContainer, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.profilePhotoInitials, { color: colors.text }]}>{initials}</Text>
-          </View>
-          <Text style={[styles.profilePhotoHint, { color: colors.textSecondary }]}>
-            Tap to change profile photo
-          </Text>
-        </View>
+        
 
         {/* User Information Fields */}
         <View style={styles.inputSection}>
           {/* Full Name */}
           <View style={styles.inputField}>
-            <Text style={[styles.fieldLabel, { color: colors.text }]}>Full Name</Text>
-            <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
-              <Ionicons name="person-outline" size={20} color={colors.button} style={styles.inputIcon} />
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Full Name</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface || '#F3F4F6' }]}>
+              <Ionicons name="person-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={[styles.textInput, { color: colors.text }]}
+                style={[styles.textInput, { color: '#000000' }]}
                 value={editedData.fullName}
                 onChangeText={(text) => setEditedData({...editedData, fullName: text})}
-                placeholder="John Doe"
-                placeholderTextColor={colors.textSecondary}
+                placeholder="Enter your full name"
+                placeholderTextColor="#000000"
               />
             </View>
           </View>
 
           {/* Email Address */}
           <View style={styles.inputField}>
-            <Text style={[styles.fieldLabel, { color: colors.text }]}>Email Address</Text>
-            <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
-              <Ionicons name="mail-outline" size={20} color={colors.button} style={styles.inputIcon} />
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Email Address</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface || '#F3F4F6' }]}>
+              <Ionicons name="mail-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={[styles.textInput, { color: colors.text }]}
+                style={[styles.textInput, { color: '#000000' }]}
                 value={editedData.email}
                 onChangeText={(text) => setEditedData({...editedData, email: text})}
-                placeholder="john.doe@example.com"
-                placeholderTextColor={colors.textSecondary}
+                placeholder="Enter your email"
+                placeholderTextColor="#000000"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -444,18 +441,18 @@ const EditProfileScreen: React.FC<Props> = ({
 
           {/* Phone Number */}
           <View style={styles.inputField}>
-            <Text style={[styles.fieldLabel, { color: colors.text }]}>Phone Number</Text>
-            <View style={[styles.inputContainer, { backgroundColor: colors.surface }]}>
-              <Ionicons name="call-outline" size={20} color={colors.button} style={styles.inputIcon} />
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Phone Number</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.surface || '#F3F4F6' }]}>
+              <Ionicons name="call-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={[styles.textInput, { color: colors.text }]}
+                style={[styles.textInput, { color: '#000000' }]}
                 value={editedData.phoneNumber}
                 onChangeText={(text) => {
                   const digitsOnly = text.replace(/\D/g, '').slice(0, 10);
                   setEditedData({...editedData, phoneNumber: digitsOnly});
                 }}
-                placeholder="+1 (555) 123-4567"
-                placeholderTextColor={colors.textSecondary}
+                placeholder="Enter your phone number"
+                placeholderTextColor="#000000"
                 keyboardType="phone-pad"
                 maxLength={10}
               />
@@ -464,23 +461,23 @@ const EditProfileScreen: React.FC<Props> = ({
         </View>
 
         {/* Account Information Section */}
-        <View style={styles.accountInfoSection}>
+        <View style={[styles.accountInfoSection, { backgroundColor: colors.surface || '#F3F4F6' }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Account Information</Text>
           
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text }]}>Member Since</Text>
-            <Text style={[styles.infoValue, { color: colors.textSecondary }]}>{memberSinceDate}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Member Since</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{memberSinceDate}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text }]}>Account Type</Text>
-            <Text style={[styles.infoValue, { color: colors.textSecondary }]}>{displayAccountType}</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Account Type</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{displayAccountType}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: colors.text }]}>Verification Status</Text>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Verification Status</Text>
             <View style={styles.verifiedContainer}>
-              <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+              <Ionicons name="checkmark-circle" size={16} color="#10B981" />
               <Text style={styles.verifiedText}>Verified</Text>
             </View>
           </View>
@@ -496,7 +493,7 @@ const EditProfileScreen: React.FC<Props> = ({
         <TouchableOpacity 
           style={[
             styles.saveButton, 
-            { backgroundColor: colors.button || '#000000' },
+            { backgroundColor: BLUE_COLOR },
             isLoading && styles.saveButtonDisabled
           ]} 
           onPress={handleSave}
@@ -506,7 +503,7 @@ const EditProfileScreen: React.FC<Props> = ({
           {isLoading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
-            <Text style={styles.saveButtonText}>SAVE CHANGES</Text>
+            <Text style={styles.saveButtonText}>Save Changes</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -530,32 +527,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 12 : 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 8 : 12,
-    paddingBottom: 16,
-    minHeight: 44,
+    gap: 12,
   },
   backButton: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 20,
+    marginLeft: -8,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'center',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '600',
     letterSpacing: 0.3,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingHorizontal: 24,
+    paddingTop: 8,
     paddingBottom: 24,
   },
   contentContainerWithTabBar: {
@@ -563,114 +564,132 @@ const styles = StyleSheet.create({
   },
   profilePhotoSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    paddingVertical: 32,
+    borderBottomWidth: 1,
   },
   profilePhotoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
   },
   profilePhotoInitials: {
-    fontSize: 36,
+    fontSize: FONT_SIZES.NUMBER_LARGE,
     fontWeight: '700',
     letterSpacing: 1,
-  },
-  profilePhotoHint: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontFamily: FONTS.INTER_BOLD,
   },
   inputSection: {
-    marginBottom: 32,
+    paddingTop: 0,
+    paddingBottom: 24,
+    gap: 24,
   },
   inputField: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   fieldLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
     marginBottom: 8,
     letterSpacing: 0.2,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 52,
+    paddingVertical: 0,
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   inputIcon: {
     marginRight: 12,
+    position: 'absolute',
+    left: 16,
+    zIndex: 1,
   },
   textInput: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '400',
     flex: 1,
     paddingVertical: 0,
+    paddingLeft: 48,
     letterSpacing: 0.2,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   accountInfoSection: {
-    marginBottom: 32,
+    marginTop: 32,
+    marginBottom: 24,
+    borderRadius: 16,
+    padding: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '700',
-    marginBottom: 20,
+    marginBottom: 16,
     letterSpacing: 0.3,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
   },
   infoLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
     letterSpacing: 0.2,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   infoValue: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
     letterSpacing: 0.2,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   verifiedContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   verifiedText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4CAF50',
-    marginLeft: 6,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
+    color: '#10B981',
+    marginLeft: 8,
     letterSpacing: 0.2,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   bottomContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
   },
   bottomContainerWithTabBar: {
     paddingBottom: 12,
   },
   saveButton: {
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    minHeight: 56,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontWeight: '600',
     color: '#FFFFFF',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   saveButtonDisabled: {
     opacity: 0.6,

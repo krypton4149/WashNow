@@ -6,6 +6,9 @@ import Geolocation from '@react-native-community/geolocation';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface Props {
   onBack?: () => void;
@@ -310,16 +313,16 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   };
 
   const renderCenter = (center: ServiceCenter) => (
-    <View key={center.id} style={[styles.centerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View key={center.id} style={[styles.centerCard, { backgroundColor: colors.card, borderColor: BLUE_COLOR + '30' }]}>
       <View style={styles.centerLeft}>
         <View style={[
           styles.statusIcon,
-          center.status === 'waiting' && styles.statusWaiting,
+          center.status === 'waiting' && { backgroundColor: BLUE_COLOR + '50' },
           center.status === 'not-available' && styles.statusNotAvailable,
-          center.status === 'accepted' && styles.statusAccepted,
+          center.status === 'accepted' && { backgroundColor: BLUE_COLOR },
         ]}>
           {center.status === 'waiting' && (
-            <Ionicons name="refresh" size={16} color="#FFFFFF" />
+            <Ionicons name="refresh" size={16} color={BLUE_COLOR} />
           )}
           {center.status === 'not-available' && (
             <Ionicons name="close" size={16} color="#FFFFFF" />
@@ -365,7 +368,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
     <SafeAreaView style={[styles.container,{backgroundColor: theme.background}]} edges={platformEdges as any}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={theme.textPrimary} />
+          <Ionicons name="close" size={24} color={BLUE_COLOR} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={[styles.title,{color: theme.textPrimary}]}>Finding your car wash</Text>
@@ -377,17 +380,17 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
         {/* Searching/Matched Status */}
         <View style={[
           styles.searchingCard,
-          { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1 }
+          { backgroundColor: theme.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }
         ]}>
           <View style={styles.searchingLeft}>
             <View style={[
               styles.searchingIcon,
-              { backgroundColor: theme.accent }
+              { backgroundColor: BLUE_COLOR }
             ]}>
               {hasAcceptedCenter ? (
-                <Ionicons name="checkmark" size={20} color={colors.buttonText} />
+                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
               ) : (
-                <Ionicons name="refresh" size={20} color={colors.buttonText} />
+                <Ionicons name="refresh" size={20} color="#FFFFFF" />
               )}
             </View>
           </View>
@@ -402,17 +405,17 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
         {/* Your Request */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>Your Request</Text>
-          <View style={[styles.requestCard,{backgroundColor: theme.card}]}> 
+          <View style={[styles.requestCard,{backgroundColor: theme.card, borderColor: BLUE_COLOR + '30', borderWidth: 1, borderRadius: 12}]}> 
             <View style={styles.requestRow}>
-              <View style={[styles.requestIcon,{backgroundColor: theme.accent}]}> 
-                <Ionicons name="flash" size={16} color={colors.buttonText} />
+              <View style={[styles.requestIcon,{backgroundColor: BLUE_COLOR}]}> 
+                <Ionicons name="flash" size={16} color="#FFFFFF" />
               </View>
               <Text style={[styles.requestText,{color: theme.textPrimary}]}>Car Wash - Instant Booking</Text>
             </View>
             <Text style={[styles.requestSubtext,{color: theme.textSecondary}]}>Service starts immediately.</Text>
             
             <View style={styles.requestRow}>
-              <Ionicons name="location-outline" size={16} color={theme.textSecondary} />
+              <Ionicons name="location-outline" size={16} color={BLUE_COLOR} />
               <Text style={[styles.requestLabel,{color: theme.textSecondary}]}>Your location</Text>
             </View>
             <Text style={[styles.requestAddress,{color: theme.textPrimary}]}>
@@ -442,7 +445,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
       </ScrollView>
 
       {/* Cancel Button */}
-      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.surface, borderTopColor: BLUE_COLOR + '30' }]}>
         <TouchableOpacity style={styles.cancelButton} onPress={onBack}>
           <Text style={[styles.cancelButtonText,{color: theme.textSecondary}]}>Cancel Request</Text>
         </TouchableOpacity>
@@ -473,14 +476,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     color: '#000',
     marginBottom: 4,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   content: {
     flex: 1,
@@ -508,23 +514,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchingText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
     color: '#000',
     marginBottom: 4,
+    fontFamily: FONTS.INTER_BOLD,
   },
   timeText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     color: '#000',
     marginBottom: 12,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   requestCard: {
     backgroundColor: '#F9FAFB',
@@ -545,26 +555,30 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   requestText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '600',
     color: '#000',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   requestSubtext: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
     marginBottom: 12,
     marginLeft: 44,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   requestLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
     marginLeft: 8,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   requestAddress: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#000',
     marginLeft: 24,
     marginTop: 4,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   centersList: {
     gap: 12,
@@ -588,7 +602,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusWaiting: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: BLUE_COLOR + '20',
   },
   statusNotAvailable: {
     backgroundColor: '#FEF2F2',
@@ -606,10 +620,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   centerName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
     color: '#000',
     flex: 1,
+    fontFamily: FONTS.INTER_BOLD,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -622,14 +637,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   centerDistance: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   centerRight: {
     marginLeft: 12,
   },
   statusText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   bottomContainer: {
     padding: 16,
@@ -672,14 +689,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
     color: '#666666',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   cancelNote: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     color: '#999999',
     textAlign: 'center',
+    fontFamily: FONTS.INTER_REGULAR,
   },
 });
 

@@ -9,6 +9,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface Props {
   onBack?: () => void;
@@ -65,7 +68,7 @@ const BookingConfirmedScreen: React.FC<Props> = ({
     <SafeAreaView style={[styles.container,{ backgroundColor: theme.background }]} edges={platformEdges as any}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={theme.textPrimary} />
+          <Ionicons name="close" size={24} color={BLUE_COLOR} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={[styles.title,{color: theme.textPrimary}]}>Finding your car wash</Text>
@@ -75,11 +78,11 @@ const BookingConfirmedScreen: React.FC<Props> = ({
 
       <View style={styles.content}>
         {/* Match Found Banner */}
-        <View style={[styles.matchFoundBanner,{ backgroundColor: theme.card }]}>
-          <View style={[styles.matchIcon, { backgroundColor: theme.accent }]}>
-            <Ionicons name="checkmark" size={16} color={colors.buttonText} />
-            <View style={[styles.clockIcon, { backgroundColor: theme.accent }]}>
-              <Ionicons name="time" size={8} color={colors.buttonText} />
+        <View style={[styles.matchFoundBanner,{ backgroundColor: theme.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }]}>
+          <View style={[styles.matchIcon, { backgroundColor: BLUE_COLOR }]}>
+            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+            <View style={[styles.clockIcon, { backgroundColor: BLUE_COLOR }]}>
+              <Ionicons name="time" size={8} color="#FFFFFF" />
             </View>
           </View>
           <View style={styles.matchContent}>
@@ -90,8 +93,8 @@ const BookingConfirmedScreen: React.FC<Props> = ({
 
         {/* Booking Confirmed */}
         <View style={styles.confirmationSection}>
-          <View style={[styles.confirmationIcon, { backgroundColor: theme.accent }]}>
-            <Ionicons name="checkmark" size={48} color={colors.buttonText} />
+          <View style={[styles.confirmationIcon, { backgroundColor: BLUE_COLOR }]}>
+            <Ionicons name="checkmark" size={48} color="#FFFFFF" />
           </View>
           <Text style={[styles.confirmationTitle,{color: theme.textPrimary}]}>Booking Confirmed!</Text>
           <Text style={[styles.confirmationSubtitle,{color: theme.textSecondary}] }>
@@ -102,7 +105,7 @@ const BookingConfirmedScreen: React.FC<Props> = ({
         {/* Car Wash Details */}
         <View style={styles.detailsSection}>
           <Text style={[styles.detailsTitle,{color: theme.textPrimary}]}>Your Car Wash Details</Text>
-          <View style={[styles.detailsCard,{ backgroundColor: theme.card }]}>
+          <View style={[styles.detailsCard,{ backgroundColor: theme.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }]}>
             <View style={styles.detailRow}>
               <Text style={[styles.detailLabel,{color: theme.textSecondary}]}>Center:</Text>
               <Text style={[styles.detailValue,{color: theme.textPrimary}]}>{acceptedCenter.name}</Text>
@@ -122,9 +125,9 @@ const BookingConfirmedScreen: React.FC<Props> = ({
       </View>
 
       {/* Proceed to Payment Button */}
-      <View style={[styles.bottomContainer,{ backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-        <TouchableOpacity style={[styles.paymentButton, { backgroundColor: theme.accent }]} onPress={() => onProceedToPayment?.(instantBookingData)}>
-          <Text style={[styles.paymentButtonText, { color: colors.buttonText }]}>Proceed to Payment</Text>
+      <View style={[styles.bottomContainer,{ backgroundColor: theme.surface, borderTopColor: BLUE_COLOR + '30' }]}>
+        <TouchableOpacity style={[styles.paymentButton, { backgroundColor: BLUE_COLOR }]} onPress={() => onProceedToPayment?.(instantBookingData)}>
+          <Text style={[styles.paymentButtonText, { color: '#FFFFFF' }]}>Proceed to Payment</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -152,14 +155,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     color: '#000',
     marginBottom: 4,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   content: {
     flex: 1,
@@ -196,14 +202,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   matchText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
     color: '#000',
     marginBottom: 4,
+    fontFamily: FONTS.INTER_BOLD,
   },
   matchTime: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   confirmationSection: {
     alignItems: 'center',
@@ -218,29 +226,35 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   confirmationTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.APP_TITLE_SMALL,
+    fontWeight: '700',
     color: '#000',
     marginBottom: 8,
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.5,
   },
   confirmationSubtitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     color: '#666666',
     textAlign: 'center',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   detailsSection: {
     marginBottom: 24,
   },
   detailsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     color: '#000',
     marginBottom: 12,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   detailsCard: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: '#F9FAFB',
     padding: 16,
     borderRadius: 12,
+    borderWidth: 1,
   },
   detailRow: {
     flexDirection: 'row',
@@ -249,13 +263,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
     color: '#000',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -285,8 +301,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   paymentButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: 0.5,
   },
 });
 

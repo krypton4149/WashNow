@@ -15,6 +15,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import BottomTabBar from '../../components/BottomTabBar';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 
 interface UserData {
@@ -145,11 +149,11 @@ const ProfileScreen: React.FC<Props> = ({
       >
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <View style={styles.headerTop}>
-            <TouchableOpacity onPress={onBack} style={styles.headerButton} activeOpacity={0.7}>
+            <TouchableOpacity onPress={onBack} style={styles.headerButtonWhite} activeOpacity={0.7}>
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity style={styles.headerButton} onPress={onEditProfile} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.headerButtonBlack} onPress={onEditProfile} activeOpacity={0.7}>
               <Ionicons name="create-outline" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
@@ -253,7 +257,9 @@ const ProfileScreen: React.FC<Props> = ({
           
           <View style={styles.contactCard}>
             <View style={styles.contactIconPhone}>
-              <Ionicons name="call-outline" size={24} color="#FFFFFF" />
+              <View style={styles.phoneGradientBackground} />
+              <View style={styles.phoneGradientOverlay} />
+              <Ionicons name="call-outline" size={16} color="#FFFFFF" style={styles.iconContent} />
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>Phone Number</Text>
@@ -265,7 +271,9 @@ const ProfileScreen: React.FC<Props> = ({
 
           <View style={styles.contactCard}>
             <View style={styles.contactIconCalendar}>
-              <Ionicons name="calendar-outline" size={24} color="#FFFFFF" />
+              <View style={styles.calendarGradientBackground} />
+              <View style={styles.calendarGradientOverlay} />
+              <Ionicons name="calendar-outline" size={16} color="#FFFFFF" style={styles.iconContent} />
             </View>
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>Member Since</Text>
@@ -282,10 +290,11 @@ const ProfileScreen: React.FC<Props> = ({
             <TouchableOpacity 
               style={styles.quickActionCard}
               onPress={onBookingHistory}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons name="refresh-circle" size={28} color="#374151" />
+                <View style={styles.quickActionIconGradient} />
+                <Ionicons name="refresh-circle" size={20} color="#000000" style={styles.quickActionIconContent} />
               </View>
               <Text style={styles.quickActionText}>Booking History</Text>
             </TouchableOpacity>
@@ -293,10 +302,11 @@ const ProfileScreen: React.FC<Props> = ({
             <TouchableOpacity 
               style={styles.quickActionCard}
               onPress={onHelpSupport}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons name="help-circle-outline" size={28} color="#374151" />
+                <View style={styles.quickActionIconGradient} />
+                <Ionicons name="help-circle-outline" size={20} color="#000000" style={styles.quickActionIconContent} />
               </View>
               <Text style={styles.quickActionText}>Help & Support</Text>
             </TouchableOpacity>
@@ -304,10 +314,11 @@ const ProfileScreen: React.FC<Props> = ({
             <TouchableOpacity 
               style={styles.quickActionCard}
               onPress={onSettings}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
               <View style={styles.quickActionIcon}>
-                <Ionicons name="settings-outline" size={28} color="#374151" />
+                <View style={styles.quickActionIconGradient} />
+                <Ionicons name="settings-outline" size={20} color="#000000" style={styles.quickActionIconContent} />
               </View>
               <Text style={styles.quickActionText}>Settings</Text>
             </TouchableOpacity>
@@ -316,12 +327,12 @@ const ProfileScreen: React.FC<Props> = ({
 
         {/* Edit Profile Button */}
         <TouchableOpacity 
-          style={[styles.editProfileButton, { backgroundColor: colors.surface }]}
+          style={[styles.editProfileButton, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB' }]}
           onPress={onEditProfile}
           activeOpacity={0.8}
         >
-          <Ionicons name="create-outline" size={20} color={colors.text} />
-          <Text style={[styles.editProfileButtonText, { color: colors.text }]}>Edit Profile</Text>
+          <Ionicons name="create-outline" size={20} color="#000000" />
+          <Text style={[styles.editProfileButtonText, { color: '#000000' }]}>Edit Profile</Text>
         </TouchableOpacity>
 
         <View style={styles.bottomSpacing} />
@@ -387,7 +398,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 20,
-    paddingTop: 0,
+    paddingTop: 24,
     paddingBottom: 0, // Bottom padding handled by bottomSpacing
   },
   profileSummary: {
@@ -412,10 +423,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   profileInitials: {
-    fontSize: 28,
+    fontSize: FONT_SIZES.NUMBER_LARGE,
     fontWeight: '700',
     letterSpacing: 1,
     color: '#FFFFFF',
+    fontFamily: FONTS.INTER_BOLD,
   },
   onlineDot: {
     position: 'absolute',
@@ -438,34 +450,37 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   userNameWhite: {
-    fontSize: 22,
+    fontSize: FONT_SIZES.HEADING_LARGE,
     fontWeight: '700',
     marginRight: 8,
     letterSpacing: 0.3,
     color: '#FFFFFF',
+    fontFamily: FONTS.MONTserrat_BOLD,
   },
   verifiedBadgeBlue: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#3366FF',
+    backgroundColor: BLUE_COLOR,
     justifyContent: 'center',
     alignItems: 'center',
   },
   userEmailLight: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     letterSpacing: 0.2,
     color: '#E5E7EB',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   section: {
     marginBottom: 28,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '700',
     marginBottom: 16,
     letterSpacing: 0.3,
     color: '#000000',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   contactCard: {
     flexDirection: 'row',
@@ -473,46 +488,92 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   contactIconPhone: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: '#4285F4',
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: BLUE_COLOR,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  phoneGradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: BLUE_COLOR,
+  },
+  phoneGradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '50%',
+    height: '100%',
+    backgroundColor: '#0369a1',
+    opacity: 0.6,
   },
   contactIconCalendar: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: '#8B5CF6',
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: YELLOW_COLOR,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  calendarGradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: YELLOW_COLOR,
+  },
+  calendarGradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '50%',
+    height: '100%',
+    backgroundColor: '#fbbf24',
+    opacity: 0.6,
+  },
+  iconContent: {
+    position: 'relative',
+    zIndex: 1,
   },
   contactInfo: {
     flex: 1,
   },
   contactLabel: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     fontWeight: '400',
     color: '#6B7280',
-    marginBottom: 4,
+    marginBottom: 2,
     letterSpacing: 0.2,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   contactValue: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
     color: '#000000',
     letterSpacing: 0.2,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   quickActionsRow: {
     flexDirection: 'row',
@@ -522,51 +583,70 @@ const styles = StyleSheet.create({
   quickActionCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    padding: 16,
     alignItems: 'center',
-    minHeight: 120,
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   quickActionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    marginBottom: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  quickActionIconGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  quickActionIconContent: {
+    position: 'relative',
+    zIndex: 1,
   },
   quickActionText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontWeight: '400',
     textAlign: 'center',
-    letterSpacing: 0.2,
+    lineHeight: 16,
     color: '#000000',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   editProfileButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginTop: 8,
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   editProfileButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
     marginLeft: 8,
     letterSpacing: 0.3,
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   bottomSpacing: {
     minHeight: 20,
@@ -577,8 +657,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
 });
 

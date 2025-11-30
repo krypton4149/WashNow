@@ -15,6 +15,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 interface Props {
   onBack?: () => void;
@@ -190,21 +194,21 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
     switch (type) {
       case 'booking-confirmed':
       case 'booking_confirmed':
-        return { name: 'checkmark-circle' as const, color: '#4CAF50' };
+        return { name: 'checkmark-circle' as const, color: BLUE_COLOR };
       case 'service-starting':
       case 'service_starting':
-        return { name: 'time-outline' as const, color: '#3366FF' };
+        return { name: 'time-outline' as const, color: BLUE_COLOR };
       case 'service-completed':
       case 'service_completed':
-        return { name: 'checkmark-circle' as const, color: '#4CAF50' };
+        return { name: 'checkmark-circle' as const, color: BLUE_COLOR };
       case 'special-offer':
       case 'special_offer':
-        return { name: 'gift-outline' as const, color: '#8B5CF6' };
+        return { name: 'gift-outline' as const, color: BLUE_COLOR };
       case 'booking-canceled':
       case 'booking_canceled':
-        return { name: 'close-circle' as const, color: '#DC2626' };
+        return { name: 'close-circle' as const, color: BLUE_COLOR };
       default:
-        return { name: 'notifications-circle' as const, color: '#6B7280' };
+        return { name: 'notifications-circle' as const, color: BLUE_COLOR };
     }
   };
 
@@ -222,7 +226,7 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
     const isMarking = markingRead === notification.id;
     
     // Determine icon background color based on read status
-    const iconBackgroundColor = isUnread ? '#3366FF' : '#4CAF50';
+    const iconBackgroundColor = isUnread ? BLUE_COLOR : '#E5E7EB';
     
     return (
       <TouchableOpacity
@@ -243,9 +247,9 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
             <View style={styles.titleRow}>
               <Text style={[styles.notificationTitle, { color: colors.text }]}>{notification.title}</Text>
               {isMarking ? (
-                <ActivityIndicator size="small" color={colors.button} style={styles.markingIndicator} />
+                <ActivityIndicator size="small" color={BLUE_COLOR} style={styles.markingIndicator} />
               ) : (
-                isUnread && <View style={[styles.unreadDot, { backgroundColor: '#3366FF' }]} />
+                isUnread && <View style={[styles.unreadDot, { backgroundColor: YELLOW_COLOR }]} />
               )}
             </View>
             <Text style={[styles.notificationDescription, { color: colors.textSecondary }]}>
@@ -281,7 +285,7 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
           <Text style={[
             styles.markAllText, 
             { 
-              color: unreadCount === 0 ? colors.textSecondary : colors.button,
+              color: unreadCount === 0 ? colors.textSecondary : BLUE_COLOR,
               opacity: unreadCount === 0 ? 0.5 : 1
             }
           ]}>
@@ -292,7 +296,7 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.button} />
+          <ActivityIndicator size="large" color={BLUE_COLOR} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading notifications...</Text>
         </View>
       ) : (
@@ -304,7 +308,7 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
             <RefreshControl
               refreshing={refreshing}
               onRefresh={fetchNotifications}
-              tintColor={colors.button}
+              tintColor={BLUE_COLOR}
             />
           }
         >
@@ -351,12 +355,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '600',
     marginBottom: 2,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   unreadCount: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   markAllButton: {
     padding: 4,
@@ -364,8 +370,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   markAllText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BUTTON_SMALL,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   content: {
     flex: 1,
@@ -384,7 +391,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   notificationItem: {
     backgroundColor: '#FFFFFF',
@@ -420,18 +428,21 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notificationTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '700',
     flex: 1,
     marginBottom: 4,
+    fontFamily: FONTS.INTER_BOLD,
   },
   notificationDescription: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     lineHeight: 20,
     marginBottom: 6,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   notificationTimestamp: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   unreadDot: {
     width: 8,
@@ -452,15 +463,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   emptyDescription: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     textAlign: 'center',
     lineHeight: 24,
+    fontFamily: FONTS.INTER_REGULAR,
   },
 });
 

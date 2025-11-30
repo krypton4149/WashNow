@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import BackButton from '../../components/ui/BackButton';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface ScheduleForLaterScreenProps {
   onBack: () => void;
@@ -172,14 +176,19 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
   // );
 
 
-  const renderCarWashCenter = (center: CarWashCenter) => (
+  const renderCarWashCenter = (center: CarWashCenter, index: number) => (
     <TouchableOpacity
       key={center.id}
-      style={[styles.centerCard, { backgroundColor: colors.card }]}
+      style={[
+        styles.centerCard, 
+        { backgroundColor: colors.card },
+        index < filteredCenters.length - 1 && styles.centerCardSpacing
+      ]}
       onPress={() => onCenterSelect(center)}
+      activeOpacity={0.7}
     >
-      <View style={[styles.centerLocationIcon, { backgroundColor: colors.surface }]}>
-        <Text style={styles.centerLocationIconText}>📍</Text>
+      <View style={[styles.centerLocationIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
+        <Ionicons name="location" size={18} color={BLUE_COLOR} />
       </View>
       <View style={styles.centerInfo}>
         <Text style={[styles.centerName, { color: colors.text }]}>{center.name || 'Service Center'}</Text>
@@ -204,8 +213,8 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={styles.searchIcon}>🔍</Text>
+          <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: BLUE_COLOR + '50' }]}>
+            <Ionicons name="search-outline" size={20} color={BLUE_COLOR} style={styles.searchIcon} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
               placeholder="Where do you want the car wash?"
@@ -233,13 +242,13 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
               ) : error ? (
                 <View style={styles.errorContainer}>
                   <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
-                  <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.button }]} onPress={fetchServiceCenters}>
-                    <Text style={[styles.retryButtonText, { color: colors.buttonText }]}>Try Again</Text>
+                  <TouchableOpacity style={[styles.retryButton, { backgroundColor: BLUE_COLOR }]} onPress={fetchServiceCenters}>
+                    <Text style={[styles.retryButtonText, { color: '#FFFFFF' }]}>Try Again</Text>
                   </TouchableOpacity>
                 </View>
               ) : filteredCenters.length > 0 ? (
                 <View style={styles.centersList}>
-                  {filteredCenters.map(renderCarWashCenter)}
+                  {filteredCenters.map((center, index) => renderCarWashCenter(center, index))}
                 </View>
               ) : (
                 <View style={styles.noResultsContainer}>
@@ -284,15 +293,16 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: FONT_SIZES.APP_TITLE_SMALL,
     fontWeight: '700',
     marginBottom: 4,
-    fontFamily: 'System',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '400',
-    fontFamily: 'System',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -304,26 +314,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchIcon: {
-    fontSize: 18,
     marginRight: 12,
-    color: '#666666',
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: 'System',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   locationsContainer: {
     paddingHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     marginBottom: 16,
-    fontFamily: 'System',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   locationsList: {
     gap: 16,
@@ -371,22 +385,33 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   centersList: {
-    backgroundColor: '#FFFFFF',
+    // Container for center cards
   },
   centerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: BLUE_COLOR + '40',
+    backgroundColor: '#FFFFFF',
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  centerCardSpacing: {
+    marginBottom: 12,
   },
   centerLocationIcon: {
-    width: 24,
-    height: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   centerLocationIconText: {
     fontSize: 16,
@@ -396,14 +421,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   centerName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
     marginBottom: 2,
-    fontFamily: 'System',
+    fontFamily: FONTS.INTER_BOLD,
   },
   centerAddress: {
-    fontSize: 14,
-    fontFamily: 'System',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    lineHeight: 18,
   },
   scheduleInfo: {
     flexDirection: 'row',
@@ -437,49 +463,55 @@ const styles = StyleSheet.create({
         paddingVertical: 40,
       },
       loadingText: {
-        fontSize: 16,
+        fontSize: FONT_SIZES.BODY_LARGE,
         color: '#666666',
         marginTop: 12,
-        fontFamily: 'System',
+        fontFamily: FONTS.INTER_REGULAR,
       },
       errorContainer: {
         alignItems: 'center',
         paddingVertical: 40,
       },
       errorText: {
-        fontSize: 16,
+        fontSize: FONT_SIZES.BODY_LARGE,
         color: '#FF6B6B',
         textAlign: 'center',
         marginBottom: 16,
-        fontFamily: 'System',
+        fontFamily: FONTS.INTER_REGULAR,
       },
       retryButton: {
-        backgroundColor: '#000000',
+        backgroundColor: BLUE_COLOR,
         paddingHorizontal: 24,
         paddingVertical: 12,
-        borderRadius: 8,
+        borderRadius: 12,
+        shadowColor: BLUE_COLOR,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 3,
       },
       retryButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: FONT_SIZES.BUTTON_MEDIUM,
         fontWeight: '600',
-        fontFamily: 'System',
+        fontFamily: FONTS.INTER_SEMIBOLD,
+        letterSpacing: 0.5,
       },
       noResultsContainer: {
         alignItems: 'center',
         paddingVertical: 40,
       },
       noResultsText: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: FONT_SIZES.HEADING_SMALL,
+        fontWeight: '700',
         color: '#666666',
         marginBottom: 8,
-        fontFamily: 'System',
+        fontFamily: FONTS.MONTserrat_SEMIBOLD,
       },
       noResultsSubtext: {
-        fontSize: 14,
+        fontSize: FONT_SIZES.BODY_SMALL,
         color: '#999999',
-        fontFamily: 'System',
+        fontFamily: FONTS.INTER_REGULAR,
       },
     });
 

@@ -6,6 +6,9 @@ import Geolocation from '@react-native-community/geolocation';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface Props {
   onBack?: () => void;
@@ -183,7 +186,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     <SafeAreaView style={[styles.container,{backgroundColor: theme.background}]} edges={platformEdges as any}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={BLUE_COLOR} />
         </TouchableOpacity>
                 <Text style={[styles.title,{color: theme.textPrimary}]}>Plan your wash</Text>
         <View style={{ width: 24 }} />
@@ -193,31 +196,31 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         {/* Selection Buttons */}
         <View style={styles.selectionContainer}>
           <TouchableOpacity 
-            style={[styles.selectionButton,{backgroundColor: theme.chip}]}
+            style={[styles.selectionButton,{backgroundColor: theme.chip, borderColor: BLUE_COLOR, borderWidth: 1}]}
             onPress={() => setShowTimeModal(true)}
           >
-            <Ionicons name="time-outline" size={16} color={theme.textPrimary} />
+            <Ionicons name="time-outline" size={16} color={BLUE_COLOR} />
                     <Text style={[styles.selectionText,{color: theme.textPrimary}]}>Wash now</Text>
-            <Ionicons name="chevron-down-outline" size={16} color={theme.textPrimary} />
+            <Ionicons name="chevron-down-outline" size={16} color={BLUE_COLOR} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.selectionButton,{backgroundColor: theme.chip}]}> 
+          <TouchableOpacity style={[styles.selectionButton,{backgroundColor: theme.chip, borderColor: BLUE_COLOR, borderWidth: 1}]}> 
             <Text style={[styles.selectionText,{color: theme.textPrimary}]}>For me</Text>
-            <Ionicons name="chevron-down-outline" size={16} color={theme.textPrimary} />
+            <Ionicons name="chevron-down-outline" size={16} color={BLUE_COLOR} />
           </TouchableOpacity>
         </View>
 
         {/* Location Input */}
-        <View style={[styles.locationContainer,{backgroundColor: theme.card,borderColor: theme.textPrimary}]}> 
+        <View style={[styles.locationContainer,{backgroundColor: theme.card,borderColor: BLUE_COLOR}]}> 
           <View style={styles.locationRow}>
-            <View style={[styles.locationDot,{backgroundColor: theme.textPrimary}]} />
+            <View style={[styles.locationDot,{backgroundColor: BLUE_COLOR}]} />
             <Text style={[styles.locationText,{color: theme.textPrimary}]}>{currentLocation}</Text>
           </View>
           
           <View style={styles.whereToWashRow}>
             <View style={styles.checkboxContainer}>
-              <View style={[styles.checkbox,{borderColor: theme.textPrimary}, whereToWash && {backgroundColor: theme.textPrimary}]}> 
-                {whereToWash && <Ionicons name="checkmark" size={12} color={colors.buttonText} />}
+              <View style={[styles.checkbox,{borderColor: BLUE_COLOR}, whereToWash && {backgroundColor: BLUE_COLOR}]}> 
+                {whereToWash && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
               </View>
             </View>
             <TextInput
@@ -275,10 +278,10 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
             filteredCenters.map((center, index) => (
               <View 
                 key={center.id || index} 
-                style={[styles.centerRow,{borderBottomColor: theme.border}, index === filteredCenters.length - 1 && styles.lastCenterRow]}
+                style={[styles.centerRow,{borderBottomColor: BLUE_COLOR + '30'}, index === filteredCenters.length - 1 && styles.lastCenterRow]}
               >
                 <View style={styles.centerLeft}>
-                  <Ionicons name="location-outline" size={20} color={theme.textPrimary} />
+                  <Ionicons name="location-outline" size={20} color={BLUE_COLOR} />
                 </View>
                 <View style={styles.centerBody}>
                   <Text style={[styles.centerName,{color: theme.textPrimary}]}>{center.name || center.service_center_name || 'Service Center'}</Text>
@@ -293,9 +296,9 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
       </ScrollView>
 
       {/* Confirm Booking Button */}
-      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.card, borderTopColor: theme.border }]}> 
-        <TouchableOpacity style={[styles.confirmButton,{backgroundColor: theme.accent}]} onPress={handleConfirmBooking}>
-          <Text style={[styles.confirmButtonText,{color: colors.buttonText}]}>Confirm Booking</Text>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.card, borderTopColor: BLUE_COLOR + '30' }]}> 
+        <TouchableOpacity style={[styles.confirmButton,{backgroundColor: BLUE_COLOR}]} onPress={handleConfirmBooking}>
+          <Text style={[styles.confirmButtonText,{color: '#FFFFFF'}]}>Confirm Booking</Text>
         </TouchableOpacity>
         <Text style={[styles.bottomText,{color: theme.textSecondary}]}>
           {searchText.trim() 
@@ -320,20 +323,20 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                 style={styles.closeButton}
                 onPress={() => setShowTimeModal(false)}
               >
-                <Ionicons name="close" size={24} color={theme.textPrimary} />
+                <Ionicons name="close" size={24} color={BLUE_COLOR} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.timeOptions}>
               <TouchableOpacity 
-                style={[styles.timeOption,{backgroundColor: isDarkMode ? colors.surface : '#F9FAFB'}]}
+                style={[styles.timeOption,{backgroundColor: isDarkMode ? colors.surface : '#F9FAFB', borderColor: BLUE_COLOR + '30', borderWidth: 1}]}
                 onPress={() => {
                   setSelectedTimeOption('now');
                   setShowTimeModal(false);
                 }}
               >
-                <View style={[styles.timeOptionIcon,{backgroundColor: theme.accent}]}> 
-                  <Ionicons name="flash" size={24} color={colors.buttonText} />
+                <View style={[styles.timeOptionIcon,{backgroundColor: BLUE_COLOR}]}> 
+                  <Ionicons name="flash" size={24} color="#FFFFFF" />
                 </View>
                 <View style={styles.timeOptionContent}>
                   <Text style={[styles.timeOptionTitle,{color: theme.textPrimary}]}>Now</Text>
@@ -344,15 +347,15 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
               </TouchableOpacity>
 
               <TouchableOpacity 
-                style={[styles.timeOption,{backgroundColor: isDarkMode ? colors.surface : '#F9FAFB'}]}
+                style={[styles.timeOption,{backgroundColor: isDarkMode ? colors.surface : '#F9FAFB', borderColor: BLUE_COLOR + '30', borderWidth: 1}]}
                 onPress={() => {
                   setSelectedTimeOption('later');
                   setShowTimeModal(false);
                   onNavigateToScheduleForLater?.();
                 }}
               >
-                <View style={[styles.timeOptionIcon,{backgroundColor: theme.accent}]}> 
-                  <Ionicons name="calendar-outline" size={24} color={colors.buttonText} />
+                <View style={[styles.timeOptionIcon,{backgroundColor: BLUE_COLOR}]}> 
+                  <Ionicons name="calendar-outline" size={24} color="#FFFFFF" />
                 </View>
                 <View style={styles.timeOptionContent}>
                   <Text style={[styles.timeOptionTitle,{color: theme.textPrimary}]}>Schedule for later</Text>
@@ -385,9 +388,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     color: '#000',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   content: {
     flex: 1,
@@ -407,12 +412,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     gap: 8,
     flex: 1,
+    borderWidth: 1,
   },
   selectionText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     color: '#000',
     fontWeight: '600',
     flex: 1,
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   locationContainer: {
     backgroundColor: '#FFFFFF',
@@ -435,10 +442,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   locationText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     color: '#000',
     fontWeight: '400',
     flex: 1,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   whereToWashRow: {
     flexDirection: 'row',
@@ -451,9 +459,10 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     paddingVertical: 8,
     paddingHorizontal: 4,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   checkbox: {
     width: 20,
@@ -477,10 +486,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     color: '#1F2937',
     marginBottom: 16,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   centerRow: {
     flexDirection: 'row',
@@ -508,16 +519,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   centerName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
     color: '#000',
     flex: 1,
     marginBottom: 4,
+    fontFamily: FONTS.INTER_BOLD,
   },
   centerAddress: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
     fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   centerDistance: {
     fontSize: 14,
@@ -553,21 +566,29 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   confirmButton: {
-    backgroundColor: '#000000',
+    backgroundColor: BLUE_COLOR,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 8,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
     color: '#FFFFFF',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: 0.5,
   },
   bottomText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
     textAlign: 'center',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   modalOverlay: {
     flex: 1,
@@ -590,10 +611,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     color: '#1F2937',
     flex: 1,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   closeButton: {
     padding: 4,
@@ -607,12 +630,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     backgroundColor: '#F9FAFB',
+    borderWidth: 1,
   },
   timeOptionIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#000000',
+    backgroundColor: BLUE_COLOR,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -621,15 +645,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timeOptionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '700',
     color: '#1F2937',
     marginBottom: 8,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   timeOptionDescription: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#6B7280',
     lineHeight: 20,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -639,44 +665,49 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   errorContainer: {
     alignItems: 'center',
     paddingVertical: 20,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#DC2626',
     textAlign: 'center',
     marginBottom: 10,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   retryButton: {
-    backgroundColor: '#1F2937',
+    backgroundColor: BLUE_COLOR,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   retryButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: FONT_SIZES.BUTTON_SMALL,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 20,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
     textAlign: 'center',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#9CA3AF',
     textAlign: 'center',
     marginTop: 8,
+    fontFamily: FONTS.INTER_REGULAR,
   },
 });
 

@@ -4,6 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface Props {
   onBack?: () => void;
@@ -67,8 +70,8 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <View style={styles.content}>
         {/* Confirmation Icon */}
-        <View style={[styles.confirmationIcon, { backgroundColor: colors.button }]}>
-          <Ionicons name="checkmark" size={48} color={colors.buttonText} />
+        <View style={[styles.confirmationIcon, { backgroundColor: BLUE_COLOR }]}>
+          <Ionicons name="checkmark" size={48} color="#FFFFFF" />
         </View>
         
         <Text style={styles.confirmationTitle}>Booking Confirmed!</Text>
@@ -84,7 +87,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
             {/* Location */}
             <View style={styles.bookingRow}>
               <View style={styles.bookingIcon}>
-                <Ionicons name="location" size={16} color="#000" />
+                <Ionicons name="location" size={16} color={BLUE_COLOR} />
               </View>
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Location</Text>
@@ -95,7 +98,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
             {/* Date */}
             <View style={styles.bookingRow}>
               <View style={styles.bookingIcon}>
-                <Ionicons name="calendar" size={16} color="#000" />
+                <Ionicons name="calendar" size={16} color={BLUE_COLOR} />
               </View>
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Date</Text>
@@ -113,7 +116,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
             {/* Time */}
             <View style={styles.bookingRow}>
               <View style={styles.bookingIcon}>
-                <Ionicons name="time" size={16} color="#000" />
+                <Ionicons name="time" size={16} color={BLUE_COLOR} />
               </View>
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Time</Text>
@@ -139,7 +142,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
       {/* Action Buttons */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={[styles.viewStatusButton, { backgroundColor: colors.button }]}
+          style={[styles.viewStatusButton, { backgroundColor: BLUE_COLOR }]}
           onPress={() => {
             try {
               const destination = encodeURIComponent(acceptedCenter?.address || acceptedCenter?.name || 'Car Wash Center');
@@ -156,11 +159,11 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
             }
           }}
         >
-          <Text style={[styles.viewStatusButtonText, { color: colors.buttonText }]}>Get Directions</Text>
+          <Text style={[styles.viewStatusButtonText, { color: '#FFFFFF' }]}>Get Directions</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={[styles.backToHomeButton, { borderColor: colors.button }]} onPress={onBackToHome}>
-          <Text style={[styles.backToHomeButtonText, { color: colors.button }]}>Back to Home</Text>
+        <TouchableOpacity style={[styles.backToHomeButton, { borderColor: BLUE_COLOR }]} onPress={onBackToHome}>
+          <Text style={[styles.backToHomeButtonText, { color: BLUE_COLOR }]}>Back to Home</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -187,22 +190,27 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(24),
   },
   confirmationTitle: {
-    fontSize: moderateScale(24),
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.APP_TITLE_SMALL,
+    fontWeight: '700',
     color: '#000',
     marginBottom: moderateScale(8),
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.5,
   },
   confirmationSubtitle: {
-    fontSize: moderateScale(16),
+    fontSize: FONT_SIZES.BODY_LARGE,
     color: '#666666',
     textAlign: 'center',
     marginBottom: moderateScale(40),
+    fontFamily: FONTS.INTER_REGULAR,
   },
   bookingCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: moderateScale(20),
     width: '100%',
+    borderWidth: 1,
+    borderColor: BLUE_COLOR + '30',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -214,13 +222,14 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(20),
   },
   bookingId: {
-    fontSize: moderateScale(12),
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     color: '#000000',
     fontWeight: '700',
     backgroundColor: '#E5E7EB',
     paddingHorizontal: moderateScale(8),
     paddingVertical: moderateScale(4),
     borderRadius: moderateScale(12),
+    fontFamily: FONTS.INTER_BOLD,
   },
   bookingDetails: {
     marginBottom: moderateScale(20),
@@ -240,14 +249,16 @@ const styles = StyleSheet.create({
     marginLeft: moderateScale(12),
   },
   bookingLabel: {
-    fontSize: moderateScale(14),
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
     marginBottom: moderateScale(4),
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   bookingValue: {
-    fontSize: moderateScale(16),
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '600',
     color: '#000',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   dateRow: {
     flexDirection: 'row',
@@ -277,24 +288,27 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(8),
   },
   paymentLabel: {
-    fontSize: moderateScale(14),
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   paymentStatus: {
-    fontSize: moderateScale(14),
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#059669',
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   paymentAmount: {
-    fontSize: moderateScale(16),
-    fontWeight: '600',
+    fontSize: FONT_SIZES.NUMBER_SMALL,
+    fontWeight: '700',
     color: '#000',
+    fontFamily: FONTS.INTER_BOLD,
   },
   bottomContainer: {
     padding: moderateScale(16),
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: BLUE_COLOR + '30',
   },
   viewStatusButton: {
     borderRadius: moderateScale(12),
@@ -303,8 +317,10 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(12),
   },
   viewStatusButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: 0.5,
   },
   backToHomeButton: {
     backgroundColor: '#FFFFFF',
@@ -314,8 +330,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backToHomeButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
 });
 

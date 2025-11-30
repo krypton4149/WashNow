@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface ScheduleBookingScreenProps {
   onBack: () => void;
@@ -211,7 +215,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       key={index}
       style={[
         styles.calendarDay,
-        dayData.isSelected && [styles.calendarDaySelected, { backgroundColor: colors.button }],
+        dayData.isSelected && [styles.calendarDaySelected, { backgroundColor: BLUE_COLOR }],
         !dayData.isCurrentMonth && styles.calendarDayInactive,
         dayData.isPast && styles.calendarDayPast,
       ]}
@@ -221,7 +225,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       <Text style={[
         styles.calendarDayText,
         { color: colors.text },
-        dayData.isSelected && [styles.calendarDayTextSelected, { color: colors.buttonText }],
+        dayData.isSelected && [styles.calendarDayTextSelected, { color: '#FFFFFF' }],
         !dayData.isCurrentMonth && [styles.calendarDayTextInactive, { color: colors.textSecondary }],
         dayData.isPast && [styles.calendarDayTextPast, { color: colors.textSecondary }],
       ]}>
@@ -235,8 +239,8 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       key={timeSlot.id}
       style={[
         styles.timeSlotButton,
-        { backgroundColor: colors.surface },
-        selectedTime === timeSlot.id && [styles.timeSlotButtonSelected, { backgroundColor: colors.button }],
+        { backgroundColor: colors.surface, borderColor: BLUE_COLOR + '30' },
+        selectedTime === timeSlot.id && [styles.timeSlotButtonSelected, { backgroundColor: BLUE_COLOR, borderColor: BLUE_COLOR }],
       ]}
       onPress={() => handleTimeSelect(timeSlot.id)}
       disabled={!timeSlot.isAvailable}
@@ -244,7 +248,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       <Text style={[
         styles.timeSlotText,
         { color: colors.text },
-        selectedTime === timeSlot.id && [styles.timeSlotTextSelected, { color: colors.buttonText }],
+        selectedTime === timeSlot.id && [styles.timeSlotTextSelected, { color: '#FFFFFF' }],
       ]}>
         {timeSlot.time}
       </Text>
@@ -258,9 +262,9 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(16, Math.min(insets.bottom || 0, 24)) }} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <View style={[styles.header, { borderBottomColor: BLUE_COLOR + '30' }]}>
           <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.surface }]} onPress={onBack}>
-            <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
+            <Ionicons name="close" size={20} color={BLUE_COLOR} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>Schedule Booking</Text>
           <View style={{ width: 40 }} />
@@ -269,12 +273,12 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
         {/* Service Center */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Service Center</Text>
-          <View style={[styles.centerCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.centerCard, { backgroundColor: colors.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }]}>
             <Image source={{ uri: selectedCenter.image }} style={styles.centerImage} />
             <View style={styles.centerInfo}>
               <Text style={[styles.centerName, { color: colors.text }]}>{selectedCenter.name}</Text>
               <View style={styles.centerAddressContainer}>
-                <Text style={styles.centerAddressIcon}>📍</Text>
+                <Ionicons name="location" size={16} color={BLUE_COLOR} style={styles.centerAddressIcon} />
                 <Text style={[styles.centerAddress, { color: colors.textSecondary }]}>{selectedCenter.address}</Text>
               </View>
             </View>
@@ -284,17 +288,19 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
         {/* Date Selection */}
         <View style={styles.section}>
           <View style={styles.dateHeader}>
-            <Text style={styles.dateIcon}>📅</Text>
+            <View style={styles.dateIconContainer}>
+              <Ionicons name="calendar-outline" size={20} color={BLUE_COLOR} />
+            </View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Select Date</Text>
           </View>
-          <View style={[styles.calendarCard, { backgroundColor: colors.card }]}>
+          <View style={[styles.calendarCard, { backgroundColor: colors.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }]}>
             <View style={styles.calendarHeader}>
-              <TouchableOpacity style={styles.calendarNavButton} onPress={handlePreviousMonth}>
-                <Text style={[styles.calendarNavText, { color: colors.text }]}>‹</Text>
+              <TouchableOpacity style={[styles.calendarNavButton, { backgroundColor: BLUE_COLOR + '15' }]} onPress={handlePreviousMonth}>
+                <Ionicons name="chevron-back" size={18} color={BLUE_COLOR} />
               </TouchableOpacity>
               <Text style={[styles.calendarMonth, { color: colors.text }]}>{getMonthName(currentMonth)} {currentYear}</Text>
-              <TouchableOpacity style={styles.calendarNavButton} onPress={handleNextMonth}>
-                <Text style={[styles.calendarNavText, { color: colors.text }]}>›</Text>
+              <TouchableOpacity style={[styles.calendarNavButton, { backgroundColor: BLUE_COLOR + '15' }]} onPress={handleNextMonth}>
+                <Ionicons name="chevron-forward" size={18} color={BLUE_COLOR} />
               </TouchableOpacity>
             </View>
             <View style={styles.calendarDaysHeader}>
@@ -307,7 +313,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
             </View>
             
             {/* Selected Date Display */}
-            <View style={[styles.selectedDateContainer, { borderTopColor: colors.border }]}>
+            <View style={[styles.selectedDateContainer, { borderTopColor: BLUE_COLOR + '30' }]}>
               <Text style={[styles.selectedDateLabel, { color: colors.textSecondary }]}>Selected Date</Text>
               <Text style={[styles.selectedDateText, { color: colors.text }]}>
                 {new Date(currentYear, currentMonth, parseInt(selectedDate)).toLocaleDateString('en-US', {
@@ -324,7 +330,9 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
         {/* Time Selection */}
         <View style={styles.section}>
           <View style={styles.timeHeader}>
-            <Text style={styles.timeIcon}>🕐</Text>
+            <View style={styles.timeIconContainer}>
+              <Ionicons name="time-outline" size={20} color={BLUE_COLOR} />
+            </View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Select Time</Text>
           </View>
           <View style={styles.timeSlotsGrid}>
@@ -336,10 +344,10 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
 
         {/* Book Now Button */}
         <TouchableOpacity 
-          style={[styles.continueButton, { backgroundColor: colors.button }]} 
+          style={[styles.continueButton, { backgroundColor: BLUE_COLOR }]} 
           onPress={handleBooking}
         >
-          <Text style={[styles.continueButtonText, { color: colors.buttonText }]}>Book Now</Text>
+          <Text style={[styles.continueButtonText, { color: '#FFFFFF' }]}>Book Now</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -376,30 +384,35 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   section: {
     paddingHorizontal: 16,
     marginTop: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
     marginBottom: 12,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
   },
   centerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    borderWidth: 1,
+    shadowColor: BLUE_COLOR,
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 3,
   },
   centerImage: {
@@ -412,9 +425,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   centerName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
     marginBottom: 8,
+    fontFamily: FONTS.INTER_BOLD,
   },
   centerAddressContainer: {
     flexDirection: 'row',
@@ -422,11 +436,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   centerAddressIcon: {
-    fontSize: 12,
-    marginRight: 4,
+    marginRight: 6,
   },
   centerAddress: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    flex: 1,
   },
   servicesList: {
     gap: 12,
@@ -489,20 +504,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  dateIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: BLUE_COLOR + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
   dateIcon: {
     fontSize: 16,
     marginRight: 8,
   },
   calendarCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    borderWidth: 1,
+    shadowColor: BLUE_COLOR,
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 3,
   },
   calendarHeader: {
@@ -512,10 +537,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   calendarNavButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -524,8 +548,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   calendarMonth: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   calendarDaysHeader: {
     flexDirection: 'row',
@@ -534,10 +559,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   calendarDayHeaderText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '600',
     width: '14.28%', // Match calendar day width for alignment
     textAlign: 'center',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -547,23 +573,25 @@ const styles = StyleSheet.create({
   calendarDay: {
     width: '14.28%', // 100% / 7 = 14.28% for exactly 7 items per row
     aspectRatio: 1,
-    minHeight: 32,
-    maxHeight: 40,
+    minHeight: 36,
+    maxHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 2,
   },
   calendarDaySelected: {
-    borderRadius: 16,
+    borderRadius: 22,
   },
   calendarDayInactive: {
     opacity: 0.3,
   },
   calendarDayText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   calendarDayTextSelected: {
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
   },
   calendarDayPast: {
     opacity: 0.3,
@@ -594,17 +622,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedDateLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     marginBottom: 4,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   selectedDateText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
   },
   timeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  timeIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: BLUE_COLOR + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   timeIcon: {
     fontSize: 16,
@@ -616,20 +655,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   timeSlotButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
-    minWidth: 80,
+    minWidth: 90,
     alignItems: 'center',
+    borderWidth: 1.5,
   },
-  timeSlotButtonSelected: {},
+  timeSlotButtonSelected: {
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   timeSlotText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
-  timeSlotTextSelected: {},
+  timeSlotTextSelected: {
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
+  },
   scheduleInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -660,12 +710,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 24,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   continueButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: 0.5,
   },
 });
 

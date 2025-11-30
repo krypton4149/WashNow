@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const { width, height } = Dimensions.get('window');
 
@@ -183,19 +184,19 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   appTitle: {
-    fontSize: 28,
+    fontSize: FONT_SIZES.APP_TITLE_SMALL,
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 6,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
+    fontFamily: FONTS.MONTserrat_BOLD,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     color: '#666666',
     textAlign: 'center',
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     letterSpacing: 0.2,
   },
   choicesContainer: {
@@ -282,20 +283,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '700',
     color: '#1A1A1A',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.3,
   },
   sparkleIcon: {
     marginLeft: 8,
   },
   cardDescription: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     color: '#555555',
-    fontWeight: '500',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     lineHeight: 22,
     letterSpacing: 0.1,
   },
@@ -305,11 +306,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     color: '#999999',
     textAlign: 'center',
     fontWeight: '400',
-    fontFamily: 'System',
+    fontFamily: FONTS.INTER_REGULAR,
     lineHeight: 18,
   },
 });
