@@ -6,7 +6,6 @@ import {
   Pressable,
   Dimensions,
   Image,
-  ScrollView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +13,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { platformEdges } from '../../utils/responsive';
 
 const { width, height } = Dimensions.get('window');
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 interface UserChoiceScreenProps {
   onCustomerPress: () => void;
@@ -28,21 +30,20 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
   const [serviceOwnerHovered, setServiceOwnerHovered] = useState(false);
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.content}>
         {/* App Icon and Title */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../assets/images/logo.jpg')} 
-              style={styles.appLogo}
-              resizeMode="contain"
-              onError={(error) => {
-                console.log('Logo image error:', error);
-              }}
-            />
+            <View style={styles.logoGradient}>
+              <Image 
+                source={require('../../assets/images/logo.jpg')} 
+                style={styles.appLogo}
+                resizeMode="contain"
+                onError={(error) => {
+                  console.log('Logo image error:', error);
+                }}
+              />
+            </View>
           </View>
           <Text style={styles.appTitle}>CarWash</Text>
           <Text style={styles.subtitle}>Choose how you want to continue</Text>
@@ -71,8 +72,8 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
                 resizeMode="cover"
               />
               {/* Icon Overlay */}
-              <View style={styles.cardIconOverlay}>
-                <Ionicons name="person" size={20} color="#000" />
+              <View style={[styles.cardIconOverlay, { borderColor: BLUE_COLOR }]}>
+                <Ionicons name="person" size={20} color={BLUE_COLOR} />
               </View>
             </View>
             
@@ -80,7 +81,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             <View style={styles.cardContent}>
               <View style={styles.cardTitleContainer}>
                 <Text style={styles.cardTitle}>I'm a Customer</Text>
-                <Ionicons name="star" size={16} color="#FFC107" style={styles.sparkleIcon} />
+                <Ionicons name="water" size={18} color={YELLOW_COLOR} style={styles.sparkleIcon} />
               </View>
               <Text style={styles.cardDescription}>
                 Book premium car wash services near you
@@ -109,8 +110,8 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
                 resizeMode="cover"
               />
               {/* Icon Overlay */}
-              <View style={styles.cardIconOverlay}>
-                <Ionicons name="storefront" size={20} color="#000" />
+              <View style={[styles.cardIconOverlay, { borderColor: YELLOW_COLOR }]}>
+                <Ionicons name="storefront" size={20} color={YELLOW_COLOR} />
               </View>
             </View>
             
@@ -118,7 +119,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             <View style={styles.cardContent}>
               <View style={styles.cardTitleContainer}>
                 <Text style={styles.cardTitle}>I'm a Service Owner</Text>
-                <Ionicons name="star" size={16} color="#2196F3" style={styles.sparkleIcon} />
+                <Ionicons name="water" size={18} color={BLUE_COLOR} style={styles.sparkleIcon} />
               </View>
               <Text style={styles.cardDescription}>
                 Manage your car wash center and bookings
@@ -133,7 +134,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             By continuing, you agree to our Terms of Service and Privacy Policy.
           </Text>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -141,27 +142,23 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#E8F0F8',
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: 'space-between',
   },
   header: {
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 40,
+    marginTop: Platform.OS === 'ios' ? 16 : 32,
+    marginBottom: 20,
   },
   logoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#000000',
+    width: 70,
+    height: 70,
+    borderRadius: 18,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -172,65 +169,76 @@ const styles = StyleSheet.create({
     elevation: 6,
     overflow: 'hidden',
   },
+  logoGradient: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: BLUE_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 18,
+  },
   appLogo: {
-    width: 90,
-    height: 90,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
   },
   appTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
-    marginBottom: 8,
-    fontFamily: 'System',
+    color: '#1A1A1A',
+    marginBottom: 6,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
     color: '#666666',
     textAlign: 'center',
-    fontWeight: '400',
-    fontFamily: 'System',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    letterSpacing: 0.2,
   },
   choicesContainer: {
-    paddingBottom: 20,
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 20,
   },
   choiceCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    marginBottom: 20,
+    marginBottom: 14,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderWidth: 2,
+    borderColor: '#E5E5E5',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowRadius: 10,
+    elevation: 4,
     transform: [{ scale: 1 }],
   },
   choiceCardHovered: {
-    borderColor: '#2196F3',
-    borderWidth: 2,
+    borderColor: BLUE_COLOR,
+    borderWidth: 3,
     shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
-    transform: [{ scale: 1.02 }],
+    shadowRadius: 16,
+    elevation: 8,
+    transform: [{ scale: 1.01 }],
   },
   choiceCardPressed: {
-    borderColor: '#1976D2',
-    borderWidth: 2,
-    transform: [{ scale: 0.98 }],
+    borderColor: BLUE_COLOR,
+    borderWidth: 3,
+    transform: [{ scale: 0.99 }],
     shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 7,
+    shadowRadius: 18,
+    elevation: 10,
   },
   cardImageContainer: {
     width: '100%',
-    height: 180,
+    height: 140,
     position: 'relative',
     backgroundColor: '#E8E8E8',
   },
@@ -249,47 +257,47 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 2,
   },
   cardContent: {
-    padding: 20,
+    padding: 18,
   },
   cardTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
-    fontFamily: 'System',
-    letterSpacing: -0.2,
+    color: '#1A1A1A',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-medium',
+    letterSpacing: -0.3,
   },
   sparkleIcon: {
-    marginLeft: 6,
+    marginLeft: 8,
   },
   cardDescription: {
-    fontSize: 14,
-    color: '#666666',
-    fontWeight: '400',
-    fontFamily: 'System',
-    lineHeight: 20,
+    fontSize: 15,
+    color: '#555555',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif',
+    lineHeight: 22,
+    letterSpacing: 0.1,
   },
   footer: {
     paddingVertical: 20,

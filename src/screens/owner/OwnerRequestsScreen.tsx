@@ -721,8 +721,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -734,7 +733,6 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         </View>
         <View style={styles.placeholder} />
       </View>
-
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}

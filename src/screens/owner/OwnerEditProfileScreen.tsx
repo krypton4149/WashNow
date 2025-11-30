@@ -317,7 +317,9 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
   if (isLoading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={platformEdges as any}>
-        <ActivityIndicator size="large" color="#111827" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#111827" />
+        </View>
       </SafeAreaView>
     );
   }
@@ -331,7 +333,6 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
         <Text style={styles.headerTitle}>Business Profile</Text>
         <View style={styles.headerRightPlaceholder} />
       </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

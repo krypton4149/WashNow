@@ -343,7 +343,6 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, themeStyles.scrollContent]}
         showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="never"
       >
         {/* Header */}
         <View style={styles.header}>
@@ -480,7 +479,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 12, android: 10 }),
+    paddingTop: Platform.select({ ios: 16, android: 14 }),
     paddingBottom: Platform.select({ 
       ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
       android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
@@ -490,7 +489,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: Platform.select({ ios: 16, android: 14 }),
+    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    paddingTop: Platform.select({ ios: 20, android: 16 }),
+    paddingBottom: Platform.select({ ios: 10, android: 8 }),
   },
   headerLeft: {
     flex: 1,

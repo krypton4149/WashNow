@@ -282,7 +282,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -300,7 +300,6 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           />
         </TouchableOpacity>
       </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}

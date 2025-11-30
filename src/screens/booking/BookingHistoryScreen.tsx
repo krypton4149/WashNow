@@ -5,6 +5,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface Booking {
   id: number;
@@ -285,44 +288,44 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
 
       <View style={[styles.tabsContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'Ongoing' && [styles.activeTab, { borderBottomColor: colors.button }]]}
+          style={[styles.tab, activeTab === 'Ongoing' && [styles.activeTab, { borderBottomColor: BLUE_COLOR }]]}
           onPress={() => setActiveTab('Ongoing')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, { color: activeTab === 'Ongoing' ? colors.text : colors.textSecondary }, activeTab === 'Ongoing' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'Ongoing' ? [styles.activeTabText, { color: BLUE_COLOR }] : { color: colors.textSecondary }]}>
             Ongoing
           </Text>
-          {activeTab === 'Ongoing' && ongoingCount > 0 && (
-            <View style={[styles.tabBadge, { backgroundColor: colors.button }]}>
-              <Text style={[styles.tabBadgeText, { color: colors.buttonText }]}>{ongoingCount}</Text>
+          {ongoingCount > 0 && (
+            <View style={[styles.tabBadge, { backgroundColor: activeTab === 'Ongoing' ? BLUE_COLOR : '#E5E7EB' }]}>
+              <Text style={[styles.tabBadgeText, { color: activeTab === 'Ongoing' ? '#FFFFFF' : '#6B7280' }]}>{ongoingCount}</Text>
             </View>
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'Completed' && [styles.activeTab, { borderBottomColor: colors.button }]]}
+          style={[styles.tab, activeTab === 'Completed' && [styles.activeTab, { borderBottomColor: BLUE_COLOR }]]}
           onPress={() => setActiveTab('Completed')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, { color: activeTab === 'Completed' ? colors.text : colors.textSecondary }, activeTab === 'Completed' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'Completed' ? [styles.activeTabText, { color: BLUE_COLOR }] : { color: colors.textSecondary }]}>
             Completed
           </Text>
-          {activeTab === 'Completed' && completedCount > 0 && (
-            <View style={[styles.tabBadge, { backgroundColor: colors.button }]}>
-              <Text style={[styles.tabBadgeText, { color: colors.buttonText }]}>{completedCount}</Text>
+          {completedCount > 0 && (
+            <View style={[styles.tabBadge, { backgroundColor: activeTab === 'Completed' ? BLUE_COLOR : '#E5E7EB' }]}>
+              <Text style={[styles.tabBadgeText, { color: activeTab === 'Completed' ? '#FFFFFF' : '#6B7280' }]}>{completedCount}</Text>
             </View>
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'Canceled' && [styles.activeTab, { borderBottomColor: colors.button }]]}
+          style={[styles.tab, activeTab === 'Canceled' && [styles.activeTab, { borderBottomColor: BLUE_COLOR }]]}
           onPress={() => setActiveTab('Canceled')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, { color: activeTab === 'Canceled' ? colors.text : colors.textSecondary }, activeTab === 'Canceled' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'Canceled' ? [styles.activeTabText, { color: BLUE_COLOR }] : { color: colors.textSecondary }]}>
             Canceled
           </Text>
-          {activeTab === 'Canceled' && canceledCount > 0 && (
-            <View style={[styles.tabBadge, { backgroundColor: colors.button }]}>
-              <Text style={[styles.tabBadgeText, { color: colors.buttonText }]}>{canceledCount}</Text>
+          {canceledCount > 0 && (
+            <View style={[styles.tabBadge, { backgroundColor: activeTab === 'Canceled' ? BLUE_COLOR : '#E5E7EB' }]}>
+              <Text style={[styles.tabBadgeText, { color: activeTab === 'Canceled' ? '#FFFFFF' : '#6B7280' }]}>{canceledCount}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -343,8 +346,8 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
             <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
             <Text style={[styles.errorText, { color: colors.text }]}>Failed to load bookings</Text>
             <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>{error}</Text>
-            <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.button }]} onPress={loadBookings}>
-              <Text style={[styles.retryButtonText, { color: colors.buttonText }]}>Try Again</Text>
+            <TouchableOpacity style={[styles.retryButton, { backgroundColor: BLUE_COLOR }]} onPress={loadBookings}>
+              <Text style={[styles.retryButtonText, { color: '#FFFFFF' }]}>Try Again</Text>
             </TouchableOpacity>
           </View>
         ) : filteredBookings.length > 0 ? (
@@ -378,19 +381,13 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
               <View style={styles.cardContent}>
                 <Text style={[styles.serviceName, { color: colors.text }]}>{booking.name}</Text>
                 
-                {/* Location */}
-                <View style={styles.locationRow}>
-                  <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
-                  <Text style={[styles.locationText, { color: colors.textSecondary }]}>{booking.address}</Text>
-                </View>
-                
                 {/* Date/Time in Pill - Different colors based on status */}
                 <View style={[
                   styles.dateTimePill, 
                   booking.status === 'Completed' 
                     ? { backgroundColor: '#E8F5E9' }
                     : booking.status === 'In Progress'
-                    ? { backgroundColor: '#E0E8F9' }
+                    ? { backgroundColor: 'rgba(3, 88, 168, 0.1)' }
                     : booking.status === 'Canceled'
                     ? { backgroundColor: '#F3F4F6' }
                     : { backgroundColor: colors.border + '30' }
@@ -402,10 +399,10 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                       booking.status === 'Completed' 
                         ? '#4CAF50' 
                         : booking.status === 'In Progress'
-                        ? '#3366FF'
+                        ? BLUE_COLOR
                         : booking.status === 'Canceled'
                         ? '#6B7280'
-                        : '#3366FF'
+                        : BLUE_COLOR
                     } 
                   />
                   <Text style={[styles.dateTimeText, { color: colors.text }]}>{booking.dateTime}</Text>
@@ -479,8 +476,9 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -502,11 +500,13 @@ const styles = StyleSheet.create({
   activeTab: {
   },
   tabText: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   activeTabText: {
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   tabBadge: {
     borderRadius: 10,
@@ -515,8 +515,9 @@ const styles = StyleSheet.create({
   },
   tabBadgeText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   bookingsList: {
     flex: 1,
@@ -533,13 +534,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
   },
   statusHeaderBar: {
-    backgroundColor: '#3366FF',
+    backgroundColor: BLUE_COLOR,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -586,26 +587,30 @@ const styles = StyleSheet.create({
   },
   statusHeaderText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   statusHeaderTextCompleted: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   statusHeaderTextCanceled: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   cardContent: {
     padding: 16,
   },
   serviceName: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '700',
     marginBottom: 4,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   serviceType: {
     fontSize: 14,
@@ -618,8 +623,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   locationText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     flex: 1,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   dateTimePill: {
     flexDirection: 'row',
@@ -631,8 +637,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   dateTimeText: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   infoRow: {
     flexDirection: 'row',
@@ -641,11 +648,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   infoTextBold: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
   },
   cardDivider: {
     height: 1,
@@ -662,23 +671,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTotalLabel: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     marginBottom: 4,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   cardTotalPrice: {
-    fontSize: 20,
+    fontSize: FONT_SIZES.NUMBER_MEDIUM,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
   },
   cancelButtonFooter: {
     backgroundColor: '#FEE2E2',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   cancelButtonFooterText: {
     color: '#DC2626',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   noBookingsContainer: {
     alignItems: 'center',
@@ -687,16 +699,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   noBookingsText: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '600',
     color: '#666666',
     marginTop: 16,
     marginBottom: 8,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   noBookingsSubtext: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#999999',
     textAlign: 'center',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -705,9 +719,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     color: '#666666',
     marginTop: 16,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   errorContainer: {
     alignItems: 'center',
@@ -716,28 +731,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '600',
     color: '#DC2626',
     marginTop: 16,
     marginBottom: 8,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   errorSubtext: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
     textAlign: 'center',
     marginBottom: 20,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   retryButton: {
-    backgroundColor: '#000000',
+    backgroundColor: BLUE_COLOR,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   retryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
 });
 

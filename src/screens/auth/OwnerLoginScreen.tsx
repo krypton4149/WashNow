@@ -20,6 +20,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { API_BASE_URL } from '../../services/api';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface OwnerLoginScreenProps {
   onBack: () => void;
@@ -38,13 +41,26 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const handleLogin = async () => {
+    // Reset errors
+    setEmailError('');
+    setPasswordError('');
+    
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
-    if (!trimmedEmail || !trimmedPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+    // Validate email
+    if (!trimmedEmail) {
+      setEmailError('Email is required');
+      return;
+    }
+    
+    // Validate password
+    if (!trimmedPassword) {
+      setPasswordError('Password is required');
       return;
     }
 
@@ -172,17 +188,17 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
         <View style={styles.topSection}>
           <ImageBackground
             source={{
-              uri: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNofGVufDF8fHx8MTc2MjM5ODkzN3ww&ixlib=rb-4.1.0&q=80&w=1080'
+              uri: 'https://images.unsplash.com/photo-1761934658038-d0e6792378b1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNoJTIwY2xlYW4lMjBtb2Rlcm58ZW58MXx8fHwxNzYyNDUwMTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080'
             }}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
-            blurRadius={10}
+            blurRadius={8}
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
             <TouchableOpacity style={styles.backButton} onPress={onBack}>
               <View style={styles.backButtonCircle}>
-                <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
             
@@ -218,41 +234,57 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
               {/* Form Fields */}
               <View style={styles.inputsContainer}>
                 {/* Email Field */}
-                <View style={styles.inputField}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Email"
-                    placeholderTextColor="#9CA3AF"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Email Address</Text>
+                  <View style={[styles.inputField, emailError && styles.inputFieldError]}>
+                    <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your email"
+                      placeholderTextColor="#9CA3AF"
+                      value={email}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        if (emailError) setEmailError('');
+                      }}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
                 </View>
 
                 {/* Password Field */}
-                <View style={styles.inputField}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Password"
-                    placeholderTextColor="#9CA3AF"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Ionicons 
-                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color="#6B7280" 
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <View style={[styles.inputField, passwordError && styles.inputFieldError]}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#9CA3AF"
+                      value={password}
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        if (passwordError) setPasswordError('');
+                      }}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
                     />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Ionicons 
+                        name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                        size={20} 
+                        color="#9CA3AF" 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
                 </View>
               </View>
 
@@ -266,33 +298,20 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
                 style={[styles.loginButton, (!isFormValid || isLoading) && styles.loginButtonDisabled]}
                 onPress={handleLogin}
                 disabled={!isFormValid || isLoading}
+                activeOpacity={0.8}
               >
                 {isLoading ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <>
-                    <Text style={styles.loginButtonText}>Sign In</Text>
-                    <View style={styles.checkmarkCircle}>
-                      <Ionicons name="checkmark" size={16} color="#000000" />
-                    </View>
-                  </>
+                  <Text style={styles.loginButtonText}>Sign In</Text>
                 )}
               </TouchableOpacity>
 
-              {/* Security Indicators */}
-              <View style={styles.securityContainer}>
-                <View style={styles.securityItem}>
-                  <View style={[styles.securityDot, { backgroundColor: '#10B981' }]} />
-                  <Text style={styles.securityText}>Secure</Text>
-                </View>
-                <View style={styles.securityItem}>
-                  <View style={[styles.securityDot, { backgroundColor: '#3B82F6' }]} />
-                  <Text style={styles.securityText}>Encrypted</Text>
-                </View>
-                <View style={styles.securityItem}>
-                  <View style={[styles.securityDot, { backgroundColor: '#8B5CF6' }]} />
-                  <Text style={styles.securityText}>Private</Text>
-                </View>
+              {/* Terms of Service */}
+              <View style={styles.termsContainer}>
+                <Text style={styles.termsText}>
+                  By continuing, you agree to our Terms of Service and Privacy Policy.
+                </Text>
               </View>
             </View>
           </TouchableWithoutFeedback>
@@ -321,17 +340,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topSection: {
-    height: '25%',
+    height: '28%',
     position: 'relative',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(3, 88, 168, 0.4)',
   },
   backButton: {
     position: 'absolute',
-    top: 50,
-    left: 20,
+    top: Platform.select({ ios: 54, android: 50 }),
+    left: Platform.select({ ios: 22, android: 20 }),
     zIndex: 10,
   },
   backButtonCircle: {
@@ -344,24 +363,25 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: 'absolute',
-    bottom: -40,
+    bottom: -35,
     left: '50%',
-    marginLeft: -40,
+    marginLeft: -35,
     zIndex: 20,
     overflow: 'visible',
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
+    width: 70,
+    height: 70,
+    borderRadius: 18,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 8,
     borderWidth: 2,
     borderColor: '#FFFFFF',
+    backgroundColor: BLUE_COLOR,
   },
   logoImage: {
     width: '100%',
@@ -371,84 +391,107 @@ const styles = StyleSheet.create({
   bottomSection: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     marginTop: -10,
-    paddingTop: 65,
+    paddingTop: 50,
     zIndex: 10,
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: Platform.select({ ios: 50, android: 40 }),
   },
   formContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
   },
   header: {
     marginBottom: 32,
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: FONT_SIZES.APP_TITLE_LARGE,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1A1A1A',
     marginBottom: 8,
     textAlign: 'center',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    color: '#666666',
     fontWeight: '400',
     textAlign: 'center',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   inputsContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  inputWrapper: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    minHeight: 44,
+  },
+  inputFieldError: {
+    borderColor: '#EF4444',
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#111827',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    color: '#1A1A1A',
+    fontFamily: FONTS.INTER_REGULAR,
+  },
+  errorText: {
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    color: '#EF4444',
+    marginTop: 6,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   eyeButton: {
     padding: 4,
+    marginLeft: 8,
   },
   forgotPasswordContainer: {
     alignItems: 'flex-end',
-    marginBottom: 24,
+    marginBottom: 28,
   },
   forgotPasswordText: {
-    fontSize: 14,
-    color: '#111827',
+    fontSize: FONT_SIZES.BUTTON_SMALL,
+    color: BLUE_COLOR,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   loginButton: {
-    backgroundColor: '#000000',
+    backgroundColor: BLUE_COLOR,
     borderRadius: 12,
-    paddingVertical: 16,
-    flexDirection: 'row',
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 16,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+    minHeight: 48,
   },
   loginButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -457,39 +500,23 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_LARGE,
     fontWeight: '600',
-    marginRight: 8,
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
-  checkmarkCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
+  termsContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 16,
     alignItems: 'center',
   },
-  securityContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 24,
-    marginBottom: 20,
-  },
-  securityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  securityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  securityText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+  termsText: {
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    color: '#999999',
+    textAlign: 'center',
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
+    lineHeight: 18,
   },
   overlay: {
     position: 'absolute',
@@ -515,8 +542,9 @@ const styles = StyleSheet.create({
   },
   overlayText: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#111827',
+    fontFamily: FONTS.INTER_REGULAR,
   },
 });
 

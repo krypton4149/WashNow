@@ -111,6 +111,24 @@ const AppContent: React.FC = () => {
     setCurrentScreen('user-choice');
   };
 
+  // Auto-advance onboarding slides every 2 seconds
+  useEffect(() => {
+    if (currentScreen === 'onboarding') {
+      const interval = setInterval(() => {
+        setCurrentOnboardingIndex((prevIndex) => {
+          if (prevIndex < onboardingScreens.length - 1) {
+            return prevIndex + 1;
+          } else {
+            setCurrentScreen('user-choice');
+            return prevIndex;
+          }
+        });
+      }, 2000); // 2 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [currentScreen, onboardingScreens.length]);
+
   const handleCustomerPress = () => {
     setUserType('customer');
     setCurrentScreen('auth');
@@ -360,9 +378,8 @@ const AppContent: React.FC = () => {
             isActive={true}
             totalScreens={onboardingScreens.length}
             currentIndex={currentOnboardingIndex}
-            onNext={handleNext}
             onSkip={handleSkip}
-            onPreview={currentOnboardingIndex === 1 ? handlePreview : undefined}
+            onGetStarted={handleSkip}
           />
         );
       case 'user-choice':

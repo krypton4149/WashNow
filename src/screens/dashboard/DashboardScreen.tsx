@@ -7,12 +7,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 interface UserData {
   id: string;
@@ -306,48 +310,59 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
         {/* Summary Cards */}
         <View style={styles.summaryCards}>
-          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.summaryIconWrap, { backgroundColor: colors.surface }]}>
-              <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+          <View style={[styles.summaryCard, styles.summaryCardGradient]}>
+            <View style={styles.gradientBackground} />
+            <View style={styles.gradientOverlay} />
+            <View style={styles.summaryCardContent}>
+              <View style={styles.summaryIconWrapBlue}>
+                <Ionicons name="calendar-outline" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.summaryNumberWhite}>
+                {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : totalBookings}
+              </Text>
+              <Text style={styles.summaryLabelWhite}>Total Bookings</Text>
             </View>
-            <Text style={[styles.summaryNumber, { color: colors.text }]}>
-              {isLoading ? <ActivityIndicator size="small" color={colors.text} /> : totalBookings}
-            </Text>
-            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Bookings</Text>
           </View>
           
-          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.summaryIconWrap, { backgroundColor: colors.surface }]}>
-              <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
+          <View style={[styles.summaryCard, styles.summaryCardYellow]}>
+            <View style={styles.summaryIconWrapYellow}>
+              <Ionicons name="time-outline" size={22} color="#FFFFFF" />
             </View>
-            <Text style={[styles.summaryNumber, { color: colors.text }]}>
-              {isLoading ? <ActivityIndicator size="small" color={colors.text} /> : currentRequests}
+            <Text style={styles.summaryNumberWhite}>
+              {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : currentRequests}
             </Text>
-            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Current Request</Text>
+            <Text style={styles.summaryLabelWhite}>Current Request</Text>
           </View>
           
-          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.summaryIconWrap, { backgroundColor: colors.surface }]}>
-              <Ionicons name="checkmark-done-outline" size={20} color={colors.textSecondary} />
+          <View style={[styles.summaryCard, styles.summaryCardGradient]}>
+            <View style={styles.gradientBackground} />
+            <View style={styles.gradientOverlay} />
+            <View style={styles.summaryCardContent}>
+              <View style={styles.summaryIconWrapBlue}>
+                <Ionicons name="checkmark-done-outline" size={22} color="#FFFFFF" />
+              </View>
+              <Text style={styles.summaryNumberWhite}>
+                {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : completedBookings}
+              </Text>
+              <Text style={styles.summaryLabelWhite}>Completed</Text>
             </View>
-            <Text style={[styles.summaryNumber, { color: colors.text }]}>
-              {isLoading ? <ActivityIndicator size="small" color={colors.text} /> : completedBookings}
-            </Text>
-            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Completed</Text>
           </View>
         </View>
 
         {/* Book a Car Wash Button */}
-        <TouchableOpacity style={[styles.bookButton, { backgroundColor: colors.button }]} onPress={onBookWash}>
-          <Text style={[styles.bookButtonText, { color: colors.buttonText }]}>Book a car wash</Text>
-        </TouchableOpacity>
+        <View style={styles.bookButtonContainer}>
+          <TouchableOpacity style={styles.bookButton} onPress={onBookWash} activeOpacity={0.8}>
+            <Text style={styles.bookButtonText}>Book a car wash</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Recent Activity Section */}
         <View style={styles.activitySection}>
           <View style={styles.activityHeader}>
-            <Text style={[styles.activitySectionTitle, { color: colors.text }]}>Recent Bookings</Text>
+            <Text style={styles.activitySectionTitle}>Recent Activity</Text>
             <TouchableOpacity onPress={onViewAll} style={styles.seeAllButton}>
-              <Text style={[styles.seeAllText, { color: colors.text }]}>See all</Text>
+              <Text style={styles.seeAllText}>See all</Text>
+              <Ionicons name="chevron-forward" size={16} color={BLUE_COLOR} />
             </TouchableOpacity>
           </View>
           
@@ -385,8 +400,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
-  welcomeText: { fontSize: 16, marginBottom: 2 },
-  userNameText: { fontSize: 24, fontWeight: 'bold' },
+  welcomeText: { 
+    fontSize: 13, 
+    marginBottom: 2,
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
+  },
+  userNameText: { 
+    fontSize: 28, 
+    fontWeight: '700',
+    fontFamily: 'Montserrat-Bold',
+    color: '#1A1A1A',
+  },
   summaryCards: {
     flexDirection: 'row',
     paddingHorizontal: 20,
@@ -396,26 +421,107 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  summaryIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  summaryCardGradient: {
+    backgroundColor: 'rgba(3, 88, 168, 0.9)',
+  },
+  gradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(3, 88, 168, 0.9)',
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '70%',
+    height: '70%',
+    backgroundColor: 'rgba(2, 132, 199, 0.9)',
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  summaryCardContent: {
+    position: 'relative',
+    zIndex: 1,
+    alignItems: 'center',
+    width: '100%',
+  },
+  summaryCardBlue: {
+    backgroundColor: BLUE_COLOR,
+  },
+  summaryCardYellow: {
+    backgroundColor: YELLOW_COLOR,
+  },
+  summaryIconWrapBlue: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginBottom: 8,
   },
-  summaryNumber: { fontSize: 24, fontWeight: 'bold', marginVertical: 8 },
-  summaryLabel: { fontSize: 12, textAlign: 'center' },
-  bookButton: {
+  summaryIconWrapYellow: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginBottom: 8,
+  },
+  summaryNumberWhite: { 
+    fontSize: 22, 
+    fontWeight: '700', 
+    marginVertical: 6,
+    color: '#FFFFFF',
+    fontFamily: 'Inter-Bold',
+  },
+  summaryLabelWhite: { 
+    fontSize: 13, 
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+  },
+  bookButtonContainer: {
     marginHorizontal: 20,
-    paddingVertical: 16,
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+  bookButton: {
+    width: '100%',
+    maxWidth: 400,
+    paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 32,
+    justifyContent: 'center',
+    backgroundColor: BLUE_COLOR,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  bookButtonText: { fontSize: 16, fontWeight: '600' },
+  bookButtonText: { 
+    fontSize: 16, 
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontFamily: 'Inter-SemiBold',
+  },
   activitySection: { paddingHorizontal: 20 },
   activityHeader: {
     flexDirection: 'row',
@@ -423,9 +529,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  activitySectionTitle: { fontSize: 18, fontWeight: 'bold' },
-  seeAllButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  seeAllText: { fontSize: 14, fontWeight: '500' },
+  activitySectionTitle: { 
+    fontSize: 20, 
+    fontWeight: '600',
+    color: '#1A1A1A',
+    fontFamily: 'Montserrat-SemiBold',
+    letterSpacing: -0.3,
+  },
+  seeAllButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4,
+  },
+  seeAllText: { 
+    fontSize: 15, 
+    fontWeight: '600',
+    color: BLUE_COLOR,
+    fontFamily: 'Inter-SemiBold',
+  },
   activityList: { gap: 12, paddingBottom: 20 },
   activityItem: {
     borderRadius: 12,
@@ -445,21 +566,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  activityTitle: { fontSize: 16, fontWeight: '600', flex: 1 },
-  activityService: { fontSize: 14, marginBottom: 8 },
+  activityTitle: { 
+    fontSize: 16, 
+    fontWeight: '400', 
+    flex: 1,
+    fontFamily: 'Inter-Regular',
+    color: '#1A1A1A',
+  },
+  activityService: { 
+    fontSize: 14, 
+    marginBottom: 8,
+    fontFamily: 'Inter-Regular',
+    color: '#666666',
+  },
   timeRow: { flexDirection: 'row', alignItems: 'center' },
   timeIcon: { marginRight: 6 },
-  activityTimeText: { fontSize: 12 },
+  activityTimeText: { 
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
+  },
   recentRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   recentIcon: { marginRight: 6 },
-  recentText: { fontSize: 13 },
-  recentBookingId: { fontSize: 13, fontWeight: '700' },
+  recentText: { 
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
+  },
+  recentBookingId: { 
+    fontSize: 18, 
+    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
+    color: '#1A1A1A',
+  },
   activityDivider: { height: 1, marginTop: 12 },
   statusTagInProgress: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#3366FF',
+    backgroundColor: BLUE_COLOR,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -468,6 +613,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: 'Inter-Medium',
   },
   statusTagCompleted: {
     backgroundColor: '#4CAF50',
@@ -479,6 +625,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: 'Inter-Medium',
   },
   statusTagCanceled: {
     backgroundColor: '#FEE2E2',
@@ -490,6 +637,7 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontSize: 12,
     fontWeight: '700',
+    fontFamily: 'Inter-Medium',
   },
   cancelButton: {
     marginTop: 10,
@@ -505,12 +653,29 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontWeight: '700',
     fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
   },
   loadingContainer: { alignItems: 'center', paddingVertical: 40 },
-  loadingText: { fontSize: 14, marginTop: 12 },
+  loadingText: { 
+    fontSize: 14, 
+    marginTop: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#666666',
+  },
   emptyContainer: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { fontSize: 16, fontWeight: '500', marginBottom: 8 },
-  emptySubtext: { fontSize: 14, textAlign: 'center' },
+  emptyText: { 
+    fontSize: 16, 
+    fontWeight: '500', 
+    marginBottom: 8,
+    fontFamily: 'Inter-Medium',
+    color: '#1A1A1A',
+  },
+  emptySubtext: { 
+    fontSize: 14, 
+    textAlign: 'center',
+    fontFamily: 'Inter-Regular',
+    color: '#666666',
+  },
 });
 
 export default DashboardScreen;

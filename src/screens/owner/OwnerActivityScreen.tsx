@@ -270,7 +270,6 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         {onBack ? (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
@@ -291,8 +290,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
         </TouchableOpacity>
         )}
       </View>
-
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={false}
@@ -382,12 +380,12 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
                   </View>
                 </View>
                 {!item.isRead && (
-                  <View
-                    style={[
-                      styles.notificationDot,
+                <View
+                  style={[
+                    styles.notificationDot,
                       { backgroundColor: '#2563EB' },
-                    ]}
-                  />
+                  ]}
+                />
                 )}
                 </TouchableOpacity>
             );

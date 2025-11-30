@@ -19,6 +19,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { validateRegistrationForm, FormErrors } from '../../utils/validation';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -261,17 +264,17 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         <View style={styles.topSection}>
           <ImageBackground
             source={{
-              uri: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNofGVufDF8fHx8MTc2MjM5ODkzN3ww&ixlib=rb-4.1.0&q=80&w=1080'
+              uri: 'https://images.unsplash.com/photo-1552930294-6b595f4c2974?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNoJTIwc2lnbnVwJTIwcHJlbWl1bXxlbnwxfHx8fDE3NjI0ODkwNTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
             }}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
-            blurRadius={10}
+            blurRadius={8}
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
             <TouchableOpacity style={styles.backButton} onPress={onBack}>
               <View style={styles.backButtonCircle}>
-                <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
             
@@ -307,97 +310,116 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
               {/* Form Fields */}
               <View style={styles.inputsContainer}>
                 {/* Full Name Field */}
-                <View style={[styles.inputField, errors.name && styles.inputFieldError]}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Full Name"
-                    placeholderTextColor="#9CA3AF"
-                    value={fullName}
-                    onChangeText={(value) => handleInputChange('name', value)}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Full Name</Text>
+                  <View style={[styles.inputField, errors.name && styles.inputFieldError]}>
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your full name"
+                      placeholderTextColor="#9CA3AF"
+                      value={fullName}
+                      onChangeText={(value) => handleInputChange('name', value)}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
                 </View>
-                {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
                 {/* Email Field */}
-                <View style={[styles.inputField, errors.email && styles.inputFieldError]}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Email"
-                    placeholderTextColor="#9CA3AF"
-                    value={email}
-                    onChangeText={(value) => handleInputChange('email', value)}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Email</Text>
+                  <View style={[styles.inputField, errors.email && styles.inputFieldError]}>
+                    <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your email"
+                      placeholderTextColor="#9CA3AF"
+                      value={email}
+                      onChangeText={(value) => handleInputChange('email', value)}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
                 </View>
-                {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
                 {/* Phone Number Field */}
-                <View style={[styles.inputField, errors.phone && styles.inputFieldError]}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Phone Number"
-                    placeholderTextColor="#9CA3AF"
-                    value={phoneNumber}
-                    onChangeText={(value) => handleInputChange('phone', value)}
-                    keyboardType="phone-pad"
-                    autoCorrect={false}
-                  />
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Phone Number</Text>
+                  <View style={[styles.inputField, errors.phone && styles.inputFieldError]}>
+                    <Ionicons name="call-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your phone number"
+                      placeholderTextColor="#9CA3AF"
+                      value={phoneNumber}
+                      onChangeText={(value) => handleInputChange('phone', value)}
+                      keyboardType="phone-pad"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
                 </View>
-                {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
                 {/* Password Field */}
-                <View style={[styles.inputField, errors.password && styles.inputFieldError]}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Password"
-                    placeholderTextColor="#9CA3AF"
-                    value={password}
-                    onChangeText={(value) => handleInputChange('password', value)}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Ionicons 
-                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color="#6B7280" 
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <View style={[styles.inputField, errors.password && styles.inputFieldError]}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your password"
+                      placeholderTextColor="#9CA3AF"
+                      value={password}
+                      onChangeText={(value) => handleInputChange('password', value)}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
                     />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Ionicons 
+                        name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                        size={20} 
+                        color="#9CA3AF" 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
                 </View>
-                {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
                 {/* Confirm Password Field */}
-                <View style={[styles.inputField, errors.password_confirmation && styles.inputFieldError]}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Confirm Password"
-                    placeholderTextColor="#9CA3AF"
-                    value={confirmPassword}
-                    onChangeText={(value) => handleInputChange('password_confirmation', value)}
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    <Ionicons 
-                      name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color="#6B7280" 
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Confirm Password</Text>
+                  <View style={[styles.inputField, errors.password_confirmation && styles.inputFieldError]}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Confirm your password"
+                      placeholderTextColor="#9CA3AF"
+                      value={confirmPassword}
+                      onChangeText={(value) => handleInputChange('password_confirmation', value)}
+                      secureTextEntry={!showConfirmPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
                     />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.eyeButton}
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      <Ionicons 
+                        name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
+                        size={20} 
+                        color="#9CA3AF" 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.password_confirmation && <Text style={styles.errorText}>{errors.password_confirmation}</Text>}
                 </View>
-                {errors.password_confirmation && <Text style={styles.errorText}>{errors.password_confirmation}</Text>}
               </View>
 
               {/* Terms and Privacy */}
@@ -423,22 +445,25 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
                 style={[styles.createAccountButton, (!isFormValid || isLoading) && styles.createAccountButtonDisabled]}
                 onPress={handleRegister}
                 disabled={!isFormValid || isLoading}
+                activeOpacity={0.8}
               >
                 {isLoading ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <>
-                    <Text style={styles.createAccountButtonText}>Create Account</Text>
-                    <View style={styles.checkmarkCircle}>
-                      <Ionicons name="checkmark" size={16} color="#000000" />
-                    </View>
-                  </>
+                  <Text style={styles.createAccountButtonText}>Create Account</Text>
                 )}
               </TouchableOpacity>
 
+              {/* OR Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
               {/* Login Link */}
               <View style={styles.loginContainer}>
-                <Text style={styles.loginQuestion}>ALREADY HAVE AN ACCOUNT?</Text>
+                <Text style={styles.loginQuestion}>Already have an account? </Text>
                 <TouchableOpacity onPress={onLogin}>
                   <Text style={styles.loginLink}>Sign in instead</Text>
                 </TouchableOpacity>
@@ -486,17 +511,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topSection: {
-    height: '25%',
+    height: '28%',
     position: 'relative',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(3, 88, 168, 0.4)',
   },
   backButton: {
     position: 'absolute',
-    top: 50,
-    left: 20,
+    top: Platform.select({ ios: 54, android: 50 }),
+    left: Platform.select({ ios: 22, android: 20 }),
     zIndex: 10,
   },
   backButtonCircle: {
@@ -509,24 +534,25 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: 'absolute',
-    bottom: -40,
+    bottom: -35,
     left: '50%',
-    marginLeft: -40,
+    marginLeft: -35,
     zIndex: 20,
     overflow: 'visible',
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
+    width: 70,
+    height: 70,
+    borderRadius: 18,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 8,
     borderWidth: 2,
     borderColor: '#FFFFFF',
+    backgroundColor: BLUE_COLOR,
   },
   logoImage: {
     width: '100%',
@@ -536,10 +562,10 @@ const styles = StyleSheet.create({
   bottomSection: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     marginTop: -10,
-    paddingTop: 65,
+    paddingTop: 50,
     zIndex: 10,
   },
   scrollContent: {
@@ -553,55 +579,66 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: FONT_SIZES.APP_TITLE_LARGE,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1A1A1A',
     marginBottom: 8,
     textAlign: 'center',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    color: '#666666',
     fontWeight: '400',
     textAlign: 'center',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   inputsContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  inputWrapper: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    minHeight: 44,
   },
   inputFieldError: {
     borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#111827',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    color: '#1A1A1A',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   eyeButton: {
     padding: 4,
+    marginLeft: 8,
   },
   errorText: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     color: '#EF4444',
-    marginTop: -12,
-    marginBottom: 12,
-    marginLeft: 4,
+    marginTop: 6,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   termsContainer: {
     marginBottom: 24,
@@ -627,27 +664,29 @@ const styles = StyleSheet.create({
   },
   termsText: {
     flex: 1,
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    color: '#666666',
     lineHeight: 20,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   termsLink: {
-    color: '#111827',
+    color: BLUE_COLOR,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   createAccountButton: {
-    backgroundColor: '#000000',
+    backgroundColor: BLUE_COLOR,
     borderRadius: 12,
-    paddingVertical: 16,
-    flexDirection: 'row',
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 16,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+    minHeight: 48,
   },
   createAccountButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -656,32 +695,45 @@ const styles = StyleSheet.create({
   },
   createAccountButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_LARGE,
     fontWeight: '600',
-    marginRight: 8,
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
-  checkmarkCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
+  dividerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 24,
+    marginHorizontal: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 32,
   },
   loginQuestion: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 8,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    color: '#666666',
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   loginLink: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BUTTON_SMALL,
+    color: BLUE_COLOR,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   securityContainer: {
     flexDirection: 'row',
@@ -701,9 +753,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   securityText: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     color: '#6B7280',
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   overlay: {
     position: 'absolute',
@@ -729,8 +782,9 @@ const styles = StyleSheet.create({
   },
   overlayText: {
     marginTop: 10,
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#111827',
+    fontFamily: FONTS.INTER_REGULAR,
   },
 });
 

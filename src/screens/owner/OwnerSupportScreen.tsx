@@ -11,10 +11,12 @@ import {
   ImageBackground,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { platformEdges } from '../../utils/responsive';
 import authService from '../../services/authService';
+import { useTheme } from '../../context/ThemeContext';
+import { StatusBar } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -112,6 +114,8 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
     setExpandedQuestion((prev) => (prev === id ? null : id));
   };
 
+  const { colors } = useTheme();
+
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <View style={styles.header}>
@@ -125,7 +129,6 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
         <Text style={styles.headerTitle}>Help & Support</Text>
         <View style={styles.headerPlaceholder} />
       </View>
-
       <View style={styles.tabRow}>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'faqs' && styles.tabButtonActive]}

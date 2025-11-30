@@ -182,7 +182,6 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
           </Text>
         </View>
       </View>
-
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.content}

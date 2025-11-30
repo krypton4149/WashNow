@@ -21,9 +21,8 @@ interface OnboardingScreenProps {
   isActive: boolean;
   totalScreens: number;
   currentIndex: number;
-  onNext: () => void;
   onSkip: () => void;
-  onPreview?: () => void; // Optional preview button for second screen
+  onGetStarted: () => void;
 }
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
@@ -33,15 +32,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   isActive,
   totalScreens,
   currentIndex,
-  onNext,
   onSkip,
-  onPreview,
+  onGetStarted,
 }) => {
   const { colors } = useTheme();
-
-  const isLastScreen = currentIndex === totalScreens - 1;
-  const buttonText = isLastScreen ? 'Get Started' : 'Next';
-  const showPreview = currentIndex === 1 && onPreview; // Show preview on second screen
+  const blueColor = '#0358a8';
 
   if (!isActive) return null;
 
@@ -55,10 +50,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       {/* Main Content */}
       <View style={styles.content}>
         {/* Icon with Gradient Background */}
-        <View style={[styles.iconContainer, { backgroundColor: colors.button }]}>
-          <View style={[styles.gradientTop, { backgroundColor: colors.button }]} />
-          <View style={[styles.gradientMiddle, { backgroundColor: colors.button }]} />
-          <Ionicons name={icon as any} size={56} color={colors.buttonText} style={styles.icon} />
+        <View style={[styles.iconContainer, { backgroundColor: blueColor }]}>
+          <View style={[styles.gradientTop, { backgroundColor: blueColor }]} />
+          <View style={[styles.gradientMiddle, { backgroundColor: blueColor }]} />
+          <Ionicons name={icon as any} size={56} color="#FFFFFF" style={styles.icon} />
         </View>
 
         {/* Title */}
@@ -75,11 +70,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             // First screen: blue dash, other screens: solid blue circle
             if (currentIndex === 0) {
               return (
-                <View key={i} style={[styles.activeIndicatorDash, { backgroundColor: colors.button }]} />
+                <View key={i} style={[styles.activeIndicatorDash, { backgroundColor: blueColor }]} />
               );
             } else {
               return (
-                <View key={i} style={[styles.activeIndicatorCircle, { backgroundColor: colors.button }]} />
+                <View key={i} style={[styles.activeIndicatorCircle, { backgroundColor: blueColor }]} />
               );
             }
           } else {
@@ -91,17 +86,17 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         })}
       </View>
 
-      {/* Action Buttons Container */}
+      {/* Get Started Button */}
       <View style={styles.buttonContainer}>
-        {/* Next Button */}
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.button }]} onPress={onNext}>
-          <Text style={[styles.actionButtonText, { color: colors.buttonText }]}>{buttonText}</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.buttonText} style={styles.arrowIcon} />
+        <TouchableOpacity 
+          style={[styles.getStartedButton, { backgroundColor: blueColor }]} 
+          onPress={onGetStarted}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.getStartedButtonText}>Get Started</Text>
         </TouchableOpacity>
-
-        {/* Preview Button (only on second screen) */}
-       
       </View>
+
     </SafeAreaView>
   );
 };
@@ -201,42 +196,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   buttonContainer: {
-    position: 'relative',
     marginBottom: 40,
-    marginHorizontal: 24,
+    paddingHorizontal: 0,
   },
-  actionButton: {
+  getStartedButton: {
     paddingVertical: 18,
     paddingHorizontal: 24,
     borderRadius: 12,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     minHeight: 56,
   },
-  actionButtonText: {
+  getStartedButtonText: {
     fontSize: 17,
     fontWeight: '600',
     fontFamily: 'System',
-    flex: 1,
-  },
-  arrowIcon: {
-    marginLeft: 8,
-  },
-  previewButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderTopLeftRadius: 0,
-    borderBottomRightRadius: 12,
-  },
-  previewButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'System',
+    color: '#FFFFFF',
   },
 });
 

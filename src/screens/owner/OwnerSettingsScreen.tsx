@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
@@ -86,7 +87,6 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
         <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Settings</Text>
         <View style={styles.headerPlaceholder} />
       </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, dynamicStyles.scrollContent]}
