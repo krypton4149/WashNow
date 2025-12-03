@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StatusBar,
   StyleSheet,
   Alert,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -49,6 +51,8 @@ const AppContent: React.FC = () => {
   const [lastBookingId, setLastBookingId] = useState<string | undefined>(undefined);
   const [filteredCenters, setFilteredCenters] = useState<any[] | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
+  const onboardingScrollRef = useRef<ScrollView>(null);
+  const { width: screenWidth } = Dimensions.get('window');
 
   // Check authentication status on app start
   useEffect(() => {
@@ -76,19 +80,19 @@ const AppContent: React.FC = () => {
 
   const onboardingScreens = [
     {
-      icon: 'location-outline',
-      title: 'Find Nearby Centers',
-      description: 'Discover car wash centers near you with real-time distance tracking',
+      icon: 'calendar-outline',
+      title: 'Book Your Wash',
+      description: 'Schedule car wash services at your convenience',
     },
     {
-      icon: 'time-outline',
-      title: 'Easy Scheduling',
-      description: 'Book your preferred time slot and service in just a few taps',
+      icon: 'options-outline',
+      title: 'Choose Your Service',
+      description: 'Select from various wash packages and add-ons',
     },
     {
-      icon: 'card-outline',
-      title: 'Secure Payments',
-      description: 'Pay safely with multiple payment options and track your history',
+      icon: 'car-outline',
+      title: 'Enjoy Clean Rides',
+      description: 'Get your vehicle professionally cleaned',
     },
   ];
 
@@ -101,9 +105,22 @@ const AppContent: React.FC = () => {
 
   const handleNext = () => {
     if (currentOnboardingIndex < onboardingScreens.length - 1) {
-      setCurrentOnboardingIndex(currentOnboardingIndex + 1);
+      const nextIndex = currentOnboardingIndex + 1;
+      setCurrentOnboardingIndex(nextIndex);
+      onboardingScrollRef.current?.scrollTo({
+        x: nextIndex * screenWidth,
+        animated: true,
+      });
     } else {
       setCurrentScreen('user-choice');
+    }
+  };
+
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / screenWidth);
+    if (index !== currentOnboardingIndex && index >= 0 && index < onboardingScreens.length) {
+      setCurrentOnboardingIndex(index);
     }
   };
 
@@ -111,23 +128,38 @@ const AppContent: React.FC = () => {
     setCurrentScreen('user-choice');
   };
 
-  // Auto-advance onboarding slides every 2 seconds
+  // Auto-advance onboarding slider every 4 seconds
   useEffect(() => {
     if (currentScreen === 'onboarding') {
       const interval = setInterval(() => {
         setCurrentOnboardingIndex((prevIndex) => {
           if (prevIndex < onboardingScreens.length - 1) {
-            return prevIndex + 1;
-          } else {
-            setCurrentScreen('user-choice');
-            return prevIndex;
+            const nextIndex = prevIndex + 1;
+            // Scroll to next screen
+            onboardingScrollRef.current?.scrollTo({
+              x: nextIndex * screenWidth,
+              animated: true,
+            });
+            return nextIndex;
           }
+          // Stay on last screen, don't auto-advance
+          return prevIndex;
         });
       }, 2000); // 2 seconds
 
       return () => clearInterval(interval);
     }
-  }, [currentScreen, onboardingScreens.length]);
+  }, [currentScreen, onboardingScreens.length, screenWidth]);
+
+  // Sync scroll position when currentOnboardingIndex changes programmatically
+  useEffect(() => {
+    if (currentScreen === 'onboarding' && onboardingScrollRef.current) {
+      onboardingScrollRef.current.scrollTo({
+        x: currentOnboardingIndex * screenWidth,
+        animated: true,
+      });
+    }
+  }, [currentOnboardingIndex, currentScreen, screenWidth]);
 
   const handleCustomerPress = () => {
     setUserType('customer');
@@ -371,16 +403,32 @@ const AppContent: React.FC = () => {
     switch (currentScreen) {
       case 'onboarding':
         return (
-          <OnboardingScreen
-            icon={onboardingScreens[currentOnboardingIndex].icon}
-            title={onboardingScreens[currentOnboardingIndex].title}
-            description={onboardingScreens[currentOnboardingIndex].description}
-            isActive={true}
-            totalScreens={onboardingScreens.length}
-            currentIndex={currentOnboardingIndex}
-            onSkip={handleSkip}
-            onGetStarted={handleSkip}
-          />
+          <ScrollView
+            ref={onboardingScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleScroll}
+            scrollEventThrottle={16}
+            style={{ flex: 1 }}
+            scrollEnabled={currentOnboardingIndex < onboardingScreens.length - 1}
+          >
+            {onboardingScreens.map((screen, index) => (
+              <View key={index} style={{ width: screenWidth }}>
+                <OnboardingScreen
+                  icon={screen.icon}
+                  title={screen.title}
+                  description={screen.description}
+                  isActive={index === currentOnboardingIndex}
+                  totalScreens={onboardingScreens.length}
+                  currentIndex={index}
+                  onNext={handleNext}
+                  onSkip={handleSkip}
+                  onGetStarted={handleSkip}
+                />
+              </View>
+            ))}
+          </ScrollView>
         );
       case 'user-choice':
         return (

@@ -15,6 +15,10 @@ import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 interface Props {
   onBack?: () => void;
@@ -243,7 +247,7 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
           style={[
             styles.updateButton,
             { 
-              backgroundColor: (isFormValid() && !isLoading) ? (colors.button || colors.primary || '#3B82F6') : colors.border 
+              backgroundColor: (isFormValid() && !isLoading) ? BLUE_COLOR : colors.border 
             }
           ]}
           onPress={handleUpdatePassword}
@@ -284,19 +288,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 19, android: 18 }),
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   headerSubtitle: {
-    fontSize: Platform.select({ ios: 15, android: 14 }),
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     marginTop: 2,
   },
   inputContainer: {
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     marginBottom: 8,
   },
   inputWrapper: {
@@ -310,7 +317,8 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontFamily: FONTS.INTER_REGULAR,
     paddingVertical: 0,
   },
   eyeButton: {
@@ -322,8 +330,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   requirementsTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     marginBottom: 12,
   },
   requirementRow: {
@@ -340,7 +349,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   requirementText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   securityTipContainer: {
     flexDirection: 'row',
@@ -351,7 +361,8 @@ const styles = StyleSheet.create({
   },
   securityTipText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     lineHeight: 20,
   },
   bottomContainer: {
@@ -378,8 +389,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   updateButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
 });
 

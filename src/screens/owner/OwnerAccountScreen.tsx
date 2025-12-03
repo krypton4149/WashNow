@@ -6,6 +6,11 @@ import authService from '../../services/authService';
 import OwnerEditProfileScreen from './OwnerEditProfileScreen';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
+const DARK_BLUE = '#0277BD';
 
 interface OwnerAccountScreenProps {
   onBack?: () => void;
@@ -242,14 +247,6 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
     },
   ];
 
-  if (business.status && business.status !== 'Not provided') {
-    contactDetails.push({
-      id: 'status',
-      icon: 'shield-checkmark-outline',
-      label: 'Account Status',
-      value: business.status,
-    });
-  }
 
   if (business.weekOffDays && business.weekOffDays !== 'Not provided') {
     contactDetails.push({
@@ -281,129 +278,156 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
-        {onBack && (
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
+      {/* Blue Gradient Header */}
+      <View style={styles.headerGradient}>
+        <View style={styles.gradientOverlay} />
+        <View style={styles.headerNav}>
+          {onBack && (
+            <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
+              <View style={styles.backButtonCircle}>
+                <Ionicons name="chevron-back" size={20} color="#000000" />
+              </View>
+            </TouchableOpacity>
+          )}
+          <Text style={styles.headerTitle}>Profile</Text>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={handleEditProfilePress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.editButtonCircle}>
+              <Ionicons name="pencil" size={18} color="#000000" />
+            </View>
           </TouchableOpacity>
+        </View>
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text style={styles.loadingText}>Loading profile...</Text>
+          </View>
+        ) : (
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Ionicons name="storefront" size={40} color="#FFFFFF" />
+              </View>
+            </View>
+            <Text style={styles.businessName}>{business.name}</Text>
+            <Text style={styles.ownerName}>{business.ownerName}</Text>
+            <View style={styles.ratingRow}>
+              <Text style={styles.bookingCount}>{business.totalBookings} bookings</Text>
+            </View>
+          </View>
         )}
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={handleEditProfilePress}
-        >
-          <Ionicons
-            name="pencil-outline"
-            size={22}
-            color={colors.text}
-          />
-        </TouchableOpacity>
       </View>
+
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
       >
-        {isLoading && (
-          <View style={[styles.loadingContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <ActivityIndicator size="small" color={colors.text} />
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading profile...</Text>
-          </View>
-        )}
-
-        <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
-          <View style={styles.avatar}>
-            <Ionicons name="storefront-outline" size={36} color={colors.textSecondary} />
-          </View>
-          <Text style={[styles.businessName, { color: colors.text }]}>{business.name}</Text>
-          <Text style={[styles.ownerName, { color: colors.textSecondary }]}>{business.ownerName}</Text>
-          <View style={styles.ratingRow}>
-            <Text style={[styles.bookingCount, { color: colors.textSecondary }]}>{`${business.totalBookings} bookings`}</Text>
-          </View>
-        </View>
-
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
+        {/* Contact Information Card */}
+        <View style={styles.sectionCard}>
           {contactDetails.map((detail, index) => (
             <View key={detail.id}>
               <View style={styles.infoRow}>
                 <View style={styles.infoIcon}>
-                  <Ionicons name={detail.icon} size={20} color={colors.text} />
+                  <Ionicons name={detail.icon} size={20} color="#FFFFFF" />
                 </View>
                 <View style={styles.infoTextContainer}>
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{detail.label}</Text>
-                  <Text style={[styles.infoValue, { color: colors.text }]}>{detail.value}</Text>
+                  <Text style={styles.infoLabel}>{detail.label}</Text>
+                  <Text style={styles.infoValue}>{detail.value}</Text>
                 </View>
               </View>
-              {index < contactDetails.length - 1 && <View style={[styles.divider, { backgroundColor: colors.border }]} />}
+              {index < contactDetails.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
         </View>
 
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
+        {/* Account Status Card */}
+        {business.status && business.status !== 'Not provided' && (
+          <View style={styles.sectionCard}>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIcon}>
+                <Ionicons name="shield-checkmark" size={20} color="#FFFFFF" />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.sectionTitle}>Account Status</Text>
+                <Text style={styles.infoValue}>{business.status}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Working Hours Card */}
+        <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <View style={styles.sectionIcon}>
-                <Ionicons name="time-outline" size={18} color={colors.text} />
+              <View style={styles.workingHoursIcon}>
+                <Ionicons name="time" size={20} color="#FFFFFF" />
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{'Working Hours'}</Text>
+              <Text style={styles.sectionTitle}>Working Hours</Text>
             </View>
-            <View style={styles.previewPill}>
-              <Text style={styles.previewText}>Preview</Text>
+            <View style={styles.activePill}>
+              <Text style={styles.activeText}>Active</Text>
             </View>
           </View>
           <View style={styles.hoursRow}>
-            <Text style={[styles.hoursDays, { color: colors.textSecondary }]}>{business.hours.days}</Text>
-            <Text style={[styles.hoursTime, { color: colors.text }]}>{`${business.hours.open} - ${business.hours.close}`}</Text>
+            <Text style={styles.hoursDays}>{business.hours.days}</Text>
+            <Text style={styles.hoursTime}>{`${business.hours.open} - ${business.hours.close}`}</Text>
           </View>
         </View>
 
-        <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
+        {/* Services Offered Card */}
+        <View style={styles.sectionCard}>
           <View style={styles.sectionTitleRow}>
             <View style={styles.sectionIcon}>
-              <Ionicons name="briefcase-outline" size={18} color={colors.text} />
+              <Ionicons name="briefcase-outline" size={18} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{'Services Offered'}</Text>
+            <Text style={styles.sectionTitle}>Services Offered</Text>
           </View>
           <View style={styles.servicesContainer}>
             {business.services.map((service: string) => (
-              <View key={service} style={[styles.serviceChip, { borderColor: colors.border }]}>
-                <Text style={[styles.serviceText, { color: colors.text }]}>{service}</Text>
+              <View key={service} style={styles.serviceChip}>
+                <Text style={styles.serviceText}>{service}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        <View style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
+        {/* Action Card */}
+        <View style={styles.actionCard}>
           <TouchableOpacity
-            style={[styles.actionItem, styles.actionItemTop, { backgroundColor: colors.surface }]}
+            style={[styles.actionItem, styles.actionItemTop]}
             activeOpacity={0.7}
             onPress={onOpenSettings}
             disabled={!onOpenSettings}
           >
             <View style={styles.actionItemLeft}>
               <View style={styles.actionIcon}>
-                <Ionicons name="settings-outline" size={18} color={colors.text} />
+                <Ionicons name="settings-outline" size={18} color={BLUE_COLOR} />
               </View>
-              <Text style={[styles.actionLabel, { color: colors.text }]}>{'Settings'}</Text>
+              <Text style={styles.actionLabel}>Settings</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
-          <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.actionDivider} />
           <TouchableOpacity
-            style={[styles.actionItem, styles.actionItemBottom, { backgroundColor: colors.surface }]}
+            style={[styles.actionItem, styles.actionItemBottom]}
             activeOpacity={0.7}
             onPress={onOpenSupport}
             disabled={!onOpenSupport}
           >
             <View style={styles.actionItemLeft}>
               <View style={styles.actionIcon}>
-                <Ionicons name="help-circle-outline" size={18} color={colors.text} />
+                <Ionicons name="help-circle-outline" size={18} color={BLUE_COLOR} />
               </View>
-              <Text style={[styles.actionLabel, { color: colors.text }]}>{'Help & Support'}</Text>
+              <Text style={styles.actionLabel}>Help & Support</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -414,16 +438,31 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
   },
-  header: {
+  headerGradient: {
+    backgroundColor: DARK_BLUE,
+    paddingTop: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: BLUE_COLOR,
+    opacity: 0.3,
+  },
+  headerNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
-    paddingVertical: Platform.select({ ios: 14, android: 12 }),
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F3F4F6',
+    marginBottom: 20,
+    zIndex: 1,
   },
   backButton: {
     width: 40,
@@ -431,10 +470,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-start',
   },
+  backButtonCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: {
-    fontSize: Platform.select({ ios: 18, android: 17 }),
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '600',
-    color: '#111827',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    color: '#FFFFFF',
   },
   editButton: {
     width: 40,
@@ -442,101 +490,99 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-end',
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
-    paddingTop: Platform.select({ ios: 12, android: 10 }),
-    paddingBottom: Platform.select({ 
-      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
-      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
-    }),
+  editButtonCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingContainer: {
-    marginBottom: 14,
-    padding: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     alignItems: 'center',
+    paddingVertical: 20,
+    zIndex: 1,
   },
   loadingText: {
     marginTop: 8,
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#FFFFFF',
   },
-  profileCard: {
+  profileHeader: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    paddingVertical: Platform.select({ ios: 16, android: 14 }),
-    paddingHorizontal: Platform.select({ ios: 16, android: 14 }),
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000000',
-    shadowOpacity: Platform.select({ ios: 0.04, android: 0.03 }),
-    shadowRadius: Platform.select({ ios: 8, android: 6 }),
-    shadowOffset: { width: 0, height: Platform.select({ ios: 3, android: 2 }) || 2 },
-    elevation: Platform.select({ ios: 0, android: 1 }),
-    marginBottom: Platform.select({ ios: 14, android: 12 }),
+    zIndex: 1,
+  },
+  avatarContainer: {
+    marginBottom: 12,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#F9FAFB',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'transparent',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    marginBottom: 6,
   },
   businessName: {
-    fontSize: Platform.select({ ios: 20, android: 18 }),
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
   ownerName: {
-    fontSize: Platform.select({ ios: 15, android: 14 }),
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '400',
-    color: '#6B7280',
-    marginBottom: 3,
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#E3F2FD',
+    marginBottom: 12,
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
   },
   bookingCount: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#FFFFFF',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: Platform.select({ 
+      ios: 80,
+      android: 70
+    }),
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    padding: Platform.select({ ios: 14, android: 12 }),
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000000',
-    shadowOpacity: Platform.select({ ios: 0.04, android: 0.03 }),
-    shadowRadius: Platform.select({ ios: 8, android: 6 }),
-    shadowOffset: { width: 0, height: Platform.select({ ios: 3, android: 2 }) || 2 },
-    elevation: Platform.select({ ios: 0, android: 1 }),
-    marginBottom: Platform.select({ ios: 14, android: 12 }),
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
+    alignItems: 'flex-start',
+    paddingVertical: 8,
   },
   infoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F9FAFB',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: BLUE_COLOR,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -545,28 +591,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#6B7280',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#111827',
   },
   divider: {
     height: 1,
     backgroundColor: '#F3F4F6',
-    marginVertical: 12,
+    marginVertical: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 12,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  workingHoursIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: YELLOW_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   sectionIcon: {
     width: 32,
@@ -575,41 +634,47 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   sectionTitle: {
-    fontSize: Platform.select({ ios: 15, android: 14 }),
-    fontWeight: '500',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#111827',
-    marginLeft: 12,
   },
-  previewPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  activePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
     backgroundColor: '#F3F4F6',
   },
-  previewText: {
-    fontSize: 12,
+  activeText: {
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#6B7280',
-    letterSpacing: 0.2,
   },
   hoursRow: {
-    marginTop: 4,
-    gap: 6,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   hoursDays: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
   hoursTime: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
   },
   servicesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    marginTop: 8,
   },
   serviceChip: {
     paddingHorizontal: 12,
@@ -622,20 +687,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   serviceText: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#111827',
   },
   actionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000000',
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     overflow: 'hidden',
     marginBottom: 16,
   },
@@ -643,9 +709,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   actionItemTop: {
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -664,16 +730,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#EEF2F7',
   },
   actionLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
   },
 });

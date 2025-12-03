@@ -6,13 +6,18 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { platformEdges } from '../../utils/responsive';
 import { useTheme } from '../../context/ThemeContext';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const { width, height } = Dimensions.get('window');
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 interface OnboardingScreenProps {
   icon: string; // Icon name from Ionicons
@@ -21,9 +26,17 @@ interface OnboardingScreenProps {
   isActive: boolean;
   totalScreens: number;
   currentIndex: number;
+  onNext?: () => void;
   onSkip: () => void;
   onGetStarted: () => void;
 }
+
+// Image sources for each onboarding screen
+const onboardingImages = [
+  require('../../assets/images/screen1.jpg'), // Book Your Wash - two men with smartphone
+  require('../../assets/images/screen2.jpg'), // Choose Your Service - two men selecting services
+  require('../../assets/images/screen3.jpg'), // Enjoy Clean Rides - man and woman washing car
+];
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   icon,
@@ -32,71 +45,74 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   isActive,
   totalScreens,
   currentIndex,
+  onNext,
   onSkip,
   onGetStarted,
 }) => {
   const { colors } = useTheme();
-  const blueColor = '#0358a8';
+  const isLastScreen = currentIndex === totalScreens - 1;
 
-  if (!isActive) return null;
+  // Always render when using ScrollView (isActive is used for tracking active screen)
 
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
-      {/* Skip Button */}
-      <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
-        <Text style={styles.skipText}>Skip</Text>
-      </TouchableOpacity>
+      {/* Logo Section */}
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('../../assets/images/logo2.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
+      </View>
 
       {/* Main Content */}
       <View style={styles.content}>
-        {/* Icon with Gradient Background */}
-        <View style={[styles.iconContainer, { backgroundColor: blueColor }]}>
-          <View style={[styles.gradientTop, { backgroundColor: blueColor }]} />
-          <View style={[styles.gradientMiddle, { backgroundColor: blueColor }]} />
-          <Ionicons name={icon as any} size={56} color="#FFFFFF" style={styles.icon} />
+        {/* Illustration Image */}
+        <View style={styles.illustrationContainer}>
+          <Image
+            source={onboardingImages[currentIndex]}
+            style={styles.illustrationImage}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Title */}
         <Text style={styles.title}>{title}</Text>
 
         {/* Description */}
-        <Text style={styles.description}>{description}</Text>
+        <Text style={styles.description} numberOfLines={1} adjustsFontSizeToFit>
+          {description}
+        </Text>
       </View>
 
-      {/* Pagination */}
-      <View style={styles.pagination}>
-        {Array.from({ length: totalScreens }).map((_, i) => {
-          if (i === currentIndex) {
-            // First screen: blue dash, other screens: solid blue circle
-            if (currentIndex === 0) {
-              return (
-                <View key={i} style={[styles.activeIndicatorDash, { backgroundColor: blueColor }]} />
-              );
-            } else {
-              return (
-                <View key={i} style={[styles.activeIndicatorCircle, { backgroundColor: blueColor }]} />
-              );
-            }
-          } else {
-            // Inactive: grey outline circles
-            return (
-              <View key={i} style={styles.inactiveIndicator} />
-            );
-          }
-        })}
-      </View>
+      {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        {/* Pagination Dots - Hide on last screen */}
+        {!isLastScreen && (
+          <View style={styles.pagination}>
+            {Array.from({ length: totalScreens }).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  i === currentIndex ? styles.activeDot : styles.inactiveDot,
+                ]}
+              />
+            ))}
+          </View>
+        )}
 
-      {/* Get Started Button */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[styles.getStartedButton, { backgroundColor: blueColor }]} 
-          onPress={onGetStarted}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.getStartedButtonText}>Get Started</Text>
-        </TouchableOpacity>
+        {/* Get Started Button - Only on last screen */}
+        {isLastScreen && (
+          <TouchableOpacity
+            style={styles.getStartedButton}
+            onPress={onGetStarted}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.navButtonText}>Get Started</Text>
+          </TouchableOpacity>
+        )}
       </View>
-
     </SafeAreaView>
   );
 };
@@ -105,112 +121,99 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  logoContainer: {
+    paddingTop: Platform.select({ ios: 20, android: 16 }),
     paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  skipButton: {
-    alignSelf: 'flex-end',
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  skipText: {
-    fontSize: 17,
-    color: '#666666',
-    fontWeight: '400',
-    fontFamily: 'System',
+  logoImage: {
+    width: 180,
+    height: 180,
+    borderRadius: 28,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 20,
+    paddingTop: 0,
   },
-  iconContainer: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+  illustrationContainer: {
+    width: width * 0.95,
+    height: width * 0.95,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
-    overflow: 'hidden',
-    position: 'relative',
+    marginBottom: 20,
+    marginTop: -20,
   },
-  gradientTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '40%',
-  },
-  gradientMiddle: {
-    position: 'absolute',
-    top: '40%',
-    left: 0,
-    right: 0,
-    height: '20%',
-  },
-  icon: {
-    zIndex: 1,
+  illustrationImage: {
+    width: '100%',
+    height: '100%',
   },
   title: {
-    fontSize: 32,
+    fontSize: FONT_SIZES.HEADING_LARGE,
     fontWeight: '700',
-    color: '#000000',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    color: BLUE_COLOR,
     textAlign: 'center',
-    marginBottom: 16,
-    fontFamily: 'System',
-    letterSpacing: -0.5,
+    marginBottom: 12,
   },
   description: {
-    fontSize: 17,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#666666',
     textAlign: 'center',
     lineHeight: 24,
-    fontWeight: '400',
-    fontFamily: 'System',
-    maxWidth: 280,
+    paddingHorizontal: 10,
+    flexShrink: 0,
+  },
+  bottomSection: {
+    paddingBottom: Platform.select({ ios: 40, android: 32 }),
+    paddingHorizontal: 24,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
-    gap: 12,
+    marginBottom: 24,
+    gap: 8,
   },
-  activeIndicatorDash: {
-    width: 32,
-    height: 4,
-    borderRadius: 2,
+  dot: {
+    height: 8,
+    borderRadius: 4,
   },
-  activeIndicatorCircle: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  activeDot: {
+    backgroundColor: BLUE_COLOR,
+    width: 24,
   },
-  inactiveIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: '#D1D1D6',
-    backgroundColor: 'transparent',
+  inactiveDot: {
+    backgroundColor: '#D1D5DB',
+    width: 8,
   },
-  buttonContainer: {
-    marginBottom: 40,
-    paddingHorizontal: 0,
-  },
-  getStartedButton: {
-    paddingVertical: 18,
-    paddingHorizontal: 24,
+  navButton: {
     borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 56,
+    minHeight: 50,
   },
-  getStartedButtonText: {
-    fontSize: 17,
+  getStartedButton: {
+    backgroundColor: BLUE_COLOR,
+    width: '100%',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+  },
+  navButtonText: {
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
-    fontFamily: 'System',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#FFFFFF',
   },
 });

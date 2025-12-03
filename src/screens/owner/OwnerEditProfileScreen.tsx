@@ -15,6 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 interface OwnerEditProfileScreenProps {
   ownerData?: any;
@@ -49,7 +53,7 @@ const EditableField: React.FC<{
     <Text style={styles.label}>{label}</Text>
     <View style={styles.inputShell}>
       {icon ? (
-        <Ionicons name={icon as any} size={18} color="#111827" style={styles.inputIcon} />
+        <Ionicons name={icon as any} size={18} color="#9CA3AF" style={styles.inputIcon} />
       ) : null}
       <TextInput
         style={[styles.valueText, styles.editableInput]}
@@ -340,7 +344,9 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
       >
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="storefront-outline" size={20} color="#111827" />
+            <View style={styles.sectionIconWrapper}>
+              <Ionicons name="storefront" size={20} color="#FFFFFF" />
+            </View>
             <Text style={styles.sectionTitle}>Business Information</Text>
           </View>
           <InfoField label="Business Name" icon="business-outline" value={business.businessName} />
@@ -365,7 +371,9 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
 
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="location-outline" size={20} color="#111827" />
+            <View style={styles.sectionIconWrapper}>
+              <Ionicons name="location" size={20} color="#FFFFFF" />
+            </View>
             <Text style={styles.sectionTitle}>Location Details</Text>
           </View>
           <InfoField label="Street Address" value={business.address} />
@@ -387,7 +395,9 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
 
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="time-outline" size={20} color="#111827" />
+            <View style={[styles.sectionIconWrapper, { backgroundColor: YELLOW_COLOR }]}>
+              <Ionicons name="time" size={20} color="#FFFFFF" />
+            </View>
             <Text style={styles.sectionTitle}>Working Hours</Text>
           </View>
           <View style={styles.switchRow}>
@@ -395,7 +405,7 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
               <Text style={styles.switchLabel}>Open 24 Hours</Text>
               <Text style={styles.switchDescription}>Available round the clock</Text>
             </View>
-            <Switch value={false} trackColor={{ false: '#D1D5DB', true: '#111827' }} disabled />
+            <Switch value={false} trackColor={{ false: '#D1D5DB', true: `${BLUE_COLOR}33` }} thumbColor={false ? '#F4F5F7' : BLUE_COLOR} disabled />
           </View>
           <View style={styles.horizontalRow}>
             <View style={styles.rowItem}>
@@ -415,7 +425,9 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
 
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="stats-chart-outline" size={20} color="#111827" />
+            <View style={styles.sectionIconWrapper}>
+              <Ionicons name="stats-chart" size={20} color="#FFFFFF" />
+            </View>
             <Text style={styles.sectionTitle}>Business Statistics</Text>
           </View>
           <View style={styles.statRow}>
@@ -457,7 +469,7 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
@@ -481,8 +493,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 21, android: 20 }),
-    fontWeight: '700',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#111827',
   },
   headerRightPlaceholder: {
@@ -492,61 +505,71 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
-    paddingTop: Platform.select({ ios: 14, android: 12 }),
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: Platform.select({ 
-      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
-      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+      ios: 100,
+      android: 90
     }),
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
-    padding: Platform.select({ ios: 20, android: 18 }),
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    shadowColor: '#000000',
-    shadowOpacity: Platform.select({ ios: 0.05, android: 0.04 }),
-    shadowRadius: Platform.select({ ios: 12, android: 10 }),
-    shadowOffset: { width: 0, height: Platform.select({ ios: 4, android: 3 }) },
-    elevation: Platform.select({ ios: 0, android: 1 }),
-    marginBottom: Platform.select({ ios: 20, android: 18 }),
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  sectionIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: BLUE_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   sectionTitle: {
-    fontSize: Platform.select({ ios: 17, android: 16 }),
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#111827',
   },
   infoField: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   label: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
-    color: '#6B7280',
-    marginBottom: 6,
+    fontFamily: FONTS.INTER_MEDIUM,
+    color: '#111827',
+    marginBottom: 8,
   },
   inputShell: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   valueText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#111827',
-    fontWeight: '500',
     flexShrink: 1,
   },
   editableInput: {
@@ -570,12 +593,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   switchLabel: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
   },
   switchDescription: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
     marginTop: 4,
   },
@@ -588,12 +613,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   statLabel: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
   statValue: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
   },
   verifiedRow: {
@@ -602,8 +629,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   verifiedText: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#22C55E',
   },
   footer: {
@@ -614,16 +642,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   saveButton: {
-    backgroundColor: '#111827',
-    borderRadius: 14,
+    backgroundColor: BLUE_COLOR,
+    borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   saveButtonDisabled: {
     opacity: 0.7,

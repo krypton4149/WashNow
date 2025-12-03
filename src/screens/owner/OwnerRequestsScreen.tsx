@@ -11,13 +11,16 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
 import apiClient from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
-import { platformEdges } from '../../utils/responsive';
+import { StatusBar } from 'react-native';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 interface OwnerRequestsScreenProps {
   onBack?: () => void;
@@ -289,8 +292,8 @@ const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
     timeAgo,
     status,
     vehicle: {
-      primary: vehiclePlate !== 'Plate not provided' ? vehiclePlate : vehicleModel,
-      secondary: vehiclePlate !== 'Plate not provided' ? vehicleModel : '',
+      model: vehicleModel,
+      plate: vehiclePlate !== 'Plate not provided' ? vehiclePlate : '',
     },
     location: {
       address: locationAddress,
@@ -456,6 +459,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   onBack,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [rawBookings, setRawBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -687,12 +691,12 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
 
   const getStatusStyles = (status: StatusTone) => {
     if (status === 'accepted') {
-      return { bg: '#DCFCE7', text: '#16A34A', label: 'Accepted' };
+      return { bg: 'rgba(16,185,129,0.15)', text: '#10B981', label: 'Accepted' };
     }
     if (status === 'declined') {
-      return { bg: '#FEE2E2', text: '#DC2626', label: 'Declined' };
+      return { bg: 'rgba(239,68,68,0.15)', text: '#EF4444', label: 'Declined' };
     }
-    return { bg: '#FEF3C7', text: '#F97316', label: 'Pending' };
+    return { bg: 'rgba(251,146,60,0.15)', text: '#F97316', label: 'Pending' };
   };
 
   const pendingCount = useMemo(() => {
@@ -720,16 +724,17 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   }, [fetchBookings]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} translucent={false} />
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: '#FFFFFF', paddingTop: insets.top + 2 }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
           </TouchableOpacity>
         )}
         <View style={styles.headerTextGroup}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>New Requests</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{headerSubtitle}</Text>
+          <Text style={styles.headerTitle}>New Requests</Text>
+          <Text style={styles.headerSubtitle}>{headerSubtitle}</Text>
         </View>
         <View style={styles.placeholder} />
       </View>
@@ -775,11 +780,11 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
           {requests.map((request) => {
             const statusStyles = getStatusStyles(request.status);
             return (
-              <View key={request.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#2563EB' ? '#000' : '#020617' }]}>
+              <View key={request.id} style={styles.requestCard}>
                 <View style={styles.cardHeader}>
                   <View>
-                    <Text style={[styles.customerName, { color: colors.text }]}>{request.customerName}</Text>
-                    <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>{request.timeAgo}</Text>
+                    <Text style={styles.customerName}>{request.customerName}</Text>
+                    <Text style={styles.timeAgo}>{request.timeAgo}</Text>
                   </View>
                   <View
                     style={[
@@ -797,55 +802,41 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
 
                 <View style={styles.infoRow}>
                   <View style={styles.infoIcon}>
-                    <Ionicons name="car-outline" size={20} color={colors.text} />
+                    <Ionicons name="car-outline" size={20} color={BLUE_COLOR} />
                   </View>
                   <View style={styles.infoText}>
-                      <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Vehicle</Text>
-                      <Text style={[styles.infoValue, { color: colors.text }]}>{request.vehicle.primary}</Text>
-                      {request.vehicle.secondary ? (
-                        <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.vehicle.secondary}</Text>
-                      ) : null}
-                  </View>
-                </View>
-
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="location-outline" size={20} color={colors.text} />
-                  </View>
-                  <View style={styles.infoText}>
-                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Location</Text>
-                    <Text style={[styles.infoValue, { color: colors.text }]}>{request.location.address}</Text>
-                      {request.location.distance ? (
-                    <View style={styles.infoSubRow}>
-                      <Ionicons name="navigate-outline" size={12} color={colors.textSecondary} />
-                      <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.location.distance}</Text>
-                    </View>
+                      <Text style={styles.infoLabel}>VEHICLE</Text>
+                      <Text style={styles.infoValue}>
+                        {request.vehicle.plate || request.vehicle.model}
+                      </Text>
+                      {request.vehicle.plate && request.vehicle.model ? (
+                        <Text style={styles.infoSubValue}>{request.vehicle.model}</Text>
                       ) : null}
                   </View>
                 </View>
 
                 <View style={styles.metaRow}>
                   <View style={styles.metaPill}>
-                    <Text style={styles.metaLabel}>Scheduled</Text>
+                    <Text style={styles.metaLabel}>SCHEDULED</Text>
                     <Text style={styles.metaValue}>{request.scheduled}</Text>
                   </View>
                   <View style={styles.metaPill}>
-                    <Text style={styles.metaLabel}>Service</Text>
+                    <Text style={styles.metaLabel}>SERVICE</Text>
                     <Text style={styles.metaValue}>{request.service}</Text>
                   </View>
                 </View>
 
                 {request.notes ? (
-                  <View style={[styles.notesContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                    <Text style={[styles.notesLabel, { color: colors.text }]}>{'Customer Notes'}</Text>
-                    <Text style={[styles.notesValue, { color: colors.textSecondary }]}>{request.notes}</Text>
+                  <View style={styles.notesContainer}>
+                    <Text style={styles.notesLabel}>Customer Notes</Text>
+                    <Text style={styles.notesValue}>{request.notes}</Text>
                   </View>
                 ) : null}
 
                 <View style={styles.footerRow}>
                   <View>
-                    <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>Amount</Text>
-                    <Text style={[styles.amountValue, { color: colors.text }]}>{request.amount}</Text>
+                    <Text style={styles.amountLabel}>Amount</Text>
+                    <Text style={styles.amountValue}>{request.amount}</Text>
                   </View>
                   <View style={styles.footerActions}>
                     <Pressable
@@ -858,11 +849,11 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                       onPress={() => handleCancelBooking(request.id)}
                     >
                       {cancellationLoading[request.id] ? (
-                        <ActivityIndicator size="small" color={colors.text} />
+                        <ActivityIndicator size="small" color="#1A1A1A" />
                       ) : (
                         <>
-                          <Ionicons name="close" size={16} color={colors.text} />
-                          <Text style={[styles.declineText, { color: colors.text }]}>{'Decline'}</Text>
+                          <Ionicons name="close" size={16} color="#1A1A1A" />
+                          <Text style={styles.declineText}>Decline</Text>
                         </>
                       )}
                     </Pressable>
@@ -871,17 +862,16 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                         styles.actionChip,
                         styles.acceptChip,
                         cancellationLoading[request.id] && styles.actionChipDisabled,
-                        { backgroundColor: colors.button, borderColor: colors.button },
                       ]}
                       disabled={!!cancellationLoading[request.id]}
                       onPress={() => handleCompleteBooking(request.id)}
                     >
                       {cancellationLoading[request.id] ? (
-                        <ActivityIndicator size="small" color={colors.buttonText} />
+                        <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
                         <>
-                          <Ionicons name="checkmark" size={16} color={colors.buttonText} />
-                          <Text style={[styles.acceptText, { color: colors.buttonText }]}>{'Accept'}</Text>
+                          <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                          <Text style={styles.acceptText}>Accept</Text>
                         </>
                       )}
                     </Pressable>
@@ -893,7 +883,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -907,8 +897,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 10, android: 8 }),
-    paddingBottom: Platform.select({ ios: 14, android: 12 }),
+    paddingBottom: Platform.select({ ios: 10, android: 8 }),
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 40,
@@ -921,14 +911,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 20, android: 18 }),
-    fontWeight: '600',
-    color: '#0F172A',
+    fontSize: 26,
+    fontWeight: '700',
+    fontFamily: 'Montserrat-Bold',
+    color: '#1A1A1A',
   },
   headerSubtitle: {
-    marginTop: 3,
-    fontSize: Platform.select({ ios: 13, android: 12 }),
-    color: '#6B7280',
+    marginTop: 2,
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
   },
   placeholder: {
     width: 40,
@@ -938,7 +930,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 12, android: 10 }),
+    paddingTop: Platform.select({ ios: 8, android: 6 }),
     paddingBottom: Platform.select({ 
       ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
       android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
@@ -949,72 +941,84 @@ const styles = StyleSheet.create({
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    padding: Platform.select({ ios: 14, android: 12 }),
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
     borderColor: '#E5E7EB',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: Platform.select({ ios: 4, android: 3 }) },
-    shadowOpacity: Platform.select({ ios: 0.04, android: 0.03 }),
-    shadowRadius: Platform.select({ ios: 8, android: 6 }),
-    elevation: Platform.select({ ios: 0, android: 1 }),
-    gap: Platform.select({ ios: 12, android: 10 }),
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 16,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   customerName: {
-    fontSize: Platform.select({ ios: 16, android: 15 }),
+    fontSize: 20,
     fontWeight: '600',
-    color: '#111827',
+    fontFamily: 'Montserrat-SemiBold',
+    color: '#1A1A1A',
+    marginBottom: 6,
   },
   timeAgo: {
-    marginTop: 3,
     fontSize: 12,
-    color: '#6B7280',
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Inter-Medium',
   },
   infoRow: {
     flexDirection: 'row',
-    gap: 12,
     alignItems: 'flex-start',
+    marginBottom: 16,
   },
   infoIcon: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'rgba(3, 88, 168, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   infoText: {
     flex: 1,
-    gap: 2,
+    marginLeft: 14,
   },
   infoLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: 6,
   },
   infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 15,
+    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
+    color: '#1A1A1A',
+    marginBottom: 4,
   },
   infoSubValue: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#666666',
   },
   infoSubRow: {
     flexDirection: 'row',
@@ -1024,58 +1028,71 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 16,
   },
   metaPill: {
     flex: 1,
-    backgroundColor: '#F5F6FA',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    backgroundColor: '#F9FAFB',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   metaLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: 6,
   },
   metaValue: {
-    marginTop: 3,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
+    color: '#1A1A1A',
   },
   notesContainer: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
-    padding: 12,
-    gap: 5,
+    borderColor: 'rgba(3, 88, 168, 0.2)',
+    backgroundColor: 'rgba(3, 88, 168, 0.05)',
+    padding: 14,
+    marginBottom: 16,
   },
   notesLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#1D4ED8',
+    fontFamily: 'Inter-Medium',
+    color: BLUE_COLOR,
+    marginBottom: 8,
   },
   notesValue: {
-    fontSize: 13,
-    color: '#1E3A8A',
-    lineHeight: 18,
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+    color: '#1A1A1A',
+    lineHeight: 22,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
   amountLabel: {
     fontSize: 13,
-    color: '#9CA3AF',
-    marginBottom: 4,
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
+    marginBottom: 6,
   },
   amountValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
+    color: '#1A1A1A',
   },
   footerActions: {
     flexDirection: 'row',
@@ -1085,10 +1102,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
     borderRadius: 12,
     borderWidth: 1,
+    minWidth: 100,
+    justifyContent: 'center',
   },
   actionChipDisabled: {
     opacity: 0.6,
@@ -1098,17 +1117,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   acceptChip: {
-    borderColor: '#000000',
-    backgroundColor: '#000000',
+    borderColor: BLUE_COLOR,
+    backgroundColor: BLUE_COLOR,
   },
   declineText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+    color: '#1A1A1A',
   },
   acceptText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
   stateContainer: {
@@ -1122,17 +1143,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   stateTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: 'Montserrat-SemiBold',
     color: '#111827',
     textAlign: 'center',
   },
   stateDescription: {
     marginTop: 6,
-    fontSize: 14,
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   retryButton: {
     marginTop: 18,
@@ -1145,8 +1168,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   retryButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
 });

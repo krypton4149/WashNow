@@ -14,6 +14,10 @@ import { StatusBar } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 interface OwnerSettingsScreenProps {
   onBack?: () => void;
@@ -112,7 +116,7 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
           <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Notifications</Text>
           <View style={styles.settingRow}>
             <View style={styles.settingIconWrapper}>
-              <View style={[styles.settingIcon, { backgroundColor: '#2563EB' }]}>
+              <View style={[styles.settingIcon, { backgroundColor: BLUE_COLOR }]}>
                 <Ionicons name="notifications" size={20} color="#FFFFFF" />
               </View>
             </View>
@@ -123,8 +127,8 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
             <Switch
               value={pushNotificationsEnabled}
               onValueChange={setPushNotificationsEnabled}
-              trackColor={{ false: '#D1D5DB', true: '#2563EB33' }}
-              thumbColor={pushNotificationsEnabled ? '#2563EB' : '#F4F5F7'}
+              trackColor={{ false: '#D1D5DB', true: `${BLUE_COLOR}33` }}
+              thumbColor={pushNotificationsEnabled ? BLUE_COLOR : '#F4F5F7'}
             />
           </View>
         </View>
@@ -133,7 +137,7 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
           <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Preferences</Text>
           <View style={styles.settingRow}>
             <View style={styles.settingIconWrapper}>
-              <View style={[styles.settingIcon, { backgroundColor: '#6366F1' }]}>
+              <View style={[styles.settingIcon, { backgroundColor: YELLOW_COLOR }]}>
                 <Ionicons name="moon" size={20} color="#FFFFFF" />
               </View>
             </View>
@@ -144,8 +148,8 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
             <Switch
               value={darkModeEnabled}
               onValueChange={handleToggleDarkMode}
-              trackColor={{ false: '#D1D5DB', true: '#6366F133' }}
-              thumbColor={darkModeEnabled ? '#6366F1' : '#F4F5F7'}
+              trackColor={{ false: '#D1D5DB', true: `${YELLOW_COLOR}33` }}
+              thumbColor={darkModeEnabled ? YELLOW_COLOR : '#F4F5F7'}
             />
           </View>
         </View>
@@ -158,7 +162,7 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
             activeOpacity={0.7}
           >
             <View style={styles.settingIconWrapper}>
-              <View style={[styles.settingIcon, { backgroundColor: '#EF4444' }]}>
+              <View style={[styles.settingIcon, { backgroundColor: BLUE_COLOR }]}>
                 <Ionicons name="lock-closed" size={20} color="#FFFFFF" />
               </View>
             </View>
@@ -196,8 +200,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 21, android: 20 }),
-    fontWeight: '700',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#111827',
   },
   headerPlaceholder: {
@@ -240,18 +245,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   heroBadgeText: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.CAPTION_SMALL,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#F9FAFB',
     letterSpacing: 0.3,
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: FONT_SIZES.HEADING_LARGE,
     fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
     color: '#FFFFFF',
   },
   heroSubtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#E5E7EB',
   },
   sectionCard: {
@@ -265,8 +273,9 @@ const styles = StyleSheet.create({
     elevation: Platform.select({ ios: 0, android: 3 }),
   },
   sectionLabel: {
-    fontSize: Platform.select({ ios: 17, android: 16 }),
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#111827',
     marginBottom: Platform.select({ ios: 18, android: 16 }),
   },
@@ -289,12 +298,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: Platform.select({ ios: 17, android: 16 }),
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
   },
   settingSubtitle: {
-    fontSize: Platform.select({ ios: 14, android: 13 }),
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
     marginTop: 4,
   },

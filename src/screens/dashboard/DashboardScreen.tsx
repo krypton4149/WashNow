@@ -299,7 +299,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>Welcome to Car Wash,</Text>
+              <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>Welcome to Kwik Wash,</Text>
               <Text style={[styles.userNameText, { color: colors.text }]}>{firstName}</Text>
             </View>
             <TouchableOpacity style={styles.iconButton} onPress={onLogout}>
@@ -594,9 +594,9 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   recentBookingId: { 
-    fontSize: 18, 
-    fontWeight: '700',
-    fontFamily: 'Inter-Bold',
+    fontSize: 16, 
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#1A1A1A',
   },
   activityDivider: { height: 1, marginTop: 12 },

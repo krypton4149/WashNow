@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ImageBackground,
   Platform,
   ActivityIndicator,
   RefreshControl,
@@ -16,6 +15,11 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
 import authService from '../../services/authService';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
+const LIGHT_BLUE_BG = '#E3F2FD';
 
 interface OwnerActivityScreenProps {
   onBack?: () => void;
@@ -227,172 +231,145 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
     }
   };
 
-  const getToneStyles = (tone: Tone, highlight?: boolean) => {
-    if (tone === 'success') {
-      return {
-        container: highlight ? styles.cardSuccessHighlight : styles.cardSuccess,
-        iconBackground: '#D1FAE5',
-        iconColor: '#10B981',
-        dotColor: '#2563EB',
-      };
-    }
-    if (tone === 'info') {
-      return {
-        container: highlight ? styles.cardInfoHighlight : styles.cardInfo,
-        iconBackground: '#DBEAFE',
-        iconColor: '#2563EB',
-        dotColor: '#2563EB',
-      };
-    }
-    if (tone === 'danger') {
-      return {
-        container: styles.cardDanger,
-        iconBackground: '#FEE2E2',
-        iconColor: '#DC2626',
-        dotColor: '#2563EB',
-      };
-    }
-    if (tone === 'warning') {
-      return {
-        container: styles.cardWarning,
-        iconBackground: '#FEF3C7',
-        iconColor: '#F59E0B',
-        dotColor: '#2563EB',
-      };
-    }
+  const getToneStyles = (tone: Tone, isUnread?: boolean) => {
+    // Icon background: YELLOW_COLOR for unread, BLUE_COLOR for read
+    const iconBackground = isUnread ? YELLOW_COLOR : BLUE_COLOR;
+    const iconColor = '#FFFFFF';
+    
+    // Card background: blue for both read and unread (light blue)
+    const cardBackground = LIGHT_BLUE_BG;
+    
     return {
-      container: styles.cardPromo,
-      iconBackground: '#EDE9FE',
-      iconColor: '#7C3AED',
-      dotColor: '#2563EB',
+      container: { backgroundColor: cardBackground },
+      iconBackground,
+      iconColor,
+      dotColor: isUnread ? YELLOW_COLOR : 'transparent', // Yellow dot only for unread
     };
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+    <SafeAreaView style={styles.container} edges={platformEdges as any}>
+      <View style={styles.header}>
         {onBack ? (
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={24} color="#000000" />
           </TouchableOpacity>
         ) : (
           <View style={styles.backButtonPlaceholder} />
         )}
-        <View style={styles.headerTextGroup}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text style={styles.headerSubtitle}>
+            {unreadCount} {unreadCount === 1 ? 'unread notification' : 'unread notifications'}
           </Text>
         </View>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={handleMarkAllAsRead}>
-            <Text style={[styles.markAllReadText, { color: colors.button }]}>Mark all read</Text>
-        </TouchableOpacity>
-        )}
-      </View>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="never"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => loadAlerts(true)}
-            tintColor={colors.button}
-            colors={[colors.button]}
-          />
-        }
-      >
-        <ImageBackground
-          source={{
-            uri: 'https://images.unsplash.com/photo-1515923152115-758a6b16b743?auto=format&fit=crop&w=900&q=80',
-          }}
-          imageStyle={styles.bannerImage}
-          style={styles.banner}
+        <TouchableOpacity 
+          onPress={handleMarkAllAsRead} 
+          style={styles.markAllButton}
+          disabled={unreadCount === 0}
+          activeOpacity={0.7}
         >
-          <View style={styles.bannerOverlay} />
-          <View style={styles.bannerContent}>
-            <Text style={styles.bannerTitle}>Stay Updated</Text>
-            <Text style={styles.bannerSubtitle}>
-              Get real-time updates on your bookings
-            </Text>
-          </View>
-        </ImageBackground>
+          <Text style={[
+            styles.markAllReadText,
+            { 
+              color: unreadCount === 0 ? '#9CA3AF' : BLUE_COLOR,
+              opacity: unreadCount === 0 ? 0.5 : 1
+            }
+          ]}>
+            Mark all read
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* Notifications List */}
-        {isLoading && !isRefreshing ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.button} />
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading notifications...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
-            <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
-            <TouchableOpacity
-              style={[styles.retryButton, { backgroundColor: colors.button }]}
-              onPress={() => loadAlerts()}
-            >
-              <Text style={[styles.retryButtonText, { color: colors.buttonText }]}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : notifications.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="notifications-outline" size={64} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.text }]}>No notifications</Text>
-            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-              You're all caught up!
-            </Text>
-          </View>
-        ) : (
-        <View style={styles.notificationsList}>
-          {notifications.map((item) => {
-            const toneStyles = getToneStyles(item.tone, item.highlight);
-            return (
-                <TouchableOpacity
-                key={item.id}
-                style={[
-                  styles.notificationCard,
-                  toneStyles.container,
-                  { borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                  onPress={() => handleMarkAsRead(item)}
-                  activeOpacity={0.7}
-              >
-                <View style={styles.notificationLeft}>
-                  <View
-                    style={[
-                      styles.notificationIconWrapper,
-                      { backgroundColor: toneStyles.iconBackground },
-                    ]}
-                  >
-                    <Ionicons
-                        name={item.icon as any}
-                      size={20}
-                      color={toneStyles.iconColor}
-                    />
-                  </View>
-                  <View style={styles.notificationTextContainer}>
-                    <Text style={[styles.notificationTitle, { color: colors.text }]}>{item.title}</Text>
-                    <Text style={[styles.notificationMessage, { color: colors.textSecondary }]}>{item.message}</Text>
-                    <Text style={[styles.notificationTime, { color: colors.textSecondary }]}>{item.timeAgo}</Text>
-                  </View>
-                </View>
-                {!item.isRead && (
-                <View
-                  style={[
-                    styles.notificationDot,
-                      { backgroundColor: '#2563EB' },
-                  ]}
-                />
-                )}
-                </TouchableOpacity>
-            );
-          })}
+      {isLoading && !isRefreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={BLUE_COLOR} />
+          <Text style={styles.loadingText}>Loading notifications...</Text>
         </View>
-        )}
-      </ScrollView>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => loadAlerts()}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => loadAlerts(true)}
+              tintColor={BLUE_COLOR}
+              colors={[BLUE_COLOR]}
+            />
+          }
+        >
+          {notifications.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="notifications-outline" size={64} color="#9CA3AF" />
+              <Text style={styles.emptyText}>No Notifications</Text>
+              <Text style={styles.emptySubtext}>
+                You're all caught up! New notifications will appear here.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.notificationsList}>
+              {notifications.map((item) => {
+                const isUnread = !item.isRead;
+                const toneStyles = getToneStyles(item.tone, isUnread);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.notificationCard,
+                      toneStyles.container,
+                    ]}
+                    onPress={() => handleMarkAsRead(item)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.notificationContent}>
+                      <View
+                        style={[
+                          styles.notificationIconWrapper,
+                          { backgroundColor: toneStyles.iconBackground },
+                        ]}
+                      >
+                        <Ionicons
+                          name={item.icon as any}
+                          size={20}
+                          color={toneStyles.iconColor}
+                        />
+                      </View>
+                      <View style={styles.notificationTextContainer}>
+                        <View style={styles.titleRow}>
+                          <Text style={styles.notificationTitle}>{item.title}</Text>
+                          {isUnread && (
+                            <View
+                              style={[
+                                styles.notificationDot,
+                                { backgroundColor: toneStyles.dotColor },
+                              ]}
+                            />
+                          )}
+                        </View>
+                        <Text style={styles.notificationMessage}>{item.message}</Text>
+                        <Text style={styles.notificationTime}>{item.timeAgo}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
@@ -406,129 +383,78 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 10, android: 8 }),
-    paddingBottom: Platform.select({ ios: 14, android: 12 }),
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
   },
   backButton: {
+    padding: 4,
     width: 40,
     height: 40,
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   backButtonPlaceholder: {
     width: 40,
     height: 40,
   },
-  headerTextGroup: {
+  headerCenter: {
     flex: 1,
-    paddingHorizontal: 4,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 20, android: 18 }),
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '600',
-    color: '#0F172A',
+    marginBottom: 2,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    color: '#000000',
   },
   headerSubtitle: {
-    marginTop: 3,
-    fontSize: Platform.select({ ios: 13, android: 12 }),
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
+  markAllButton: {
+    padding: 4,
+    minWidth: 80,
+    alignItems: 'flex-end',
+  },
   markAllReadText: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.BUTTON_SMALL,
     fontWeight: '500',
-    color: '#2563EB',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 12, android: 10 }),
+    padding: 16,
     paddingBottom: Platform.select({ 
-      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
-      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+      ios: 80,
+      android: 70
     }),
   },
-  banner: {
-    height: 100,
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginBottom: 16,
-    justifyContent: 'flex-end',
-  },
-  bannerImage: {
-    borderRadius: 14,
-  },
-  bannerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.35)',
-  },
-  bannerContent: {
-    padding: 14,
-  },
-  bannerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  bannerSubtitle: {
-    fontSize: 13,
-    color: '#E2E8F0',
-    lineHeight: 18,
-  },
   notificationsList: {
-    gap: 10,
+    gap: 12,
   },
   notificationCard: {
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    padding: Platform.select({ ios: 16, android: 14 }),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     position: 'relative',
   },
-  cardSuccess: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#E5E7EB',
-  },
-  cardSuccessHighlight: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#E5E7EB',
-  },
-  cardInfo: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#E5E7EB',
-  },
-  cardInfoHighlight: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#E5E7EB',
-  },
-  cardWarning: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#E5E7EB',
-  },
-  cardDanger: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#E5E7EB',
-  },
-  cardPromo: {
-    backgroundColor: '#F9FAFB',
-    borderColor: '#E5E7EB',
-  },
-  notificationLeft: {
+  notificationContent: {
     flexDirection: 'row',
-    flex: 1,
-    gap: 12,
+    alignItems: 'flex-start',
   },
   notificationIconWrapper: {
     width: 44,
@@ -536,45 +462,54 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   notificationTextContainer: {
     flex: 1,
-    gap: 4,
   },
-  notificationTitle: {
-    fontSize: Platform.select({ ios: 16, android: 15 }),
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  notificationMessage: {
-    fontSize: Platform.select({ ios: 14, android: 13 }),
-    color: '#6B7280',
-    lineHeight: Platform.select({ ios: 20, android: 18 }),
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
+  notificationTitle: {
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
+    flex: 1,
+    marginBottom: 4,
+    fontFamily: FONTS.INTER_BOLD,
+    color: '#000000',
+  },
+  notificationMessage: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    lineHeight: 20,
+    marginBottom: 6,
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#6B7280',
+  },
   notificationTime: {
-    fontSize: 13,
-    fontWeight: '400',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#9CA3AF',
   },
   notificationDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    position: 'absolute',
-    top: 12,
-    right: 12,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginLeft: 8,
+    marginTop: 4,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 60,
-    gap: 16,
   },
   loadingText: {
-    fontSize: 16,
+    marginTop: 12,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
   errorContainer: {
@@ -585,34 +520,45 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     textAlign: 'center',
     paddingHorizontal: 32,
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#000000',
   },
   retryButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
     marginTop: 8,
+    backgroundColor: BLUE_COLOR,
   },
   retryButtonText: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#FFFFFF',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 80,
-    gap: 12,
+    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
-    color: '#111827',
+    marginTop: 16,
+    marginBottom: 8,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    color: '#6B7280',
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    textAlign: 'center',
+    lineHeight: 24,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
 });

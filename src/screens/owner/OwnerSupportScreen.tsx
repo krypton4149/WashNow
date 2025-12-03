@@ -17,6 +17,10 @@ import { platformEdges } from '../../utils/responsive';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { StatusBar } from 'react-native';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const YELLOW_COLOR = '#f4c901';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -253,7 +257,7 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
               onPress={onStartChat}
               activeOpacity={0.8}
             >
-              <View style={[styles.contactIcon, { backgroundColor: '#111827' }]}>
+              <View style={[styles.contactIcon, { backgroundColor: BLUE_COLOR }]}>
                 <Ionicons name="chatbubble-ellipses-outline" size={20} color="#FFFFFF" />
               </View>
               <View style={styles.contactContent}>
@@ -268,7 +272,7 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
               onPress={onContactEmail}
               activeOpacity={0.8}
             >
-              <View style={[styles.contactIcon, { backgroundColor: '#2563EB' }]}>
+              <View style={[styles.contactIcon, { backgroundColor: YELLOW_COLOR }]}>
                 <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
               </View>
               <View style={styles.contactContent}>
@@ -319,8 +323,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 21, android: 20 }),
-    fontWeight: '700',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#111827',
   },
   headerPlaceholder: {
@@ -340,11 +345,12 @@ const styles = StyleSheet.create({
   },
   tabButtonActive: {
     borderBottomWidth: 3,
-    borderBottomColor: '#111827',
+    borderBottomColor: BLUE_COLOR,
   },
   tabText: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#6B7280',
   },
   tabTextActive: {
@@ -380,17 +386,20 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: FONT_SIZES.HEADING_LARGE,
     fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
     color: '#FFFFFF',
   },
   heroSubtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#E5E7EB',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#111827',
     marginBottom: 8,
   },
@@ -418,16 +427,18 @@ const styles = StyleSheet.create({
   },
   faqQuestion: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
     paddingRight: 16,
   },
   faqAnswer: {
     paddingHorizontal: 20,
     paddingBottom: 18,
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     lineHeight: 21,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#4B5563',
   },
   contactCard: {
@@ -444,7 +455,8 @@ const styles = StyleSheet.create({
     gap: Platform.select({ ios: 20, android: 18 }) || 18,
   },
   contactDescription: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
   contactOption: {
@@ -464,12 +476,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
   },
   contactSubtitle: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
     marginTop: 4,
   },
@@ -488,26 +502,29 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   supportTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#111827',
   },
   supportSubtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
   chatButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111827',
+    backgroundColor: BLUE_COLOR,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 30,
     gap: 10,
   },
   chatButtonText: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#FFFFFF',
   },
   loadingContainer: {
@@ -521,7 +538,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
   errorContainer: {
@@ -535,7 +553,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#EF4444',
     textAlign: 'center',
   },
@@ -543,12 +562,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#111827',
+    backgroundColor: BLUE_COLOR,
     borderRadius: 20,
   },
   retryButtonText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BUTTON_SMALL,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#FFFFFF',
   },
   emptyContainer: {
@@ -562,7 +582,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
     textAlign: 'center',
   },

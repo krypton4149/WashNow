@@ -263,12 +263,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       >
         <View style={styles.topSection}>
           <ImageBackground
-            source={{
-              uri: 'https://images.unsplash.com/photo-1552930294-6b595f4c2974?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNoJTIwc2lnbnVwJTIwcHJlbWl1bXxlbnwxfHx8fDE3NjI0ODkwNTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
-            }}
+            source={require('../../assets/images/Car.png')}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
-            blurRadius={8}
+            blurRadius={0}
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
@@ -278,16 +276,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
               </View>
             </TouchableOpacity>
             
-            {/* App Logo */}
-            <View style={styles.logoContainer}>
-              <View style={styles.logo}>
-                <Image
-                  source={require('../../assets/images/logo.jpg')}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
           </ImageBackground>
         </View>
 
@@ -511,12 +499,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topSection: {
-    height: '28%',
+    height: '35%',
     position: 'relative',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3, 88, 168, 0.4)',
+    backgroundColor: 'rgba(3, 88, 168, 0.2)',
   },
   backButton: {
     position: 'absolute',
@@ -564,8 +552,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    marginTop: -10,
-    paddingTop: 50,
+    marginTop: -20,
+    paddingTop: 30,
     zIndex: 10,
   },
   scrollContent: {
@@ -579,12 +567,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.APP_TITLE_LARGE,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '600',
     color: '#1A1A1A',
     marginBottom: 8,
     textAlign: 'center',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.5,
   },
   subtitle: {
@@ -613,10 +601,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderWidth: 1.5,
     borderColor: '#D1D5DB',
-    minHeight: 44,
+    minHeight: 40,
   },
   inputFieldError: {
     borderColor: '#EF4444',

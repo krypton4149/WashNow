@@ -92,12 +92,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       >
         <View style={styles.topSection}>
           <ImageBackground
-            source={{
-              uri: 'https://images.unsplash.com/photo-1761934658038-d0e6792378b1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjB3YXNoJTIwY2xlYW4lMjBtb2Rlcm58ZW58MXx8fHwxNzYyNDUwMTQ2fDA&ixlib=rb-4.1.0&q=80&w=1080'
-            }}
+            source={require('../../assets/images/Car.png')}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
-            blurRadius={8}
+            blurRadius={0}
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
@@ -107,16 +105,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               </View>
             </TouchableOpacity>
             
-            {/* App Logo */}
-            <View style={styles.logoContainer}>
-              <View style={styles.logo}>
-                <Image
-                  source={require('../../assets/images/logo.jpg')}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
           </ImageBackground>
         </View>
 
@@ -130,7 +118,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             <View style={styles.formContainer}>
               {/* Header */}
               <View style={styles.header}>
-                <Text style={styles.title}>Welcome to CarWash </Text>
+                <Text style={styles.title}>Welcome to KwikWash </Text>
                 <Text style={styles.subtitle}>
                   Sign in to your account to continue
                 </Text>
@@ -262,12 +250,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topSection: {
-    height: '28%',
+    height: '35%',
     position: 'relative',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3, 88, 168, 0.4)',
+    backgroundColor: 'rgba(3, 88, 168, 0.2)',
   },
   backButton: {
     position: 'absolute',
@@ -315,8 +303,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    marginTop: -10,
-    paddingTop: 50,
+    marginTop: -20,
+    paddingTop: 30,
     zIndex: 10,
   },
   scrollContent: {
@@ -330,12 +318,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.APP_TITLE_LARGE,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '600',
     color: '#1A1A1A',
     marginBottom: 8,
     textAlign: 'center',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.5,
   },
   subtitle: {
@@ -364,10 +352,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderWidth: 1.5,
     borderColor: '#D1D5DB',
-    minHeight: 44,
+    minHeight: 40,
   },
   inputFieldError: {
     borderColor: '#EF4444',
