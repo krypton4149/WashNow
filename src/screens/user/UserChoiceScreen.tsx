@@ -64,8 +64,8 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             {/* Card Image */}
             <View style={styles.cardImageContainer}>
               <Image 
-                source={require('../../assets/images/Customer.jpeg')} 
-                style={styles.cardImage}
+                source={require('../../assets/images/Customer.png')} 
+                style={styles.customerCardImage}
                 resizeMode="contain"
               />
             </View>
@@ -213,16 +213,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 150,
     position: 'relative',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     flex: 0,
     overflow: 'hidden',
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingBottom: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 0,
   },
   cardImage: {
     width: '110%',
+    height: '100%',
+  },
+  customerCardImage: {
+    width: '100%',
     height: '100%',
   },
   cardImagePlaceholder: {

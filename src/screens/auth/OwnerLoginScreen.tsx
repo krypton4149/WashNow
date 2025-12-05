@@ -15,11 +15,10 @@ import {
   ImageBackground,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { API_BASE_URL } from '../../services/api';
-import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -37,6 +36,7 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
   onSendOTP,
   onForgotPassword,
 }) => {
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -179,13 +179,13 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
   const isFormValid = email.trim().length > 0 && password.trim().length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
+    <View style={styles.container}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.topSection}>
+        <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <ImageBackground
             source={require('../../assets/images/Car.png')}
             style={StyleSheet.absoluteFillObject}
@@ -194,7 +194,10 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
-            <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <TouchableOpacity 
+              style={[styles.backButton, { top: insets.top + 10 }]} 
+              onPress={onBack}
+            >
               <View style={styles.backButtonCircle}>
                 <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
               </View>
@@ -315,7 +318,7 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -337,7 +340,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: Platform.select({ ios: 54, android: 50 }),
     left: Platform.select({ ios: 22, android: 20 }),
     zIndex: 10,
   },

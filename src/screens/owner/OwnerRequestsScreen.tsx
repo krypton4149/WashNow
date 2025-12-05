@@ -18,6 +18,7 @@ import authService from '../../services/authService';
 import apiClient from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { StatusBar } from 'react-native';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -726,7 +727,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.surface} translucent={false} />
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: '#FFFFFF', paddingTop: insets.top + 2 }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: '#FFFFFF', paddingTop: Platform.OS === 'ios' ? 10 : 10 }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
@@ -802,7 +803,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
 
                 <View style={styles.infoRow}>
                   <View style={styles.infoIcon}>
-                    <Ionicons name="car-outline" size={20} color={BLUE_COLOR} />
+                    <Ionicons name="car-outline" size={18} color={BLUE_COLOR} />
                   </View>
                   <View style={styles.infoText}>
                       <Text style={styles.infoLabel}>VEHICLE</Text>
@@ -852,7 +853,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                         <ActivityIndicator size="small" color="#1A1A1A" />
                       ) : (
                         <>
-                          <Ionicons name="close" size={16} color="#1A1A1A" />
+                          <Ionicons name="close" size={14} color="#1A1A1A" />
                           <Text style={styles.declineText}>Decline</Text>
                         </>
                       )}
@@ -870,7 +871,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                         <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
                         <>
-                          <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                          <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                           <Text style={styles.acceptText}>Accept</Text>
                         </>
                       )}
@@ -909,11 +910,12 @@ const styles = StyleSheet.create({
   headerTextGroup: {
     flex: 1,
     paddingHorizontal: 4,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    fontFamily: 'Montserrat-Bold',
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#1A1A1A',
   },
   headerSubtitle: {
@@ -942,7 +944,7 @@ const styles = StyleSheet.create({
   requestCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 18,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000000',
@@ -950,23 +952,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
-    marginBottom: 16,
+    marginBottom: 14,
+    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 14,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
   customerName: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '500',
     fontFamily: 'Montserrat-SemiBold',
     color: '#1A1A1A',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   timeAgo: {
     fontSize: 12,
@@ -974,7 +977,7 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   statusBadge: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
@@ -986,37 +989,42 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 14,
+    backgroundColor: '#FAFBFC',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   infoIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: 'rgba(3, 88, 168, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   infoText: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 12,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#666666',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  infoValue: {
-    fontSize: 15,
-    fontWeight: '400',
-    fontFamily: 'Inter-Regular',
-    color: '#1A1A1A',
     marginBottom: 4,
   },
-  infoSubValue: {
+  infoValue: {
     fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    color: '#1A1A1A',
+    marginBottom: 2,
+  },
+  infoSubValue: {
+    fontSize: 13,
     fontFamily: 'Inter-Regular',
     color: '#666666',
   },
@@ -1027,30 +1035,30 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 14,
   },
   metaPill: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   metaLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#666666',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   metaValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'Inter-Bold',
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     color: '#1A1A1A',
   },
   notesContainer: {
@@ -1058,40 +1066,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(3, 88, 168, 0.2)',
     backgroundColor: 'rgba(3, 88, 168, 0.05)',
-    padding: 14,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 14,
   },
   notesLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     fontFamily: 'Inter-Medium',
     color: BLUE_COLOR,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   notesValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: '#1A1A1A',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    paddingTop: 16,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
   amountLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#666666',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   amountValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
     color: '#1A1A1A',
   },
   footerActions: {
@@ -1102,11 +1110,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
     borderWidth: 1,
-    minWidth: 100,
+    minWidth: 90,
     justifyContent: 'center',
   },
   actionChipDisabled: {
@@ -1121,15 +1129,15 @@ const styles = StyleSheet.create({
     backgroundColor: BLUE_COLOR,
   },
   declineText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     color: '#1A1A1A',
   },
   acceptText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     color: '#FFFFFF',
   },
   stateContainer: {

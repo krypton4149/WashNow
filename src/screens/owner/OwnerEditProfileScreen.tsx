@@ -11,10 +11,9 @@ import {
   Switch,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
-import { platformEdges } from '../../utils/responsive';
+import { StatusBar } from 'react-native';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -320,16 +319,18 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer} edges={platformEdges as any}>
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#111827" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Ionicons name="arrow-back" size={24} color="#111827" />
@@ -462,7 +463,7 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
           )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -482,7 +483,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
-    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    paddingTop: Platform.OS === 'ios' ? 10 : 10,
+    paddingBottom: Platform.select({ ios: 14, android: 12 }),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E7EB',
   },
@@ -493,7 +495,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#111827',

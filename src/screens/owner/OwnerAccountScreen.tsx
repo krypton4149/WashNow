@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import OwnerEditProfileScreen from './OwnerEditProfileScreen';
 import { useTheme } from '../../context/ThemeContext';
-import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -278,10 +276,10 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       {/* Blue Gradient Header */}
       <View style={styles.headerGradient}>
-        <View style={styles.gradientOverlay} />
         <View style={styles.headerNav}>
           {onBack && (
             <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
@@ -311,7 +309,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           <View style={styles.profileHeader}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <Ionicons name="storefront" size={40} color="#FFFFFF" />
+                <Ionicons name="storefront" size={60} color="#FFFFFF" />
               </View>
             </View>
             <Text style={styles.businessName}>{business.name}</Text>
@@ -431,31 +429,23 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: BLUE_COLOR,
+    marginTop: 0,
+    paddingTop: 0,
   },
   headerGradient: {
-    backgroundColor: DARK_BLUE,
-    paddingTop: Platform.select({ ios: 10, android: 8 }),
-    paddingBottom: 24,
-    paddingHorizontal: 16,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  gradientOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     backgroundColor: BLUE_COLOR,
-    opacity: 0.3,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
+    paddingBottom: 30,
+    paddingHorizontal: 16,
+    marginTop: 0,
   },
   headerNav: {
     flexDirection: 'row',
@@ -479,7 +469,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#FFFFFF',
@@ -514,14 +504,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   avatarContainer: {
-    marginBottom: 12,
+    marginBottom: 16,
+    marginTop: 8,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'transparent',
-    borderWidth: 3,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 4,
     borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -553,6 +544,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -561,6 +553,7 @@ const styles = StyleSheet.create({
       ios: 80,
       android: 70
     }),
+    backgroundColor: '#F5F5F5',
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',

@@ -11,9 +11,7 @@ import {
   ImageBackground,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { platformEdges } from '../../utils/responsive';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { StatusBar } from 'react-native';
@@ -121,7 +119,8 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
   const { colors } = useTheme();
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={!onBack}>
           <Ionicons
@@ -130,7 +129,9 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
             color={onBack ? '#111827' : '#D1D5DB'}
           />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help & Support</Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle}>Help & Support</Text>
+        </View>
         <View style={styles.headerPlaceholder} />
       </View>
       <View style={styles.tabRow}>
@@ -297,7 +298,7 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -309,9 +310,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
-    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 14,
+    paddingBottom: Platform.select({ ios: 12, android: 10 }),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E7EB',
@@ -321,9 +322,14 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
+    padding: 4,
+  },
+  headerTitleRow: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#111827',

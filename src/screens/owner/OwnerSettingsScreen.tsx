@@ -9,11 +9,9 @@ import {
   ImageBackground,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
-import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -79,7 +77,8 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={[styles.container, dynamicStyles.container]} edges={platformEdges as any}>
+    <View style={[styles.container, dynamicStyles.container]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <View style={[styles.header, dynamicStyles.header]}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={!onBack}>
           <Ionicons
@@ -88,7 +87,9 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
             color={onBack ? colors.text : colors.textSecondary}
           />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Settings</Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Settings</Text>
+        </View>
         <View style={styles.headerPlaceholder} />
       </View>
       <ScrollView
@@ -174,7 +175,7 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -186,9 +187,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
-    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 14,
+    paddingBottom: Platform.select({ ios: 12, android: 10 }),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E7EB',
@@ -198,9 +199,14 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
+    padding: 4,
+  },
+  headerTitleRow: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#111827',

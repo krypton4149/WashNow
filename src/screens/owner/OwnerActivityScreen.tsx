@@ -9,11 +9,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
-import { platformEdges } from '../../utils/responsive';
 import authService from '../../services/authService';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
@@ -248,7 +247,8 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       <View style={styles.header}>
         {onBack ? (
           <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
@@ -370,7 +370,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
           )}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -384,7 +384,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: Platform.OS === 'ios' ? 10 : 10,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
@@ -405,7 +406,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
     marginBottom: 2,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,

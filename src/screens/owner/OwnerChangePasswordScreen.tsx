@@ -13,8 +13,8 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
+import { StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -137,15 +137,15 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
     onToggleVisibility: () => void
   ) => (
     <View style={styles.inputContainer}>
-      <Text style={[styles.inputLabel, { color: colors.text }]}>{label}</Text>
-      <View style={[styles.inputWrapper, { borderColor: colors.border }]}>
-        <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.inputWrapper}>
+        <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" />
         <TextInput
-          style={[styles.textInput, { color: colors.text }]}
+          style={styles.textInput}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={colors.textSecondary}
+          placeholderTextColor="#9CA3AF"
           secureTextEntry={!showPassword}
           autoCapitalize="none"
           autoCorrect={false}
@@ -154,7 +154,7 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
           <Ionicons
             name={showPassword ? 'eye-off-outline' : 'eye-outline'}
             size={20}
-            color={colors.textSecondary}
+            color="#9CA3AF"
           />
         </TouchableOpacity>
       </View>
@@ -174,17 +174,21 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#000000" translucent={false} />
+      <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Change Password</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            Update your password to keep your account secure.
-          </Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle}>Change Password</Text>
         </View>
+        <View style={styles.backButton} />
+      </View>
+      <View style={styles.headerSubtitleContainer}>
+        <Text style={styles.headerSubtitle}>
+          Update your password to keep your account secure.
+        </Text>
       </View>
       <ScrollView 
         style={styles.scrollView}
@@ -210,18 +214,7 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
           () => setShowNewPassword(!showNewPassword)
         )}
 
-        {/* Password Requirements */}
-        {newPassword.length > 0 && (
-          <View style={[styles.requirementsContainer, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.requirementsTitle, { color: colors.text }]}>
-              Password must contain:
-            </Text>
-            {renderRequirement('At least 8 characters', passwordRequirements.minLength)}
-            {renderRequirement('One uppercase letter', passwordRequirements.hasUppercase)}
-            {renderRequirement('One lowercase letter', passwordRequirements.hasLowercase)}
-            {renderRequirement('One number', passwordRequirements.hasNumber)}
-          </View>
-        )}
+        {/* Password Requirements - Hidden in the image, so we'll keep it minimal or remove */}
 
         {renderPasswordInput(
           'Confirm New Password',
@@ -233,32 +226,32 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
         )}
 
         {/* Security Tip */}
-        <View style={[styles.securityTipContainer, { backgroundColor: colors.surface }]}>
-          <Ionicons name="information-circle-outline" size={20} color={colors.primary || '#3B82F6'} />
-          <Text style={[styles.securityTipText, { color: colors.textSecondary }]}>
+        <View style={styles.securityTipContainer}>
+          <Ionicons name="information-circle-outline" size={20} color="#3B82F6" />
+          <Text style={styles.securityTipText}>
             Use a strong, unique password that you don't use for other accounts. Consider using a password manager.
           </Text>
         </View>
       </ScrollView>
 
       {/* Bottom Section */}
-      <View style={[styles.bottomContainer, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
+      <View style={styles.bottomContainer}>
         <TouchableOpacity
           style={[
             styles.updateButton,
             { 
-              backgroundColor: (isFormValid() && !isLoading) ? BLUE_COLOR : colors.border 
+              backgroundColor: (isFormValid() && !isLoading) ? BLUE_COLOR : '#D1D5DB' 
             }
           ]}
           onPress={handleUpdatePassword}
           disabled={!isFormValid() || isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color={colors.buttonText || '#FFFFFF'} />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={[
               styles.updateButtonText,
-              { color: (isFormValid() && !isLoading) ? (colors.buttonText || '#FFFFFF') : colors.textSecondary }
+              { color: (isFormValid() && !isLoading) ? '#FFFFFF' : '#6B7280' }
             ]}>
               Update Password
             </Text>
@@ -272,30 +265,47 @@ const OwnerChangePasswordScreen: React.FC<Props> = ({ onBack, onPasswordChanged,
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
-    paddingVertical: Platform.select({ ios: 12, android: 10 }),
-    borderBottomWidth: 1,
+    paddingTop: Platform.select({ ios: 12, android: 10 }),
+    paddingBottom: Platform.select({ ios: 8, android: 6 }),
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     padding: 4,
-    marginRight: 16,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
-  headerContent: {
+  headerTitleRow: {
     flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    color: '#1A1A1A',
+  },
+  headerSubtitleContainer: {
+    paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
+    paddingTop: Platform.select({ ios: 4, android: 4 }),
+    paddingBottom: Platform.select({ ios: 12, android: 10 }),
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
   },
   headerSubtitle: {
     fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
-    marginTop: 2,
+    color: '#6B7280',
   },
   inputContainer: {
     marginBottom: 20,
@@ -305,21 +315,26 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     marginBottom: 8,
+    color: '#1A1A1A',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderRadius: Platform.select({ ios: 10, android: 8 }),
-    paddingHorizontal: Platform.select({ ios: 14, android: 12 }),
-    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 12,
+    minHeight: 48,
   },
   textInput: {
     flex: 1,
     fontSize: FONT_SIZES.BODY_LARGE,
     fontFamily: FONTS.INTER_REGULAR,
     paddingVertical: 0,
+    color: '#1A1A1A',
   },
   eyeButton: {
     padding: 4,
@@ -328,12 +343,14 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 20,
+    backgroundColor: '#F9FAFB',
   },
   requirementsTitle: {
     fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     marginBottom: 12,
+    color: '#1A1A1A',
   },
   requirementRow: {
     flexDirection: 'row',
@@ -347,44 +364,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    backgroundColor: '#E5E7EB',
   },
   requirementText: {
     fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
+    color: '#6B7280',
   },
   securityTipContainer: {
     flexDirection: 'row',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     gap: 12,
     marginBottom: 20,
+    backgroundColor: '#F3F4F6',
   },
   securityTipText: {
     flex: 1,
     fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
     lineHeight: 20,
+    color: '#6B7280',
   },
   bottomContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,
     paddingTop: 16,
-    borderTopWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
   },
   scrollView: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   content: {
     paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
     paddingTop: Platform.select({ ios: 16, android: 14 }),
     paddingBottom: Platform.select({ 
-      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
-      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
+      ios: 100,
+      android: 90
     }),
   },
   updateButton: {
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    paddingVertical: Platform.select({ ios: 18, android: 16 }),
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },

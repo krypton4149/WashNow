@@ -110,11 +110,14 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
   };
 
   const bottomPadding = Math.max(8, Math.min(insets.bottom || 0, 18));
+  
+  // For dashboard (home tab) and account tab, don't apply top safe area so blue header can extend to top
+  const safeAreaEdges = (activeTab === 'home' || activeTab === 'account') ? ['bottom'] : ['top', 'bottom'];
 
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background || '#FFFFFF' }]}
-      edges={['top', 'bottom']}
+      edges={safeAreaEdges}
     >
       <View style={styles.content}>{renderContent()}</View>
       <View style={[styles.tabBar, { paddingBottom: bottomPadding, backgroundColor: colors.card || '#FFFFFF', borderTopColor: colors.border || '#E5E7EB' }]}>

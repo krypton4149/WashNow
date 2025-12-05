@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ImageBackground,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -194,10 +195,8 @@ const ProfileScreen: React.FC<Props> = ({
   const memberSinceDate = getMemberSinceDate();
 
   return (
-    <SafeAreaView 
-      style={[styles.container, { backgroundColor: '#FFFFFF' }]} 
-      edges={['top', 'bottom']}
-    >
+    <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       {/* Blurred Background Section at Top */}
       <View style={styles.topBackgroundSection}>
         <ImageBackground
@@ -246,6 +245,7 @@ const ProfileScreen: React.FC<Props> = ({
         </View>
       </View>
 
+      <SafeAreaView style={styles.safeAreaBottom} edges={['bottom']}>
       <ScrollView 
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
@@ -345,7 +345,8 @@ const ProfileScreen: React.FC<Props> = ({
           onTabChange={onTabChange} 
         />
       )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -353,20 +354,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    marginTop: 0,
+    paddingTop: 0,
   },
   topBackgroundSection: {
     width: '100%',
     minHeight: 220,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
     paddingBottom: 20,
     position: 'relative',
     overflow: 'hidden',
+    marginTop: 0,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   header: {
-    paddingTop: 12,
+    paddingTop: 0,
     paddingBottom: 16,
     paddingHorizontal: 20,
   },
@@ -396,6 +401,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  safeAreaBottom: {
+    flex: 1,
+  },
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 24,
@@ -414,16 +422,16 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   profileImageWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     backgroundColor: '#374151',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   profileInitials: {
-    fontSize: FONT_SIZES.NUMBER_LARGE,
+    fontSize: 32,
     fontWeight: '700',
     letterSpacing: 1,
     color: '#FFFFFF',
@@ -643,10 +651,10 @@ const styles = StyleSheet.create({
   },
   editProfileButtonText: {
     fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
+    fontWeight: '500',
     marginLeft: 8,
     letterSpacing: 0.3,
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   bottomSpacing: {
     minHeight: 20,

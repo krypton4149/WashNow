@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
@@ -79,6 +80,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   // Get user's first name for welcome message
   const firstName = userData?.fullName?.split(' ')[0] || 'User';
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   
   // State for bookings data
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -293,270 +295,213 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={[styles.welcomeText, { color: colors.textSecondary }]}>Welcome to Kwik Wash,</Text>
-              <Text style={[styles.userNameText, { color: colors.text }]}>{firstName}</Text>
-            </View>
-            <TouchableOpacity style={styles.iconButton} onPress={onLogout}>
-              <Ionicons name="log-out-outline" size={22} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-        </View>
+    <View style={styles.container}>
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
-        {/* Summary Cards */}
-        <View style={styles.summaryCards}>
-          <View style={[styles.summaryCard, styles.summaryCardGradient]}>
-            <View style={styles.gradientBackground} />
-            <View style={styles.gradientOverlay} />
-            <View style={styles.summaryCardContent}>
-              <View style={styles.summaryIconWrapBlue}>
-                <Ionicons name="calendar-outline" size={22} color="#FFFFFF" />
-              </View>
-              <Text style={styles.summaryNumberWhite}>
-                {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : totalBookings}
-              </Text>
-              <Text style={styles.summaryLabelWhite}>Total Bookings</Text>
-            </View>
+      {/* BLUE HEADER WITH CURVE */}
+      <View style={[styles.headerSection, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.headerTop}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.welcomeText}>Welcome to Kwik Wash,</Text>
+            <Text style={styles.userNameText}>{firstName}</Text>
           </View>
-          
-          <View style={[styles.summaryCard, styles.summaryCardYellow]}>
-            <View style={styles.summaryIconWrapYellow}>
-              <Ionicons name="time-outline" size={22} color="#FFFFFF" />
-            </View>
-            <Text style={styles.summaryNumberWhite}>
-              {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : currentRequests}
-            </Text>
-            <Text style={styles.summaryLabelWhite}>Current Request</Text>
-          </View>
-          
-          <View style={[styles.summaryCard, styles.summaryCardGradient]}>
-            <View style={styles.gradientBackground} />
-            <View style={styles.gradientOverlay} />
-            <View style={styles.summaryCardContent}>
-              <View style={styles.summaryIconWrapBlue}>
-                <Ionicons name="checkmark-done-outline" size={22} color="#FFFFFF" />
-              </View>
-              <Text style={styles.summaryNumberWhite}>
-                {isLoading ? <ActivityIndicator size="small" color="#FFFFFF" /> : completedBookings}
-              </Text>
-              <Text style={styles.summaryLabelWhite}>Completed</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Book a Car Wash Button */}
-        <View style={styles.bookButtonContainer}>
-          <TouchableOpacity style={styles.bookButton} onPress={onBookWash} activeOpacity={0.8}>
-            <Text style={styles.bookButtonText}>Book a car wash</Text>
+          <TouchableOpacity style={styles.iconButton} onPress={onLogout}>
+            <Ionicons name="log-out-outline" size={25} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        {/* Recent Activity Section */}
-        <View style={styles.activitySection}>
-          <View style={styles.activityHeader}>
-            <Text style={styles.activitySectionTitle}>Recent Activity</Text>
-            <TouchableOpacity onPress={onViewAll} style={styles.seeAllButton}>
-              <Text style={styles.seeAllText}>See all</Text>
-              <Ionicons name="chevron-forward" size={16} color={BLUE_COLOR} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.activityList}>
+        {/* Metric Cards */}
+        <View style={styles.metricsRow}>
+          <View style={styles.metricCard}>
+            <Ionicons name="calendar-outline" color="#fff" size={22} />
             {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.text} />
-                <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading recent activity...</Text>
-              </View>
-            ) : recentActivities.length > 0 ? (
-              recentActivities.map(renderActivityItem)
+              <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: 4 }} />
             ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No recent activity</Text>
-                <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Book your first car wash to see activity here</Text>
-              </View>
+              <Text style={styles.metricValue}>{totalBookings}</Text>
             )}
+            <Text style={styles.metricLabel}>Total</Text>
+          </View>
+
+          <View style={styles.metricCard}>
+            <Ionicons name="time-outline" color={YELLOW_COLOR} size={22} />
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: 4 }} />
+            ) : (
+              <Text style={styles.metricValue}>{currentRequests}</Text>
+            )}
+            <Text style={styles.metricLabel}>Pending</Text>
+          </View>
+
+          <View style={styles.metricCard}>
+            <Ionicons name="checkmark-circle-outline" color="#fff" size={22} />
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: 4 }} />
+            ) : (
+              <Text style={styles.metricValue}>{completedBookings}</Text>
+            )}
+            <Text style={styles.metricLabel}>Done</Text>
           </View>
         </View>
+      </View>
+
+      {/* WHITE CONTENT */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Yellow Banner */}
+        <TouchableOpacity
+          style={styles.banner}
+          onPress={onBookWash}
+          activeOpacity={0.8}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bannerTitle}>Book a Car Wash</Text>
+            <Text style={styles.bannerSubtitle}>
+              Schedule your next car wash service
+            </Text>
+          </View>
+          <Ionicons name="car-outline" size={24} color="#1A1A1A" />
+        </TouchableOpacity>
+
+        {/* Recent Activity Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <TouchableOpacity style={styles.seeAllBtn} onPress={onViewAll}>
+            <Text style={styles.seeAllText}>See all</Text>
+            <Ionicons name="chevron-forward" size={16} color={BLUE_COLOR} />
+          </TouchableOpacity>
+        </View>
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={BLUE_COLOR} />
+            <Text style={styles.loadingText}>Loading recent activity...</Text>
+          </View>
+        ) : recentActivities.length > 0 ? (
+          recentActivities.map(renderActivityItem)
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No recent activity</Text>
+            <Text style={styles.emptySubtext}>Book your first car wash to see activity here</Text>
+          </View>
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerIcons: { flexDirection: 'row', gap: 12 },
-  iconButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  welcomeText: { 
-    fontSize: 13, 
-    marginBottom: 2,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
-  },
-  userNameText: { 
-    fontSize: 28, 
-    fontWeight: '700',
-    fontFamily: 'Montserrat-Bold',
-    color: '#1A1A1A',
-  },
-  summaryCards: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 24,
-  },
-  summaryCard: {
+  container: {
     flex: 1,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  summaryCardGradient: {
-    backgroundColor: 'rgba(3, 88, 168, 0.9)',
-  },
-  gradientBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(3, 88, 168, 0.9)',
-  },
-  gradientOverlay: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: '70%',
-    height: '70%',
-    backgroundColor: 'rgba(2, 132, 199, 0.9)',
-    borderTopRightRadius: 16,
-    borderBottomLeftRadius: 16,
-  },
-  summaryCardContent: {
-    position: 'relative',
-    zIndex: 1,
-    alignItems: 'center',
-    width: '100%',
-  },
-  summaryCardBlue: {
     backgroundColor: BLUE_COLOR,
   },
-  summaryCardYellow: {
-    backgroundColor: YELLOW_COLOR,
-  },
-  summaryIconWrapBlue: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: 8,
-  },
-  summaryIconWrapYellow: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginBottom: 8,
-  },
-  summaryNumberWhite: { 
-    fontSize: 22, 
-    fontWeight: '700', 
-    marginVertical: 6,
-    color: '#FFFFFF',
-    fontFamily: 'Inter-Bold',
-  },
-  summaryLabelWhite: { 
-    fontSize: 13, 
-    textAlign: 'center',
-    color: '#FFFFFF',
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
-  },
-  bookButtonContainer: {
-    marginHorizontal: 20,
-    marginBottom: 32,
-    alignItems: 'center',
-  },
-  bookButton: {
-    width: '100%',
-    maxWidth: 400,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerSection: {
     backgroundColor: BLUE_COLOR,
-    shadowColor: BLUE_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    paddingHorizontal: 20,
+    paddingBottom: 25,
+    borderBottomLeftRadius: 35,
+    borderBottomRightRadius: 35,
   },
-  bookButtonText: { 
-    fontSize: 16, 
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    fontFamily: 'Inter-SemiBold',
-  },
-  activitySection: { paddingHorizontal: 20 },
-  activityHeader: {
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 15,
   },
-  activitySectionTitle: { 
-    fontSize: 20, 
-    fontWeight: '600',
-    color: '#1A1A1A',
-    fontFamily: 'Montserrat-SemiBold',
-    letterSpacing: -0.3,
+  welcomeText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
   },
-  seeAllButton: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 4,
+  userNameText: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'Montserrat-Bold',
   },
-  seeAllText: { 
-    fontSize: 15, 
-    fontWeight: '600',
-    color: BLUE_COLOR,
-    fontFamily: 'Inter-SemiBold',
+  iconButton: {
+    padding: 6,
   },
-  activityList: { gap: 12, paddingBottom: 20 },
-  activityItem: {
-    borderRadius: 12,
+  metricsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 5,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  metricValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
+    color: '#fff',
+    marginVertical: 4,
+  },
+  metricLabel: {
+    color: '#fff',
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    opacity: 0.9,
+  },
+  content: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: 20,
+  },
+  banner: {
+    marginHorizontal: 20,
+    backgroundColor: YELLOW_COLOR,
     padding: 16,
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  bannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+    color: '#1A1A1A',
+    marginBottom: 3,
+  },
+  bannerSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: '#1A1A1A',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 14,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: 'Montserrat-SemiBold',
+  },
+  seeAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  seeAllText: {
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+    color: BLUE_COLOR,
+    marginRight: 4,
+  },
+  activityItem: {
+    marginHorizontal: 20,
+    backgroundColor: '#fff',
+    borderRadius: 14,
     borderWidth: 1,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderColor: '#E5E7EB',
+    padding: 12,
+    marginBottom: 8,
   },
   activityContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   activityInfo: { flex: 1 },
@@ -655,26 +600,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
   },
-  loadingContainer: { alignItems: 'center', paddingVertical: 40 },
-  loadingText: { 
-    fontSize: 14, 
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
     marginTop: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#666666',
   },
-  emptyContainer: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { 
-    fontSize: 16, 
-    fontWeight: '500', 
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
     marginBottom: 8,
-    fontFamily: 'Inter-Medium',
-    color: '#1A1A1A',
   },
-  emptySubtext: { 
-    fontSize: 14, 
-    textAlign: 'center',
+  emptySubtext: {
+    fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#666666',
+    color: '#666',
+    textAlign: 'center',
   },
 });
 

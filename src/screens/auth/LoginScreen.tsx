@@ -15,9 +15,8 @@ import {
   Image,
   ImageBackground,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -37,6 +36,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   onForgotPassword,
   onRegister,
 }) => {
+  const insets = useSafeAreaInsets();
   const [loginType, setLoginType] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -84,13 +84,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const isFormValid = email.trim().length > 0 && password.trim().length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
+    <View style={styles.container}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.topSection}>
+        <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <ImageBackground
             source={require('../../assets/images/Car.png')}
             style={StyleSheet.absoluteFillObject}
@@ -99,7 +99,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
-            <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <TouchableOpacity 
+              style={[styles.backButton, { top: insets.top + 10 }]} 
+              onPress={onBack}
+            >
               <View style={styles.backButtonCircle}>
                 <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
               </View>
@@ -237,7 +240,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -259,7 +262,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: Platform.select({ ios: 54, android: 50 }),
     left: Platform.select({ ios: 22, android: 20 }),
     zIndex: 10,
   },
