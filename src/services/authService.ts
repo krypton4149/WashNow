@@ -528,6 +528,7 @@ class AuthService {
     booking_time: string;
     vehicle_no: string;
     notes?: string;
+    service_id?: string;
   }): Promise<{ success: boolean; bookingId?: string; error?: string }> {
     try {
       const token = await this.getToken();
@@ -542,6 +543,9 @@ class AuthService {
       formData.append('vehicle_no', bookingData.vehicle_no);
       if (bookingData.notes) {
         formData.append('notes', bookingData.notes);
+      }
+      if (bookingData.service_id) {
+        formData.append('service_id', bookingData.service_id);
       }
 
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/booknow`, {

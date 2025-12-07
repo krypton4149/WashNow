@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Platform, Modal, Image, FlatList } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
@@ -39,6 +39,14 @@ const PaymentScreen: React.FC<Props> = ({
   const [vehicleNumberError, setVehicleNumberError] = useState('');
   const { colors } = useTheme();
 
+  // Service center and service selection states
+  const [serviceCenters, setServiceCenters] = useState<any[]>([]);
+  const [selectedServiceCenter, setSelectedServiceCenter] = useState<any>(null);
+  const [selectedService, setSelectedService] = useState<any>(null);
+  const [showCenterDropdown, setShowCenterDropdown] = useState(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [loadingCenters, setLoadingCenters] = useState(false);
+
   const formatDate = (d: Date) => {
     const day = d.getDate().toString().padStart(2, '0');
     const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -75,6 +83,54 @@ const PaymentScreen: React.FC<Props> = ({
     }
     // If format not recognized, return as is
     return timeStr;
+  };
+
+  // Fetch service centers on mount
+  useEffect(() => {
+    fetchServiceCenters();
+    
+    // Set initial service center from props if available
+    if (bookingData?.center) {
+      setSelectedServiceCenter(bookingData.center);
+    } else if (acceptedCenter?.id) {
+      setSelectedServiceCenter(acceptedCenter);
+    }
+  }, []);
+
+  const fetchServiceCenters = async () => {
+    setLoadingCenters(true);
+    try {
+      const result = await authService.getServiceCenters();
+      if (result.success && result.serviceCenters) {
+        setServiceCenters(result.serviceCenters);
+        
+        // If we have a center from props, find it in the list
+        const centerId = bookingData?.center?.id || acceptedCenter?.id;
+        if (centerId) {
+          const foundCenter = result.serviceCenters.find((sc: any) => sc.id === centerId || String(sc.id) === String(centerId));
+          if (foundCenter) {
+            setSelectedServiceCenter(foundCenter);
+          }
+        }
+      } else {
+        Alert.alert('Error', result.error || 'Failed to load service centers');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to load service centers');
+    } finally {
+      setLoadingCenters(false);
+    }
+  };
+
+  const handleServiceCenterSelect = (center: any) => {
+    setSelectedServiceCenter(center);
+    setSelectedService(null); // Reset selected service when center changes
+    setShowCenterDropdown(false);
+  };
+
+  const handleServiceSelect = (service: any) => {
+    setSelectedService(service);
+    setShowServiceDropdown(false);
   };
 
   const validateVehicleNumber = (): boolean => {
@@ -123,8 +179,20 @@ const PaymentScreen: React.FC<Props> = ({
           bookingTime = getCurrentTime(now);
         }
         
-        // Use center from bookingData if available (scheduled) or acceptedCenter (instant)
-        const centerId = bookingData?.center?.id || acceptedCenter?.id;
+        // Use center from selectedServiceCenter or bookingData or acceptedCenter
+        const centerId = selectedServiceCenter?.id || bookingData?.center?.id || acceptedCenter?.id;
+        
+        if (!centerId) {
+          Alert.alert('Error', 'Please select a service center.');
+          setIsProcessing(false);
+          return;
+        }
+
+        if (!selectedService?.id) {
+          Alert.alert('Error', 'Please select a service.');
+          setIsProcessing(false);
+          return;
+        }
         
         const payload = {
           service_centre_id: String(centerId),
@@ -132,6 +200,7 @@ const PaymentScreen: React.FC<Props> = ({
           booking_time: bookingTime,
           vehicle_no: vehicleNumber.trim(),
           notes: notes?.trim() ? notes.trim() : 'Payment method: Cash',
+          service_id: String(selectedService.id),
         };
 
         console.log('PaymentScreen: Calling bookNow API with payload:', JSON.stringify(payload, null, 2));
@@ -157,7 +226,21 @@ const PaymentScreen: React.FC<Props> = ({
           return;
         }
 
-        // Simulate card / wallet payment
+        // Validate service center and service for card/wallet payment
+        const centerId = selectedServiceCenter?.id || bookingData?.center?.id || acceptedCenter?.id;
+        if (!centerId) {
+          Alert.alert('Error', 'Please select a service center.');
+          setIsProcessing(false);
+          return;
+        }
+
+        if (!selectedService?.id) {
+          Alert.alert('Error', 'Please select a service.');
+          setIsProcessing(false);
+          return;
+        }
+
+        // Determine if this is a scheduled booking or instant booking
         const isScheduledBooking = bookingData?.date && bookingData?.time;
         
         let bookingDate: Date;
@@ -166,7 +249,7 @@ const PaymentScreen: React.FC<Props> = ({
         if (isScheduledBooking && bookingData.date && bookingData.time) {
           // Use scheduled date and time
           bookingDate = new Date(bookingData.date);
-          bookingTime = bookingData.time;
+          bookingTime = convertTimeTo24Hour(bookingData.time);
         } else {
           // Use current date and time for instant booking
           const now = new Date();
@@ -174,14 +257,30 @@ const PaymentScreen: React.FC<Props> = ({
           bookingTime = getCurrentTime(now);
         }
         
-        const randomId = Math.floor(10000 + Math.random() * 90000);
-        const bookingId = `B${randomId.toString().padStart(5, '0')}`;
-        // Pass booking date and time (either scheduled or current for instant)
-        const bookingDataForResponse = {
-          date: bookingDate.toISOString(),
-          time: bookingTime,
+        const payload = {
+          service_centre_id: String(centerId),
+          booking_date: formatDate(bookingDate),
+          booking_time: bookingTime,
+          vehicle_no: vehicleNumber.trim(),
+          notes: notes?.trim() || '',
+          service_id: String(selectedService.id),
         };
-        onPaymentSuccess?.(bookingId, bookingDataForResponse);
+
+        console.log('PaymentScreen: Calling bookNow API with payload:', JSON.stringify(payload, null, 2));
+        
+        const result = await authService.bookNow(payload);
+        if (result.success) {
+          const bookingId = result.bookingId || 'N/A';
+          // Pass booking date and time (either scheduled or current for instant)
+          const bookingDataForResponse = {
+            date: bookingDate.toISOString(),
+            time: isScheduledBooking && bookingData?.time ? bookingData.time : getCurrentTime(bookingDate),
+          };
+          onPaymentSuccess?.(bookingId, bookingDataForResponse);
+        } else {
+          Alert.alert('Booking Failed', result.error || 'Please try again later.');
+          setIsProcessing(false);
+        }
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to process payment.');
@@ -209,11 +308,15 @@ const PaymentScreen: React.FC<Props> = ({
           <Text style={[styles.serviceTitle, { color: colors.text }]}>Service Details</Text>
           <View style={styles.serviceRow}>
             <Ionicons name="car" size={20} color={BLUE_COLOR} />
-            <Text style={[styles.serviceText, { color: colors.textSecondary }]}>Car Wash Service</Text>
+            <Text style={[styles.serviceText, { color: colors.textSecondary }]}>
+              {selectedService ? selectedService.name : 'Car Wash Service'}
+            </Text>
           </View>
           <View style={styles.serviceRow}>
             <Ionicons name="location" size={20} color={BLUE_COLOR} />
-            <Text style={[styles.serviceText, { color: colors.textSecondary }]}>{acceptedCenter.name}</Text>
+            <Text style={[styles.serviceText, { color: colors.textSecondary }]}>
+              {selectedServiceCenter?.name || acceptedCenter.name}
+            </Text>
           </View>
           <View style={styles.serviceRow}>
             <Ionicons name="time" size={20} color={BLUE_COLOR} />
@@ -223,6 +326,101 @@ const PaymentScreen: React.FC<Props> = ({
                 : 'Service starts immediately'}
             </Text>
           </View>
+        </View>
+
+        {/* Service Center Selection */}
+        <View style={[styles.serviceCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.serviceTitle, { color: colors.text }]}>Select Service Center</Text>
+          <TouchableOpacity
+            style={[
+              styles.dropdownButton,
+              { 
+                borderColor: BLUE_COLOR + '50', 
+                backgroundColor: colors.surface 
+              }
+            ]}
+            onPress={() => setShowCenterDropdown(true)}
+            disabled={loadingCenters}
+          >
+            <Text style={[
+              styles.dropdownButtonText,
+              { color: selectedServiceCenter ? colors.text : colors.textSecondary }
+            ]}>
+              {loadingCenters 
+                ? 'Loading centers...' 
+                : selectedServiceCenter 
+                  ? selectedServiceCenter.name 
+                  : 'Select Service Center'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color={BLUE_COLOR} />
+          </TouchableOpacity>
+
+          {/* Service Selection - Show when center is selected */}
+          {selectedServiceCenter && selectedServiceCenter.services_offered && selectedServiceCenter.services_offered.length > 0 && (
+            <>
+              <Text style={[styles.serviceTitle, { color: colors.text, marginTop: 16 }]}>Select Service</Text>
+              <TouchableOpacity
+                style={[
+                  styles.dropdownButton,
+                  { 
+                    borderColor: BLUE_COLOR + '50', 
+                    backgroundColor: colors.surface 
+                  }
+                ]}
+                onPress={() => setShowServiceDropdown(true)}
+              >
+                <Text style={[
+                  styles.dropdownButtonText,
+                  { color: selectedService ? colors.text : colors.textSecondary }
+                ]}>
+                  {selectedService 
+                    ? `${selectedService.name} - $${selectedService.offer_price || selectedService.price}` 
+                    : 'Select Service'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={BLUE_COLOR} />
+              </TouchableOpacity>
+
+              {/* Selected Service Details */}
+              {selectedService && (
+                <View style={[styles.selectedServiceCard, { backgroundColor: colors.surface, borderColor: BLUE_COLOR + '30' }]}>
+                  {selectedService.image && (
+                    <Image 
+                      source={{ 
+                        uri: selectedService.image.startsWith('http') 
+                          ? selectedService.image 
+                          : `https://carwashapp.shoppypie.in/${selectedService.image}` 
+                      }} 
+                      style={styles.serviceImage}
+                      resizeMode="cover"
+                    />
+                  )}
+                  <View style={styles.selectedServiceInfo}>
+                    <Text style={[styles.selectedServiceName, { color: colors.text }]}>{selectedService.name}</Text>
+                    {selectedService.description && (
+                      <Text style={[styles.selectedServiceDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {selectedService.description}
+                      </Text>
+                    )}
+                    <View style={styles.priceContainer}>
+                      {selectedService.offer_price ? (
+                        <>
+                          <Text style={[styles.offerPrice, { color: BLUE_COLOR }]}>${selectedService.offer_price}</Text>
+                          <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>${selectedService.price}</Text>
+                        </>
+                      ) : (
+                        <Text style={[styles.offerPrice, { color: BLUE_COLOR }]}>${selectedService.price}</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+          {selectedServiceCenter && (!selectedServiceCenter.services_offered || selectedServiceCenter.services_offered.length === 0) && (
+            <Text style={[styles.noServicesText, { color: colors.textSecondary }]}>
+              No services available for this center
+            </Text>
+          )}
         </View>
 
         {/* Vehicle Details - Show for all payment methods */}
@@ -339,28 +537,158 @@ const PaymentScreen: React.FC<Props> = ({
         </View>
 
         {/* Payment Summary (hidden for Cash) */}
-        {selectedPaymentMethod !== 'cash' && (
+        {selectedPaymentMethod !== 'cash' && selectedService && (
           <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
             <Text style={[styles.summaryTitle, { color: colors.text }]}>Payment Summary</Text>
             
             <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Car Wash Service</Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>$25.00</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{selectedService.name}</Text>
+              <Text style={[styles.summaryValue, { color: colors.text }]}>
+                ${selectedService.offer_price || selectedService.price}
+              </Text>
             </View>
             
-            <View style={styles.summaryRow}>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Service Fee</Text>
-              <Text style={[styles.summaryValue, { color: colors.text }]}>$2.50</Text>
-            </View>
+            {selectedService.offer_price && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Original Price</Text>
+                <Text style={[styles.summaryValue, { color: colors.textSecondary, textDecorationLine: 'line-through' }]}>
+                  ${selectedService.price}
+                </Text>
+              </View>
+            )}
             
             <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryTotalLabel, { color: colors.text }]}>Total Amount</Text>
-              <Text style={[styles.summaryTotalValue, { color: colors.text }]}>$27.50</Text>
+              <Text style={[styles.summaryTotalValue, { color: colors.text }]}>
+                ${selectedService.offer_price || selectedService.price}
+              </Text>
             </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Service Center Dropdown Modal */}
+      <Modal
+        visible={showCenterDropdown}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCenterDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCenterDropdown(false)}
+        >
+          <View 
+            style={[styles.modalContent, { backgroundColor: colors.card }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Service Center</Text>
+              <TouchableOpacity onPress={() => setShowCenterDropdown(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={serviceCenters}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.modalItem,
+                    { borderBottomColor: colors.border },
+                    selectedServiceCenter?.id === item.id && { backgroundColor: BLUE_COLOR + '10' }
+                  ]}
+                  onPress={() => handleServiceCenterSelect(item)}
+                >
+                  <View style={styles.modalItemContent}>
+                    <Text style={[styles.modalItemTitle, { color: colors.text }]}>{item.name}</Text>
+                    {item.address && (
+                      <Text style={[styles.modalItemSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {item.address}
+                      </Text>
+                    )}
+                  </View>
+                  {selectedServiceCenter?.id === item.id && (
+                    <Ionicons name="checkmark-circle" size={24} color={BLUE_COLOR} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Service Dropdown Modal */}
+      <Modal
+        visible={showServiceDropdown}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowServiceDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowServiceDropdown(false)}
+        >
+          <View 
+            style={[styles.modalContent, { backgroundColor: colors.card }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Service</Text>
+              <TouchableOpacity onPress={() => setShowServiceDropdown(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {selectedServiceCenter?.services_offered && selectedServiceCenter.services_offered.length > 0 ? (
+              <FlatList
+                data={selectedServiceCenter.services_offered}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.modalItem,
+                      { borderBottomColor: colors.border },
+                      selectedService?.id === item.id && { backgroundColor: BLUE_COLOR + '10' }
+                    ]}
+                    onPress={() => handleServiceSelect(item)}
+                  >
+                    <View style={styles.modalItemContent}>
+                      <Text style={[styles.modalItemTitle, { color: colors.text }]}>{item.name}</Text>
+                      {item.description && (
+                        <Text style={[styles.modalItemSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
+                          {item.description}
+                        </Text>
+                      )}
+                      <View style={styles.priceContainer}>
+                        {item.offer_price ? (
+                          <>
+                            <Text style={[styles.offerPrice, { color: BLUE_COLOR }]}>${item.offer_price}</Text>
+                            <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>${item.price}</Text>
+                          </>
+                        ) : (
+                          <Text style={[styles.offerPrice, { color: BLUE_COLOR }]}>${item.price}</Text>
+                        )}
+                      </View>
+                    </View>
+                    {selectedService?.id === item.id && (
+                      <Ionicons name="checkmark-circle" size={24} color={BLUE_COLOR} />
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                  No services available
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Pay Button */}
       <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: BLUE_COLOR + '30' }]}>
@@ -368,16 +696,20 @@ const PaymentScreen: React.FC<Props> = ({
           style={[
             styles.payButton, 
             { backgroundColor: BLUE_COLOR }, 
-            (isProcessing || !vehicleNumber.trim()) && styles.payButtonDisabled
+            (isProcessing || !vehicleNumber.trim() || !selectedServiceCenter || !selectedService) && styles.payButtonDisabled
           ]} 
           onPress={handlePayment}
-          disabled={isProcessing || !vehicleNumber.trim()}
+          disabled={isProcessing || !vehicleNumber.trim() || !selectedServiceCenter || !selectedService}
         >
           {isProcessing ? (
             <Text style={[styles.payButtonText, { color: '#FFFFFF' }]}>Processing...</Text>
           ) : (
             <Text style={[styles.payButtonText, { color: '#FFFFFF' }]}>
-              {selectedPaymentMethod === 'cash' ? 'Confirm Cash Payment' : 'Pay $27.50'}
+              {selectedPaymentMethod === 'cash' 
+                ? 'Confirm Cash Payment' 
+                : selectedService 
+                  ? `Pay $${selectedService.offer_price || selectedService.price}`
+                  : 'Pay'}
             </Text>
           )}
         </TouchableOpacity>
@@ -587,6 +919,123 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.5,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  dropdownButtonText: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    flex: 1,
+  },
+  selectedServiceCard: {
+    flexDirection: 'row',
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  serviceImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  selectedServiceInfo: {
+    flex: 1,
+  },
+  selectedServiceName: {
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    marginBottom: 4,
+  },
+  selectedServiceDescription: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    marginBottom: 8,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  offerPrice: {
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
+  },
+  originalPrice: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    textDecorationLine: 'line-through',
+    fontFamily: FONTS.INTER_REGULAR,
+  },
+  noServicesText: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  modalTitle: {
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalItemContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  modalItemTitle: {
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    marginBottom: 4,
+  },
+  modalItemSubtitle: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    marginTop: 4,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
   },
 });
 

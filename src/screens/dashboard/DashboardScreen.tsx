@@ -86,6 +86,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [serviceCenters, setServiceCenters] = useState<any[]>([]);
 
   // 🧩 Helper functions defined BEFORE use
   const formatBookingTime = (bookingDate: string, createdAt: string) => {
@@ -147,10 +148,35 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return { backgroundColor: 'rgba(107, 114, 128, 0.15)', color: '#6B7280' };
   };
 
-  // Load bookings data
+  // Load bookings data and service centers
   useEffect(() => {
+    loadServiceCenters();
     loadBookings();
   }, []);
+
+  const loadServiceCenters = async () => {
+    try {
+      const result = await authService.getServiceCenters();
+      if (result.success && result.serviceCenters) {
+        setServiceCenters(result.serviceCenters);
+      }
+    } catch (error) {
+      console.error('Error loading service centers:', error);
+    }
+  };
+
+  // Find service center name by ID
+  const getServiceCenterName = (serviceCentreId: number | string): string => {
+    if (!serviceCenters.length) {
+      return `Service Center ${serviceCentreId}`;
+    }
+    
+    const center = serviceCenters.find(
+      (sc: any) => sc.id === Number(serviceCentreId) || String(sc.id) === String(serviceCentreId)
+    );
+    
+    return center?.name || `Service Center ${serviceCentreId}`;
+  };
 
   const loadBookings = async () => {
     try {
@@ -194,7 +220,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     .slice(0, 3)
     .map(booking => ({
       id: booking.booking_id,
-      title: `Service Center ${booking.service_centre_id}`,
+      title: getServiceCenterName(booking.service_centre_id),
       serviceType: booking.service_type,
       time: formatBookingTime(booking.booking_date, booking.created_at),
       status: mapBookingStatus(booking.status),

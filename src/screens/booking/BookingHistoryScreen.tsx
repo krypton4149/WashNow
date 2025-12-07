@@ -15,6 +15,10 @@ interface Booking {
   visitor_id: number;
   service_centre_id: number;
   service_type: string;
+  service_id?: number;
+  service_name?: string;
+  service_price?: string;
+  service_offer_price?: string;
   vehicle_no: string;
   booking_date: string;
   booking_time: string;
@@ -24,6 +28,17 @@ interface Booking {
   tenant_id: number;
   created_at: string;
   updated_at: string;
+  service_centre?: {
+    id: number;
+    name: string;
+    address?: string;
+  };
+  service?: {
+    id: number;
+    name: string;
+    price: string;
+    offer_price?: string;
+  };
 }
 
 interface Props {
@@ -36,11 +51,46 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [serviceCenters, setServiceCenters] = useState<any[]>([]);
 
-  // Load bookings from API
+  // Load bookings and service centers from API
   useEffect(() => {
+    loadServiceCenters();
     loadBookings();
   }, []);
+
+  // Load service centers to match with bookings
+  const loadServiceCenters = async () => {
+    try {
+      const result = await authService.getServiceCenters();
+      if (result.success && result.serviceCenters) {
+        setServiceCenters(result.serviceCenters);
+      }
+    } catch (error) {
+      console.error('Error loading service centers:', error);
+    }
+  };
+
+  // Find service details from service centers based on service_id and service_centre_id
+  const findServiceDetails = (serviceId: number | string | undefined, serviceCentreId: number | string | undefined) => {
+    if (!serviceId || !serviceCentreId || !serviceCenters.length) {
+      return null;
+    }
+
+    const center = serviceCenters.find(
+      (sc: any) => sc.id === Number(serviceCentreId) || String(sc.id) === String(serviceCentreId)
+    );
+
+    if (!center || !center.services_offered || !Array.isArray(center.services_offered)) {
+      return null;
+    }
+
+    const service = center.services_offered.find(
+      (s: any) => s.id === Number(serviceId) || String(s.id) === String(serviceId)
+    );
+
+    return service || null;
+  };
 
   const loadBookings = async () => {
     try {
@@ -90,18 +140,107 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   const getBookingDisplayData = (booking: Booking) => {
     console.log('Processing booking:', JSON.stringify(booking, null, 2));
     
+    // Try to find service details from service centers
+    // Check multiple possible field names for service_id
+    const serviceId = 
+      booking.service_id || 
+      booking.service?.id || 
+      (booking as any).service_id ||
+      (booking as any).serviceId ||
+      (booking as any).service?.id;
+    
+    const serviceCentreId = booking.service_centre_id || (booking as any).service_centre_id || (booking as any).serviceCentreId;
+    
+    // First try to find from service centers, then use booking data
+    let matchedService = findServiceDetails(serviceId, serviceCentreId);
+    
+    // If not found in service centers but we have service data in booking, use that
+    if (!matchedService && booking.service) {
+      matchedService = {
+        id: booking.service.id,
+        name: booking.service.name,
+        price: booking.service.price,
+        offer_price: booking.service.offer_price
+      };
+    }
+    
+    // Update serviceId if we found it from matched service
+    const finalServiceId = serviceId || matchedService?.id;
+    
+    console.log('Service matching:', {
+      serviceId,
+      serviceCentreId,
+      matchedService: matchedService ? { name: matchedService.name, price: matchedService.price, offer_price: matchedService.offer_price } : null,
+      serviceCentersCount: serviceCenters.length
+    });
+    
+    // Extract service information - prioritize matched service from service centers
+    const serviceName = 
+      matchedService?.name ||
+      booking.service?.name || 
+      booking.service_name || 
+      (booking as any).service_name ||
+      booking.service_type || 
+      'Car Wash Service';
+    
+    const servicePrice = 
+      matchedService?.price ||
+      booking.service?.price || 
+      booking.service_price ||
+      (booking as any).service_price;
+    
+    const serviceOfferPrice = 
+      matchedService?.offer_price ||
+      booking.service?.offer_price || 
+      booking.service_offer_price ||
+      (booking as any).service_offer_price;
+    
+    // Calculate total price (use offer_price if available, otherwise use price)
+    let totalPrice = '$25.00'; // Default fallback
+    if (serviceOfferPrice) {
+      try {
+        totalPrice = `$${parseFloat(String(serviceOfferPrice)).toFixed(2)}`;
+      } catch (e) {
+        console.error('Error parsing offer price:', e);
+      }
+    } else if (servicePrice) {
+      try {
+        totalPrice = `$${parseFloat(String(servicePrice)).toFixed(2)}`;
+      } catch (e) {
+        console.error('Error parsing price:', e);
+      }
+    }
+    
+    // Get service center name - try to find from service centers list
+    let centerName = booking.service_centre?.name || `Service Center ${booking.service_centre_id}`;
+    let centerAddress = booking.service_centre?.address || `Service Center ${booking.service_centre_id} Location`;
+    
+    if (serviceCenters.length > 0) {
+      const center = serviceCenters.find(
+        (sc: any) => sc.id === Number(serviceCentreId) || String(sc.id) === String(serviceCentreId)
+      );
+      if (center) {
+        centerName = center.name || centerName;
+        centerAddress = center.address || centerAddress;
+      }
+    }
+    
     const displayData = {
       id: booking.booking_id || booking.id.toString(),
-      name: `Service Center ${booking.service_centre_id}`, // We'll need to get center name from another API
+      name: centerName,
+      serviceName: serviceName,
       type: booking.service_type || 'Car Wash',
       date: formatDate(booking.booking_date),
       time: formatTime(booking.booking_time),
       dateTime: `${formatDate(booking.booking_date)} • ${formatTime(booking.booking_time)}`,
       status: mapBookingStatus(booking.status),
-      total: '$25.00', // Default amount since it's not in the API response
+      total: totalPrice,
+      servicePrice: servicePrice ? String(servicePrice) : undefined,
+      serviceOfferPrice: serviceOfferPrice ? String(serviceOfferPrice) : undefined,
+      serviceId: finalServiceId ? String(finalServiceId) : undefined,
       vehicle_no: booking.vehicle_no,
       notes: booking.notes,
-      address: `Service Center ${booking.service_centre_id} Location`, // Default address
+      address: centerAddress,
       duration: getDuration(booking.booking_date, booking.booking_time),
     };
     
@@ -381,6 +520,14 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
               <View style={styles.cardContent}>
                 <Text style={[styles.serviceName, { color: colors.text }]}>{booking.name}</Text>
                 
+                {/* Service Name */}
+                {booking.serviceName && (
+                  <View style={styles.serviceNameRow}>
+                    <Ionicons name="sparkles-outline" size={16} color={BLUE_COLOR} />
+                    <Text style={[styles.serviceNameText, { color: colors.text }]}>{booking.serviceName}</Text>
+                  </View>
+                )}
+                
                 {/* Date/Time in Pill - Different colors based on status */}
                 <View style={[
                   styles.dateTimePill, 
@@ -423,6 +570,16 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                     Booking ID: {booking.id}
                   </Text>
                 </View>
+                
+                {/* Service ID */}
+                {booking.serviceId && (
+                  <View style={styles.infoRow}>
+                    <Ionicons name="pricetag-outline" size={16} color={colors.textSecondary} />
+                    <Text style={[styles.infoTextBold, { color: colors.text }]}>
+                      Service ID: {booking.serviceId}
+                    </Text>
+                  </View>
+                )}
               </View>
               
               {/* Separator */}
@@ -432,7 +589,19 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
               <View style={styles.cardFooter}>
                 <View style={styles.totalSection}>
                   <Text style={[styles.cardTotalLabel, { color: colors.textSecondary }]}>Total Amount</Text>
-                  <Text style={[styles.cardTotalPrice, { color: colors.text }]}>{booking.total}</Text>
+                  <View style={styles.priceRow}>
+                    {booking.serviceOfferPrice && booking.servicePrice && 
+                     parseFloat(String(booking.serviceOfferPrice)) < parseFloat(String(booking.servicePrice)) ? (
+                      <>
+                        <Text style={[styles.cardTotalPrice, { color: colors.text }]}>{booking.total}</Text>
+                        <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>
+                          ${parseFloat(String(booking.servicePrice)).toFixed(2)}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={[styles.cardTotalPrice, { color: colors.text }]}>{booking.total}</Text>
+                    )}
+                  </View>
                 </View>
                 {booking.status === 'In Progress' && (
                   <TouchableOpacity
@@ -609,8 +778,20 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: FONT_SIZES.HEADING_SMALL,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 8,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
+  },
+  serviceNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  serviceNameText: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    flex: 1,
   },
   serviceType: {
     fontSize: 14,
@@ -675,10 +856,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontFamily: FONTS.INTER_MEDIUM,
   },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   cardTotalPrice: {
     fontSize: FONT_SIZES.NUMBER_MEDIUM,
     fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
+  },
+  originalPrice: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    textDecorationLine: 'line-through',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   cancelButtonFooter: {
     backgroundColor: '#FEE2E2',
