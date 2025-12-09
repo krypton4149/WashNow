@@ -44,6 +44,7 @@ interface BookingRequestCard {
   };
   scheduled: string;
   service: string;
+  serviceId?: string | number;
   notes?: string;
   amount: string;
 }
@@ -310,6 +311,7 @@ const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
       booking?.service_type,
       booking?.serviceType
     ),
+    serviceId: booking?.service_id || booking?.serviceId || booking?.service?.id,
     notes: notes || undefined,
     amount: formatAmount(booking),
   };
@@ -827,6 +829,14 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                   </View>
                 </View>
 
+                {request.serviceId && (
+                  <View style={styles.serviceIdRow}>
+                    <Ionicons name="pricetag-outline" size={16} color={BLUE_COLOR} />
+                    <Text style={styles.serviceIdLabel}>Service ID:</Text>
+                    <Text style={styles.serviceIdValue}>{request.serviceId}</Text>
+                  </View>
+                )}
+
                 {request.notes ? (
                   <View style={styles.notesContainer}>
                     <Text style={styles.notesLabel}>Customer Notes</Text>
@@ -943,25 +953,25 @@ const styles = StyleSheet.create({
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    marginBottom: 14,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    marginBottom: 16,
     overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 14,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    marginBottom: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1.5,
     borderBottomColor: '#F3F4F6',
   },
   customerName: {
@@ -989,18 +999,18 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 14,
+    marginBottom: 16,
     backgroundColor: '#FAFBFC',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
   },
   infoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(3, 88, 168, 0.1)',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(3, 88, 168, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1041,10 +1051,10 @@ const styles = StyleSheet.create({
   metaPill: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
   },
   metaLabel: {
@@ -1060,6 +1070,29 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'Inter-Medium',
     color: '#1A1A1A',
+  },
+  serviceIdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(3, 88, 168, 0.05)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(3, 88, 168, 0.15)',
+  },
+  serviceIdLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: '#666666',
+  },
+  serviceIdValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+    color: BLUE_COLOR,
   },
   notesContainer: {
     borderRadius: 12,

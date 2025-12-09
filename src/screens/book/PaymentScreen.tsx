@@ -40,10 +40,8 @@ const PaymentScreen: React.FC<Props> = ({
   const { colors } = useTheme();
 
   // Service center and service selection states
-  const [serviceCenters, setServiceCenters] = useState<any[]>([]);
   const [selectedServiceCenter, setSelectedServiceCenter] = useState<any>(null);
   const [selectedService, setSelectedService] = useState<any>(null);
-  const [showCenterDropdown, setShowCenterDropdown] = useState(false);
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [loadingCenters, setLoadingCenters] = useState(false);
 
@@ -85,47 +83,36 @@ const PaymentScreen: React.FC<Props> = ({
     return timeStr;
   };
 
-  // Fetch service centers on mount
+  // Fetch service center details on mount
   useEffect(() => {
-    fetchServiceCenters();
-    
-    // Set initial service center from props if available
-    if (bookingData?.center) {
-      setSelectedServiceCenter(bookingData.center);
-    } else if (acceptedCenter?.id) {
-      setSelectedServiceCenter(acceptedCenter);
+    // Set initial service center from props
+    const initialCenter = bookingData?.center || acceptedCenter;
+    if (initialCenter) {
+      setSelectedServiceCenter(initialCenter);
+      // Fetch service centers to get services_offered for the selected center
+      fetchServiceCenterDetails(initialCenter.id);
     }
   }, []);
 
-  const fetchServiceCenters = async () => {
+  const fetchServiceCenterDetails = async (centerId: number | string) => {
     setLoadingCenters(true);
     try {
       const result = await authService.getServiceCenters();
       if (result.success && result.serviceCenters) {
-        setServiceCenters(result.serviceCenters);
-        
-        // If we have a center from props, find it in the list
-        const centerId = bookingData?.center?.id || acceptedCenter?.id;
-        if (centerId) {
-          const foundCenter = result.serviceCenters.find((sc: any) => sc.id === centerId || String(sc.id) === String(centerId));
-          if (foundCenter) {
-            setSelectedServiceCenter(foundCenter);
-          }
+        // Find the selected center in the list to get its services_offered
+        const foundCenter = result.serviceCenters.find(
+          (sc: any) => sc.id === Number(centerId) || String(sc.id) === String(centerId)
+        );
+        if (foundCenter) {
+          // Update the selected center with full details including services_offered
+          setSelectedServiceCenter(foundCenter);
         }
-      } else {
-        Alert.alert('Error', result.error || 'Failed to load service centers');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load service centers');
+      console.error('Error loading service center details:', error);
     } finally {
       setLoadingCenters(false);
     }
-  };
-
-  const handleServiceCenterSelect = (center: any) => {
-    setSelectedServiceCenter(center);
-    setSelectedService(null); // Reset selected service when center changes
-    setShowCenterDropdown(false);
   };
 
   const handleServiceSelect = (service: any) => {
@@ -328,32 +315,26 @@ const PaymentScreen: React.FC<Props> = ({
           </View>
         </View>
 
-        {/* Service Center Selection */}
+        {/* Service Center Display (Read-only) */}
         <View style={[styles.serviceCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.serviceTitle, { color: colors.text }]}>Select Service Center</Text>
-          <TouchableOpacity
-            style={[
-              styles.dropdownButton,
-              { 
-                borderColor: BLUE_COLOR + '50', 
-                backgroundColor: colors.surface 
-              }
-            ]}
-            onPress={() => setShowCenterDropdown(true)}
-            disabled={loadingCenters}
-          >
+          <Text style={[styles.serviceTitle, { color: colors.text }]}>Service Center</Text>
+          <View style={[
+            styles.serviceCenterDisplay,
+            { 
+              borderColor: BLUE_COLOR + '30', 
+              backgroundColor: colors.surface 
+            }
+          ]}>
+            <Ionicons name="location" size={20} color={BLUE_COLOR} />
             <Text style={[
-              styles.dropdownButtonText,
+              styles.serviceCenterDisplayText,
               { color: selectedServiceCenter ? colors.text : colors.textSecondary }
             ]}>
-              {loadingCenters 
-                ? 'Loading centers...' 
-                : selectedServiceCenter 
-                  ? selectedServiceCenter.name 
-                  : 'Select Service Center'}
+              {selectedServiceCenter 
+                ? selectedServiceCenter.name 
+                : acceptedCenter?.name || 'Service Center'}
             </Text>
-            <Ionicons name="chevron-down" size={20} color={BLUE_COLOR} />
-          </TouchableOpacity>
+          </View>
 
           {/* Service Selection - Show when center is selected */}
           {selectedServiceCenter && selectedServiceCenter.services_offered && selectedServiceCenter.services_offered.length > 0 && (
@@ -567,58 +548,6 @@ const PaymentScreen: React.FC<Props> = ({
           </View>
         )}
       </ScrollView>
-
-      {/* Service Center Dropdown Modal */}
-      <Modal
-        visible={showCenterDropdown}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowCenterDropdown(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCenterDropdown(false)}
-        >
-          <View 
-            style={[styles.modalContent, { backgroundColor: colors.card }]}
-            onStartShouldSetResponder={() => true}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Service Center</Text>
-              <TouchableOpacity onPress={() => setShowCenterDropdown(false)}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={serviceCenters}
-              keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    { borderBottomColor: colors.border },
-                    selectedServiceCenter?.id === item.id && { backgroundColor: BLUE_COLOR + '10' }
-                  ]}
-                  onPress={() => handleServiceCenterSelect(item)}
-                >
-                  <View style={styles.modalItemContent}>
-                    <Text style={[styles.modalItemTitle, { color: colors.text }]}>{item.name}</Text>
-                    {item.address && (
-                      <Text style={[styles.modalItemSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {item.address}
-                      </Text>
-                    )}
-                  </View>
-                  {selectedServiceCenter?.id === item.id && (
-                    <Ionicons name="checkmark-circle" size={24} color={BLUE_COLOR} />
-                  )}
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Service Dropdown Modal */}
       <Modal
@@ -931,6 +860,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   dropdownButtonText: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    flex: 1,
+  },
+  serviceCenterDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginTop: 8,
+    gap: 12,
+  },
+  serviceCenterDisplayText: {
     fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
     flex: 1,
