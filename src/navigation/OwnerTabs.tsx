@@ -37,6 +37,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
         return (
           <OwnerDashboardScreen
             onLogout={onLogout}
+            onViewAll={() => setActiveTab('requests')}
             onViewAllActivity={() => setActiveTab('activity')}
             onBookingRequestPress={() => setActiveTab('requests')}
             businessName={userData?.businessName || 'Premium Auto Wash'}

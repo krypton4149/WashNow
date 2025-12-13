@@ -21,8 +21,9 @@ const CACHE_DURATION = {
   LOGIN_RESPONSE: 300000, // 5 minutes - cache login response
 };
 
-// Request timeout (reduced for faster failures and retries)
-const REQUEST_TIMEOUT = 10000; // 10 seconds
+// Request timeout - increased for better reliability on slower connections
+const REQUEST_TIMEOUT = 20000; // 20 seconds
+const MAX_RETRIES = 2; // Maximum number of retry attempts for failed requests
 
 class AuthService {
   // Store authentication token
@@ -139,8 +140,13 @@ class AuthService {
     }
   }
 
-  // Helper method for fetch with timeout
-  private async fetchWithTimeout(url: string, options: RequestInit, timeout: number = REQUEST_TIMEOUT): Promise<Response> {
+  // Helper method for fetch with timeout and retry logic
+  private async fetchWithTimeout(
+    url: string, 
+    options: RequestInit, 
+    timeout: number = REQUEST_TIMEOUT,
+    retries: number = MAX_RETRIES
+  ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
@@ -159,16 +165,36 @@ class AuthService {
       return response;
     } catch (error: any) {
       clearTimeout(timeoutId);
+      
+      // Check if it's a timeout or network error that can be retried
+      const isRetryableError = 
+        error.name === 'AbortError' || 
+        error.message?.includes('Network') ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('Failed to fetch');
+      
+      // Retry logic for network errors
+      if (isRetryableError && retries > 0) {
+        console.log(`Retrying request (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})...`);
+        // Wait a bit before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (MAX_RETRIES - retries + 1)));
+        return this.fetchWithTimeout(url, options, timeout, retries - 1);
+      }
+      
+      // Handle specific error types
       if (error.name === 'AbortError') {
         throw new Error('Request timeout. Please check your internet connection.');
       }
+      
       // Handle network errors (no response, connection refused, etc.)
       if (error.message && error.message.includes('Network')) {
         throw error;
       }
+      
       if (!error.response && !error.status) {
         throw new Error('Network Error - Please check your internet connection');
       }
+      
       throw error;
     }
   }
@@ -237,7 +263,7 @@ class AuthService {
         return { success: true, token: mockToken, user: mockUser };
       }
 
-      // Regular email login with timeout
+      // Regular email login with timeout and retry
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/login`, {
         method: 'POST',
         headers: {
@@ -250,7 +276,23 @@ class AuthService {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Error parsing login response:', parseError);
+        // If response is not ok, try to get error message from status
+        if (!response.ok) {
+          return {
+            success: false,
+            error: `Login failed with status ${response.status}. Please try again.`
+          };
+        }
+        return {
+          success: false,
+          error: 'Invalid response from server. Please try again.'
+        };
+      }
 
       if (response.ok && data.success) {
         const token = data.data?.token;
@@ -286,9 +328,11 @@ class AuthService {
           user: user
         };
       } else {
+        // Handle non-success responses
+        const errorMessage = data.message || data.error || 'Login failed. Please check your credentials.';
         return {
           success: false,
-          error: data.message || data.error || 'Login failed. Please check your credentials.'
+          error: errorMessage
         };
       }
     } catch (error: any) {

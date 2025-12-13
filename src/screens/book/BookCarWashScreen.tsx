@@ -82,6 +82,28 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   }, []);
 
   // Filter service centers based on search text
+  // Helper function to calculate minimum price from services_offered
+  const getMinPrice = (center: any): string | null => {
+    if (!center.services_offered || !Array.isArray(center.services_offered) || center.services_offered.length === 0) {
+      return null;
+    }
+    
+    const prices = center.services_offered
+      .map((service: any) => {
+        // Use offer_price if available, otherwise use price
+        const price = service.offer_price || service.price;
+        return price ? parseFloat(price) : null;
+      })
+      .filter((price: number | null) => price !== null && !isNaN(price));
+    
+    if (prices.length === 0) {
+      return null;
+    }
+    
+    const minPrice = Math.min(...prices);
+    return `$${minPrice.toFixed(2)}`;
+  };
+
   const filteredCenters = React.useMemo(() => {
     if (!searchText.trim()) {
       return serviceCenters;
@@ -184,49 +206,51 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
 
   return (
     <SafeAreaView style={[styles.container,{backgroundColor: theme.background}]} edges={platformEdges as any}>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: BLUE_COLOR + '15' }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={BLUE_COLOR} />
+          <Ionicons name="arrow-back" size={26} color="#000000" />
         </TouchableOpacity>
-                <Text style={[styles.title,{color: theme.textPrimary}]}>Plan your wash</Text>
-        <View style={{ width: 24 }} />
+        <Text style={[styles.title, { color: '#000000' }]}>Plan your wash</Text>
+        <View style={{ width: 26 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Selection Buttons */}
         <View style={styles.selectionContainer}>
           <TouchableOpacity 
-            style={[styles.selectionButton,{backgroundColor: theme.chip, borderColor: BLUE_COLOR, borderWidth: 1}]}
+            style={[styles.selectionButton, { backgroundColor: theme.chip, borderColor: BLUE_COLOR + '40', borderWidth: 1.5 }]}
             onPress={() => setShowTimeModal(true)}
           >
-            <Ionicons name="time-outline" size={16} color={BLUE_COLOR} />
-                    <Text style={[styles.selectionText,{color: theme.textPrimary}]}>Wash now</Text>
-            <Ionicons name="chevron-down-outline" size={16} color={BLUE_COLOR} />
+            <Ionicons name="time-outline" size={18} color="#000000" />
+            <Text style={[styles.selectionText, { color: '#000000' }]}>Wash now</Text>
+            <Ionicons name="chevron-down-outline" size={18} color="#000000" />
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.selectionButton,{backgroundColor: theme.chip, borderColor: BLUE_COLOR, borderWidth: 1}]}> 
-            <Text style={[styles.selectionText,{color: theme.textPrimary}]}>For me</Text>
-            <Ionicons name="chevron-down-outline" size={16} color={BLUE_COLOR} />
+          <TouchableOpacity style={[styles.selectionButton, { backgroundColor: theme.chip, borderColor: BLUE_COLOR + '40', borderWidth: 1.5 }]}> 
+            <Text style={[styles.selectionText, { color: '#000000' }]}>For me</Text>
+            <Ionicons name="chevron-down-outline" size={18} color="#000000" />
           </TouchableOpacity>
         </View>
 
         {/* Location Input */}
-        <View style={[styles.locationContainer,{backgroundColor: theme.card,borderColor: BLUE_COLOR}]}> 
+        <View style={[styles.locationContainer, { backgroundColor: theme.card, borderColor: BLUE_COLOR + '30', borderWidth: 1.5 }]}> 
           <View style={styles.locationRow}>
-            <View style={[styles.locationDot,{backgroundColor: BLUE_COLOR}]} />
-            <Text style={[styles.locationText,{color: theme.textPrimary}]}>{currentLocation}</Text>
+            <View style={[styles.locationDot, { backgroundColor: BLUE_COLOR }]} />
+            <Text style={[styles.locationText, { color: '#000000' }]}>{currentLocation}</Text>
           </View>
+          
+          <View style={[styles.separatorLine, { backgroundColor: '#E5E7EB' }]} />
           
           <View style={styles.whereToWashRow}>
             <View style={styles.checkboxContainer}>
-              <View style={[styles.checkbox,{borderColor: BLUE_COLOR}, whereToWash && {backgroundColor: BLUE_COLOR}]}> 
-                {whereToWash && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
+              <View style={[styles.checkbox, { borderColor: '#000000' }, whereToWash && { backgroundColor: BLUE_COLOR }]}> 
+                {whereToWash && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
               </View>
             </View>
             <TextInput
-              style={[styles.searchInput, { color: theme.textPrimary }]}
+              style={[styles.searchInput, { color: '#000000' }]}
               placeholder="Where to?"
-              placeholderTextColor={theme.textSecondary}
+              placeholderTextColor="#666666"
               value={searchText}
               onChangeText={(text) => {
                 setSearchText(text);
@@ -241,7 +265,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
 
         {/* Service Centers List */}
         <View style={styles.centersList}>
-          <Text style={[styles.sectionTitle,{color: theme.textPrimary}]}>
+          <Text style={[styles.sectionTitle, { color: '#000000' }]}>
             {searchText.length > 0 
               ? `Service centers for "${searchText}" (${filteredCenters.length})`
               : `Nearby car wash centers (${serviceCenters.length})`
@@ -250,45 +274,57 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
           
           {loadingCenters ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={theme.textSecondary} />
-              <Text style={[styles.loadingText,{color: theme.textSecondary}]}>Loading service centers...</Text>
+              <ActivityIndicator size="small" color="#000000" />
+              <Text style={[styles.loadingText, { color: '#000000' }]}>Loading service centers...</Text>
             </View>
           ) : centersError ? (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{centersError}</Text>
+              <Text style={[styles.errorText, { color: '#000000' }]}>{centersError}</Text>
               <TouchableOpacity onPress={fetchServiceCenters} style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
             </View>
           ) : filteredCenters.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText,{color: theme.textSecondary}]}>
+              <Text style={[styles.emptyText, { color: '#000000' }]}>
                 {searchText.length > 0 
                   ? `No service centers found for "${searchText}"`
                   : 'No service centers available'
                 }
               </Text>
               {searchText.length > 0 && (
-                <Text style={[styles.emptySubtext,{color: theme.textSecondary}]}>
+                <Text style={[styles.emptySubtext, { color: '#000000' }]}>
                   Try searching with different keywords or check spelling
                 </Text>
               )}
             </View>
           ) : (
-            filteredCenters.map((center, index) => (
-              <View 
-                key={center.id || index} 
-                style={[styles.centerRow,{borderBottomColor: BLUE_COLOR + '30'}, index === filteredCenters.length - 1 && styles.lastCenterRow]}
-              >
-                <View style={styles.centerLeft}>
-                  <Ionicons name="location-outline" size={20} color={BLUE_COLOR} />
+            filteredCenters.map((center, index) => {
+              const minPrice = getMinPrice(center);
+              return (
+                <View 
+                  key={center.id || index} 
+                  style={[styles.centerRow, { borderBottomColor: BLUE_COLOR + '20' }, index === filteredCenters.length - 1 && styles.lastCenterRow]}
+                >
+                  <View style={styles.centerLeft}>
+                    <View style={[styles.locationIconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
+                      <Ionicons name="location" size={18} color={BLUE_COLOR} />
+                    </View>
+                  </View>
+                  <View style={styles.centerBody}>
+                    <View style={styles.centerHeader}>
+                      <Text style={[styles.centerName, { color: '#000000' }]}>{center.name || center.service_center_name || 'Service Center'}</Text>
+                      {minPrice && (
+                        <View style={[styles.priceBadge, { backgroundColor: BLUE_COLOR + '15' }]}>
+                          <Text style={[styles.minPrice, { color: '#000000' }]}>{minPrice}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.centerAddress, { color: '#000000' }]}>{center.address || center.location || 'Address not available'}</Text>
+                  </View>
                 </View>
-                <View style={styles.centerBody}>
-                  <Text style={[styles.centerName,{color: theme.textPrimary}]}>{center.name || center.service_center_name || 'Service Center'}</Text>
-                  <Text style={[styles.centerAddress,{color: theme.textSecondary}]}>{center.address || center.location || 'Address not available'}</Text>
-                </View>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
 
@@ -300,7 +336,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         <TouchableOpacity style={[styles.confirmButton,{backgroundColor: BLUE_COLOR}]} onPress={handleConfirmBooking}>
           <Text style={[styles.confirmButtonText,{color: '#FFFFFF'}]}>Confirm Booking</Text>
         </TouchableOpacity>
-        <Text style={[styles.bottomText,{color: theme.textSecondary}]}>
+        <Text style={[styles.bottomText, { color: '#000000' }]}>
           {searchText.trim() 
             ? `Request will be sent to ${filteredCenters.length} matching center${filteredCenters.length !== 1 ? 's' : ''}.`
             : `Request will be sent to all ${serviceCenters.length} available car wash centers.`
@@ -381,18 +417,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     justifyContent: 'space-between',
+    borderBottomWidth: 1,
   },
   backButton: {
     padding: 4,
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
   },
   content: {
     flex: 1,
@@ -407,46 +443,63 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
-    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 24,
+    gap: 10,
     flex: 1,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   selectionText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    color: '#000',
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '400',
     flex: 1,
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   locationContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#000',
-    padding: 16,
-    marginBottom: 20,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 18,
+    marginBottom: 24,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   locationDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#000',
-    marginRight: 12,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 14,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 2,
   },
   locationText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    color: '#000',
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '400',
     flex: 1,
     fontFamily: FONTS.INTER_REGULAR,
+    lineHeight: 22,
+  },
+  separatorLine: {
+    height: 1,
+    width: '100%',
+    marginVertical: 12,
   },
   whereToWashRow: {
     flexDirection: 'row',
@@ -459,18 +512,18 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#000',
-    marginRight: 12,
+    marginRight: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -486,51 +539,70 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 16,
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '600',
+    marginBottom: 20,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   centerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingVertical: 18,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1.5,
+    borderBottomColor: BLUE_COLOR + '20',
   },
   lastCenterRow: {
     borderBottomWidth: 0,
   },
   centerLeft: {
-    width: 32,
+    width: 40,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 2,
+  },
+  locationIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   centerBody: {
     flex: 1,
-    paddingLeft: 12,
+    paddingLeft: 14,
   },
   centerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
+    flexWrap: 'wrap',
   },
   centerName: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '600',
     flex: 1,
-    marginBottom: 4,
-    fontFamily: FONTS.INTER_BOLD,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    lineHeight: 22,
+  },
+  priceBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  minPrice: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   centerAddress: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#666666',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '400',
     fontFamily: FONTS.INTER_REGULAR,
+    lineHeight: 20,
+    marginTop: 2,
   },
   centerDistance: {
     fontSize: 14,
@@ -586,9 +658,11 @@ const styles = StyleSheet.create({
   },
   bottomText: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#666666',
+    color: '#000000',
     textAlign: 'center',
     fontFamily: FONTS.INTER_REGULAR,
+    lineHeight: 18,
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -666,7 +740,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#666666',
+    color: '#000000',
     fontFamily: FONTS.INTER_REGULAR,
   },
   errorContainer: {
@@ -675,7 +749,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#DC2626',
+    color: '#000000',
     textAlign: 'center',
     marginBottom: 10,
     fontFamily: FONTS.INTER_REGULAR,
@@ -698,13 +772,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#666666',
+    color: '#000000',
     textAlign: 'center',
     fontFamily: FONTS.INTER_REGULAR,
   },
   emptySubtext: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#9CA3AF',
+    color: '#000000',
     textAlign: 'center',
     marginTop: 8,
     fontFamily: FONTS.INTER_REGULAR,

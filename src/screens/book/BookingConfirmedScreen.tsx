@@ -66,57 +66,43 @@ const BookingConfirmedScreen: React.FC<Props> = ({
   };
   return (
     <SafeAreaView style={[styles.container,{ backgroundColor: theme.background }]} edges={platformEdges as any}>
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: '#E5E7EB' }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={BLUE_COLOR} />
+          <Ionicons name="arrow-back" size={26} color="#000000" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={[styles.title,{color: theme.textPrimary}]}>Finding your car wash</Text>
-          <Text style={[styles.subtitle,{color: theme.textSecondary}]}>Broadcasting to all nearby centers</Text>
+          <Text style={[styles.title, { color: '#000000' }]}>Finding your car wash</Text>
+          <Text style={[styles.subtitle, { color: '#666666' }]}>Broadcasting to all nearby centers</Text>
         </View>
       </View>
 
       <View style={styles.content}>
-        {/* Match Found Banner */}
-        <View style={[styles.matchFoundBanner,{ backgroundColor: theme.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }]}>
-          <View style={[styles.matchIcon, { backgroundColor: BLUE_COLOR }]}>
-            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-            <View style={[styles.clockIcon, { backgroundColor: BLUE_COLOR }]}>
-              <Ionicons name="time" size={8} color="#FFFFFF" />
-            </View>
-          </View>
-          <View style={styles.matchContent}>
-            <Text style={[styles.matchText,{color: theme.textPrimary}]}>Match found!</Text>
-            <Text style={[styles.matchTime,{color: theme.textSecondary}]}>Time elapsed: 0:07</Text>
-          </View>
-        </View>
-
         {/* Booking Confirmed */}
         <View style={styles.confirmationSection}>
           <View style={[styles.confirmationIcon, { backgroundColor: BLUE_COLOR }]}>
-            <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+            <Ionicons name="checkmark" size={52} color="#FFFFFF" />
           </View>
-          <Text style={[styles.confirmationTitle,{color: theme.textPrimary}]}>Booking Confirmed!</Text>
-          <Text style={[styles.confirmationSubtitle,{color: theme.textSecondary}] }>
+          <Text style={[styles.confirmationTitle, { color: '#000000' }]}>Booking Confirmed!</Text>
+          <Text style={[styles.confirmationSubtitle, { color: '#666666' }]}>
             {acceptedCenter.name} accepted your request
           </Text>
         </View>
 
         {/* Car Wash Details */}
         <View style={styles.detailsSection}>
-          <Text style={[styles.detailsTitle,{color: theme.textPrimary}]}>Your Car Wash Details</Text>
-          <View style={[styles.detailsCard,{ backgroundColor: theme.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }]}>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel,{color: theme.textSecondary}]}>Center:</Text>
-              <Text style={[styles.detailValue,{color: theme.textPrimary}]}>{acceptedCenter.name}</Text>
+          <Text style={[styles.detailsTitle, { color: '#000000' }]}>Your Car Wash Details</Text>
+          <View style={[styles.detailsCard, { backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', borderWidth: 1 }]}>
+            <View style={[styles.detailRow, styles.detailRowWithBorder]}>
+              <Text style={[styles.detailLabel, { color: '#666666' }]}>Center:</Text>
+              <Text style={[styles.detailValue, { color: '#000000' }]}>{acceptedCenter.name}</Text>
+            </View>
+            <View style={[styles.detailRow, styles.detailRowWithBorder]}>
+              <Text style={[styles.detailLabel, { color: '#666666' }]}>Date:</Text>
+              <Text style={[styles.detailValue, { color: '#000000' }]}>{dateString}</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel,{color: theme.textSecondary}]}>Date:</Text>
-              <Text style={[styles.detailValue,{color: theme.textPrimary}]}>{dateString}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel,{color: theme.textSecondary}]}>Distance:</Text>
-              <Text style={[styles.detailValue,{color: theme.textPrimary}]}>{acceptedCenter.distance}</Text>
+              <Text style={[styles.detailLabel, { color: '#666666' }]}>Distance:</Text>
+              <Text style={[styles.detailValue, { color: '#000000' }]}>{acceptedCenter.distance}</Text>
             </View>
           </View>
         </View>
@@ -142,136 +128,111 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     padding: 4,
-    marginRight: 12,
+    marginRight: 14,
   },
   headerContent: {
     flex: 1,
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 4,
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '600',
+    marginBottom: 6,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#666666',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-  },
-  matchFoundBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 16,
-  },
-  matchIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    position: 'relative',
-  },
-  clockIcon: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  matchContent: {
-    flex: 1,
-  },
-  matchText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 4,
-    fontFamily: FONTS.INTER_BOLD,
-  },
-  matchTime: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#666666',
-    fontFamily: FONTS.INTER_REGULAR,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   confirmationSection: {
     alignItems: 'center',
-    marginVertical: 40,
+    marginVertical: 32,
+    paddingTop: 20,
   },
   confirmationIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   confirmationTitle: {
-    fontSize: FONT_SIZES.APP_TITLE_SMALL,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 8,
-    fontFamily: FONTS.MONTserrat_BOLD,
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '600',
+    marginBottom: 12,
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.5,
+    textAlign: 'center',
   },
   confirmationSubtitle: {
     fontSize: FONT_SIZES.BODY_LARGE,
-    color: '#666666',
     textAlign: 'center',
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    lineHeight: 22,
+    paddingHorizontal: 20,
   },
   detailsSection: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   detailsTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 12,
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '600',
+    marginBottom: 16,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   detailsCard: {
     backgroundColor: '#F9FAFB',
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingVertical: 14,
+  },
+  detailRowWithBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   detailLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#666666',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    flex: 1,
   },
   detailValue: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '500',
-    color: '#000',
-    fontFamily: FONTS.INTER_REGULAR,
+    fontFamily: FONTS.INTER_MEDIUM,
+    flex: 1.5,
+    textAlign: 'right',
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -290,18 +251,24 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   bottomContainer: {
-    padding: 16,
+    padding: 20,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+    paddingBottom: 24,
   },
   paymentButton: {
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   paymentButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontSize: FONT_SIZES.BUTTON_LARGE,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.5,

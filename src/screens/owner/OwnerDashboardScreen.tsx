@@ -293,6 +293,12 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
             <Ionicons name="time-outline" size={16} color={colors.textSecondary} style={styles.timeIcon} />
             <Text style={[styles.activityTimeText, { color: colors.textSecondary }]}>{activity.time}</Text>
           </View>
+          {activity.serviceType ? (
+            <View style={styles.recentRow}>
+              <Ionicons name="sparkles-outline" size={16} color={BLUE_COLOR} style={styles.recentIcon} />
+              <Text style={[styles.recentText, { color: colors.text }]}>{activity.serviceType}</Text>
+            </View>
+          ) : null}
           {activity.vehicleNo ? (
             <View style={styles.recentRow}>
               <Ionicons name="car-outline" size={16} color={colors.textSecondary} style={styles.recentIcon} />

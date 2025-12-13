@@ -40,11 +40,13 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
           [{ text: 'OK' }]
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      // Display the actual error message if available, otherwise show generic message
+      const errorMessage = error?.message || error?.error || 'An error occurred during login. Please try again.';
       Alert.alert(
         'Login Failed',
-        'An error occurred during login. Please try again.',
+        errorMessage,
         [{ text: 'OK' }]
       );
     }
@@ -244,11 +246,12 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
           [{ text: 'OK' }]
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Send OTP error:', error);
+      const errorMessage = error?.message || error?.error || 'There was an error sending the verification code. Please try again.';
       Alert.alert(
         'Failed to Send OTP',
-        'There was an error sending the verification code. Please try again.',
+        errorMessage,
         [{ text: 'OK' }]
       );
     }
@@ -270,11 +273,12 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
       } else {
         Alert.alert('Verification Failed', result.error || 'Invalid OTP. Please try again.', [{ text: 'OK' }]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Phone OTP verification error:', error);
+      const errorMessage = error?.message || error?.error || 'There was an error verifying the code. Please try again.';
       Alert.alert(
         'Verification Failed',
-        'There was an error verifying the code. Please try again.',
+        errorMessage,
         [{ text: 'OK' }]
       );
     }
@@ -300,11 +304,12 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
           [{ text: 'OK' }]
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Resend OTP error:', error);
+      const errorMessage = error?.message || error?.error || 'There was an error sending the verification code. Please try again.';
       Alert.alert(
         'Failed to Send OTP',
-        'There was an error sending the verification code. Please try again.',
+        errorMessage,
         [{ text: 'OK' }]
       );
     }
