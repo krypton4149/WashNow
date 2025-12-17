@@ -43,9 +43,13 @@ apiClient.interceptors.response.use(
       
       return Promise.reject(customError);
     } else if (error.request) {
-      // Request was made but no response received
+      // Request was made but no response received (network error, timeout, CORS, etc.)
+      // Status 0 typically indicates network failure
+      const isStatusZero = error.request.status === 0 || error.request.readyState === 4;
       const networkError: any = new Error('Network Error - Please check your internet connection');
       networkError.request = error.request;
+      networkError.status = error.request.status || 0;
+      networkError.isNetworkError = true;
       return Promise.reject(networkError);
     } else {
       // Something else happened

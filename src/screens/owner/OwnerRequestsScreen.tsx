@@ -537,13 +537,27 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         response: fetchError?.response?.data,
         status: fetchError?.response?.status,
         request: fetchError?.request,
+        requestStatus: fetchError?.request?.status,
         error: fetchError,
       });
 
-      // Handle network errors (no response, timeout, connection issues)
-      if (!fetchError?.response && (fetchError?.message?.includes('Network') || fetchError?.message?.includes('timeout') || fetchError?.code === 'ECONNABORTED')) {
+      // Handle network errors (no response, timeout, connection issues, status 0)
+      const isNetworkError = 
+        fetchError?.isNetworkError === true ||
+        (!fetchError?.response && (
+          fetchError?.message?.includes('Network') || 
+          fetchError?.message?.includes('timeout') || 
+          fetchError?.code === 'ECONNABORTED' ||
+          fetchError?.request?.status === 0 ||
+          fetchError?.status === 0 ||
+          (fetchError?.request && !fetchError?.response)
+        ));
+
+      if (isNetworkError) {
         const errorMessage = 'Network Error - Please check your internet connection and try again.';
         setError(errorMessage);
+        // Don't clear bookings on network error - keep cached data visible
+        // Loading states will be handled by the finally block
         return;
       }
 
@@ -558,12 +572,13 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         } catch (clearError) {
           console.error('[OwnerRequestsScreen] failed to clear auth data', clearError);
         }
+        setRawBookings([]);
+        setCancellationLoading({});
       } else {
         setError(fetchError?.message || 'Failed to load booking requests. Please try again.');
+        setRawBookings([]);
+        setCancellationLoading({});
       }
-      
-      setRawBookings([]);
-      setCancellationLoading({});
     } finally {
       if (isRefresh) {
         setIsRefreshing(false);
@@ -646,8 +661,39 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                 Alert.alert('Error', result.error || 'Failed to cancel booking.');
                 return;
               }
-              Alert.alert('Success', result.message || 'Booking cancelled successfully.');
-              await fetchBookings(true);
+              
+              // Immediately remove the booking from the list (delete it)
+              setRawBookings((prevBookings) => {
+                return prevBookings.filter((booking: any) => {
+                  const bookingIdToCheck = booking?.booking_id || booking?.bookingId || booking?.id || booking?.reference || booking?.uuid;
+                  return String(bookingIdToCheck) !== String(bookingId);
+                });
+              });
+              
+              // Also remove from cache
+              try {
+                const cached = await AsyncStorage.getItem(BOOKINGS_CACHE_KEY);
+                if (cached) {
+                  const parsed = JSON.parse(cached);
+                  if (parsed?.data && Array.isArray(parsed.data)) {
+                    const filteredData = parsed.data.filter((booking: any) => {
+                      const bookingIdToCheck = booking?.booking_id || booking?.bookingId || booking?.id || booking?.reference || booking?.uuid;
+                      return String(bookingIdToCheck) !== String(bookingId);
+                    });
+                    await AsyncStorage.setItem(BOOKINGS_CACHE_KEY, JSON.stringify({
+                      timestamp: parsed.timestamp,
+                      data: filteredData,
+                    }));
+                  }
+                }
+              } catch (cacheError) {
+                console.error('[OwnerRequestsScreen] failed to update cache after cancellation', cacheError);
+              }
+              
+              // Refresh the list in the background to ensure consistency
+              fetchBookings(true).catch((refreshError) => {
+                console.error('[OwnerRequestsScreen] failed to refresh after cancellation', refreshError);
+              });
             } catch (cancelError: any) {
               Alert.alert('Error', cancelError?.message || 'Failed to cancel booking.');
             } finally {
@@ -850,42 +896,87 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                     <Text style={styles.amountValue}>{request.amount}</Text>
                   </View>
                   <View style={styles.footerActions}>
-                    <Pressable
-                      style={[
-                        styles.actionChip,
-                        styles.declineChip,
-                        cancellationLoading[request.id] && styles.actionChipDisabled,
-                      ]}
-                      disabled={!!cancellationLoading[request.id]}
-                      onPress={() => handleCancelBooking(request.id)}
-                    >
-                      {cancellationLoading[request.id] ? (
-                        <ActivityIndicator size="small" color="#1A1A1A" />
-                      ) : (
-                        <>
-                          <Ionicons name="close" size={14} color="#1A1A1A" />
-                          <Text style={styles.declineText}>Decline</Text>
-                        </>
-                      )}
-                    </Pressable>
-                    <Pressable
-                      style={[
-                        styles.actionChip,
-                        styles.acceptChip,
-                        cancellationLoading[request.id] && styles.actionChipDisabled,
-                      ]}
-                      disabled={!!cancellationLoading[request.id]}
-                      onPress={() => handleCompleteBooking(request.id)}
-                    >
-                      {cancellationLoading[request.id] ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <>
-                          <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                          <Text style={styles.acceptText}>Accept</Text>
-                        </>
-                      )}
-                    </Pressable>
+                    {request.status === 'accepted' ? (
+                      // For accepted requests: show only Cancel button
+                      <Pressable
+                        style={[
+                          styles.actionChip,
+                          styles.declineChip,
+                          cancellationLoading[request.id] && styles.actionChipDisabled,
+                        ]}
+                        disabled={!!cancellationLoading[request.id]}
+                        onPress={() => handleCancelBooking(request.id)}
+                      >
+                        {cancellationLoading[request.id] ? (
+                          <ActivityIndicator size="small" color="#1A1A1A" />
+                        ) : (
+                          <>
+                            <Ionicons name="close" size={14} color="#1A1A1A" />
+                            <Text style={styles.declineText}>Cancel</Text>
+                          </>
+                        )}
+                      </Pressable>
+                    ) : request.status === 'pending' ? (
+                      // For pending requests: show both Decline and Accept buttons
+                      <>
+                        <Pressable
+                          style={[
+                            styles.actionChip,
+                            styles.declineChip,
+                            cancellationLoading[request.id] && styles.actionChipDisabled,
+                          ]}
+                          disabled={!!cancellationLoading[request.id]}
+                          onPress={() => handleCancelBooking(request.id)}
+                        >
+                          {cancellationLoading[request.id] ? (
+                            <ActivityIndicator size="small" color="#1A1A1A" />
+                          ) : (
+                            <>
+                              <Ionicons name="close" size={14} color="#1A1A1A" />
+                              <Text style={styles.declineText}>Decline</Text>
+                            </>
+                          )}
+                        </Pressable>
+                        <Pressable
+                          style={[
+                            styles.actionChip,
+                            styles.acceptChip,
+                            cancellationLoading[request.id] && styles.actionChipDisabled,
+                          ]}
+                          disabled={!!cancellationLoading[request.id]}
+                          onPress={() => handleCompleteBooking(request.id)}
+                        >
+                          {cancellationLoading[request.id] ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                              <Text style={styles.acceptText}>Accept</Text>
+                            </>
+                          )}
+                        </Pressable>
+                      </>
+                    ) : (
+                      // For declined requests: show only Cancel button
+                      <Pressable
+                        style={[
+                          styles.actionChip,
+                          styles.declineChip,
+                          cancellationLoading[request.id] && styles.actionChipDisabled,
+                        ]}
+                        disabled={!!cancellationLoading[request.id]}
+                        onPress={() => handleCancelBooking(request.id)}
+                      >
+                        {cancellationLoading[request.id] ? (
+                          <ActivityIndicator size="small" color="#1A1A1A" />
+                        ) : (
+                          <>
+                            <Ionicons name="close" size={14} color="#1A1A1A" />
+                            <Text style={styles.declineText}>Cancel</Text>
+                          </>
+                        )}
+                      </Pressable>
+                    )}
                   </View>
                 </View>
               </View>
