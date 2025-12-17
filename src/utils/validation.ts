@@ -33,7 +33,7 @@ export const validateEmail = (email: string): ValidationResult => {
   return { isValid: true };
 };
 
-// Validate phone number
+// Validate phone number (must include UK country code +44)
 export const validatePhone = (phone: string): ValidationResult => {
   if (!phone.trim()) {
     return { isValid: false, message: 'Phone number is required' };
@@ -42,8 +42,22 @@ export const validatePhone = (phone: string): ValidationResult => {
   // Remove spaces and special characters for validation
   const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
   
-  if (!PHONE_REGEX.test(cleanPhone)) {
-    return { isValid: false, message: 'Please enter a valid phone number' };
+  // Check if phone number starts with UK country code
+  if (!cleanPhone.startsWith('+44') && !cleanPhone.startsWith('44')) {
+    return { isValid: false, message: 'Phone number must include UK country code (+44)' };
+  }
+  
+  // Remove country code for length validation
+  const phoneWithoutCode = cleanPhone.replace(/^\+?44/, '');
+  
+  // UK phone numbers (without country code) should be 10 digits
+  if (phoneWithoutCode.length < 10 || phoneWithoutCode.length > 10) {
+    return { isValid: false, message: 'UK phone number must be 10 digits (excluding country code)' };
+  }
+  
+  // Check if remaining digits are valid
+  if (!/^\d{10}$/.test(phoneWithoutCode)) {
+    return { isValid: false, message: 'Please enter a valid UK phone number' };
   }
   
   return { isValid: true };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { validateRegistrationForm, FormErrors } from '../../utils/validation';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
+const UK_COUNTRY_CODE = '+44';
 
 interface RegisterScreenProps {
   onBack: () => void;
@@ -44,6 +45,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  
+  // Memoize the car image source to prevent re-renders
+  const carImageSource = useMemo(() => require('../../assets/images/Car.png'), []);
 
   const handleRegister = async () => {
     console.log('=== REGISTRATION START ===');
@@ -95,10 +99,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     setIsLoading(true);
     setErrors({});
 
+    // Ensure phone number has UK country code
+    let finalPhoneNumber = phoneNumber.trim();
+    if (!finalPhoneNumber.startsWith('+44')) {
+      // Remove any leading 0 or country code and add +44
+      finalPhoneNumber = finalPhoneNumber.replace(/^0+/, '').replace(/^\+?44\s*/, '');
+      finalPhoneNumber = UK_COUNTRY_CODE + finalPhoneNumber;
+    }
+    
     const userData = {
       fullName: fullName.trim(),
       email: email.trim(),
-      phoneNumber: phoneNumber.trim(),
+      phoneNumber: finalPhoneNumber,
       password: password.trim(),
       passwordConfirmation: confirmPassword.trim(), // Add password confirmation
     };
@@ -216,11 +228,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = useCallback((field: string, value: string) => {
     // Clear error when user starts typing
-    if (errors[field as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
+    setErrors(prev => {
+      if (prev[field as keyof FormErrors]) {
+        const newErrors = { ...prev };
+        delete newErrors[field as keyof FormErrors];
+        return newErrors;
+      }
+      return prev;
+    });
 
     switch (field) {
       case 'name':
@@ -230,7 +247,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         setEmail(value);
         break;
       case 'phone':
-        setPhoneNumber(value);
+        // For phone, value is already digits only from the input handler
+        // Always prepend +44 if there are digits
+        const phoneDigits = value.replace(/\D/g, '');
+        setPhoneNumber(phoneDigits ? UK_COUNTRY_CODE + phoneDigits : '');
         break;
       case 'password':
         setPassword(value);
@@ -239,20 +259,24 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         setConfirmPassword(value);
         break;
     }
-  };
+  }, []);
 
-  const dismissKeyboard = () => {
+  const dismissKeyboard = useCallback(() => {
     Keyboard.dismiss();
-  };
+  }, []);
 
-  const isFormValid = 
+  const isFormValid = useMemo(() => 
     fullName.trim().length > 0 &&
     email.trim().length > 0 &&
     phoneNumber.trim().length > 0 &&
+    phoneNumber.startsWith('+44') &&
+    phoneNumber.replace(/^\+44/, '').length === 10 &&
     password.trim().length > 0 &&
     confirmPassword.trim().length > 0 &&
     password === confirmPassword &&
-    agreeToTerms;
+    agreeToTerms,
+    [fullName, email, phoneNumber, password, confirmPassword, agreeToTerms]
+  );
 
   return (
     <View style={styles.container}>
@@ -263,10 +287,11 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <ImageBackground
-            source={require('../../assets/images/Car.png')}
+            source={carImageSource}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
             blurRadius={0}
+            imageStyle={{ resizeMode: 'cover' }}
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
@@ -338,20 +363,30 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
                 {/* Phone Number Field */}
                 <View style={styles.inputWrapper}>
-                  <Text style={styles.inputLabel}>Phone Number</Text>
+                  <Text style={styles.inputLabel}>Phone Number (UK)</Text>
                   <View style={[styles.inputField, errors.phone && styles.inputFieldError]}>
                     <Ionicons name="call-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <Text style={styles.countryCode}>+44</Text>
                     <TextInput
                       style={styles.textInput}
-                      placeholder="Enter your phone number"
+                      placeholder="7XXXXXXXXX"
                       placeholderTextColor="#9CA3AF"
-                      value={phoneNumber}
-                      onChangeText={(value) => handleInputChange('phone', value)}
+                      value={phoneNumber.startsWith('+44') ? phoneNumber.substring(3) : ''}
+                      onChangeText={(value) => {
+                        // Only allow digits, max 10 digits (UK phone number length)
+                        const digitsOnly = value.replace(/\D/g, '').substring(0, 10);
+                        handleInputChange('phone', digitsOnly);
+                      }}
                       keyboardType="phone-pad"
                       autoCorrect={false}
+                      maxLength={10}
                     />
                   </View>
-                  {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+                  {errors.phone ? (
+                    <Text style={styles.errorText}>{errors.phone}</Text>
+                  ) : (
+                    <Text style={styles.helperText}>Phone number must include UK country code (+44)</Text>
+                  )}
                 </View>
 
                 {/* Password Field */}
@@ -614,10 +649,23 @@ const styles = StyleSheet.create({
   inputIcon: {
     marginRight: 12,
   },
+  countryCode: {
+    fontSize: FONT_SIZES.BODY_LARGE,
+    color: '#1A1A1A',
+    fontFamily: FONTS.INTER_REGULAR,
+    marginRight: 8,
+    fontWeight: '600',
+  },
   textInput: {
     flex: 1,
     fontSize: FONT_SIZES.BODY_LARGE,
     color: '#1A1A1A',
+    fontFamily: FONTS.INTER_REGULAR,
+  },
+  helperText: {
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    color: '#6B7280',
+    marginTop: 4,
     fontFamily: FONTS.INTER_REGULAR,
   },
   eyeButton: {

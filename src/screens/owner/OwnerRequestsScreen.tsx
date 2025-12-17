@@ -11,17 +11,13 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
 import apiClient from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
-import { StatusBar } from 'react-native';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
-
-const BLUE_COLOR = '#0358a8';
-const YELLOW_COLOR = '#f4c901';
+import { platformEdges } from '../../utils/responsive';
 
 interface OwnerRequestsScreenProps {
   onBack?: () => void;
@@ -44,7 +40,6 @@ interface BookingRequestCard {
   };
   scheduled: string;
   service: string;
-  serviceId?: string | number;
   notes?: string;
   amount: string;
 }
@@ -294,8 +289,8 @@ const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
     timeAgo,
     status,
     vehicle: {
-      model: vehicleModel,
-      plate: vehiclePlate !== 'Plate not provided' ? vehiclePlate : '',
+      primary: vehiclePlate !== 'Plate not provided' ? vehiclePlate : vehicleModel,
+      secondary: vehiclePlate !== 'Plate not provided' ? vehicleModel : '',
     },
     location: {
       address: locationAddress,
@@ -311,7 +306,6 @@ const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
       booking?.service_type,
       booking?.serviceType
     ),
-    serviceId: booking?.service_id || booking?.serviceId || booking?.service?.id,
     notes: notes || undefined,
     amount: formatAmount(booking),
   };
@@ -462,7 +456,6 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   onBack,
 }) => {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const [rawBookings, setRawBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -536,30 +529,8 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         message: fetchError?.message,
         response: fetchError?.response?.data,
         status: fetchError?.response?.status,
-        request: fetchError?.request,
-        requestStatus: fetchError?.request?.status,
         error: fetchError,
       });
-
-      // Handle network errors (no response, timeout, connection issues, status 0)
-      const isNetworkError = 
-        fetchError?.isNetworkError === true ||
-        (!fetchError?.response && (
-          fetchError?.message?.includes('Network') || 
-          fetchError?.message?.includes('timeout') || 
-          fetchError?.code === 'ECONNABORTED' ||
-          fetchError?.request?.status === 0 ||
-          fetchError?.status === 0 ||
-          (fetchError?.request && !fetchError?.response)
-        ));
-
-      if (isNetworkError) {
-        const errorMessage = 'Network Error - Please check your internet connection and try again.';
-        setError(errorMessage);
-        // Don't clear bookings on network error - keep cached data visible
-        // Loading states will be handled by the finally block
-        return;
-      }
 
       // Handle 401 Unauthorized errors specifically
       if (fetchError?.status === 401 || fetchError?.response?.status === 401 || fetchError?.message === 'Unauthorized') {
@@ -572,13 +543,12 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         } catch (clearError) {
           console.error('[OwnerRequestsScreen] failed to clear auth data', clearError);
         }
-        setRawBookings([]);
-        setCancellationLoading({});
       } else {
         setError(fetchError?.message || 'Failed to load booking requests. Please try again.');
-        setRawBookings([]);
-        setCancellationLoading({});
       }
+      
+      setRawBookings([]);
+      setCancellationLoading({});
     } finally {
       if (isRefresh) {
         setIsRefreshing(false);
@@ -661,39 +631,8 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                 Alert.alert('Error', result.error || 'Failed to cancel booking.');
                 return;
               }
-              
-              // Immediately remove the booking from the list (delete it)
-              setRawBookings((prevBookings) => {
-                return prevBookings.filter((booking: any) => {
-                  const bookingIdToCheck = booking?.booking_id || booking?.bookingId || booking?.id || booking?.reference || booking?.uuid;
-                  return String(bookingIdToCheck) !== String(bookingId);
-                });
-              });
-              
-              // Also remove from cache
-              try {
-                const cached = await AsyncStorage.getItem(BOOKINGS_CACHE_KEY);
-                if (cached) {
-                  const parsed = JSON.parse(cached);
-                  if (parsed?.data && Array.isArray(parsed.data)) {
-                    const filteredData = parsed.data.filter((booking: any) => {
-                      const bookingIdToCheck = booking?.booking_id || booking?.bookingId || booking?.id || booking?.reference || booking?.uuid;
-                      return String(bookingIdToCheck) !== String(bookingId);
-                    });
-                    await AsyncStorage.setItem(BOOKINGS_CACHE_KEY, JSON.stringify({
-                      timestamp: parsed.timestamp,
-                      data: filteredData,
-                    }));
-                  }
-                }
-              } catch (cacheError) {
-                console.error('[OwnerRequestsScreen] failed to update cache after cancellation', cacheError);
-              }
-              
-              // Refresh the list in the background to ensure consistency
-              fetchBookings(true).catch((refreshError) => {
-                console.error('[OwnerRequestsScreen] failed to refresh after cancellation', refreshError);
-              });
+              Alert.alert('Success', result.message || 'Booking cancelled successfully.');
+              await fetchBookings(true);
             } catch (cancelError: any) {
               Alert.alert('Error', cancelError?.message || 'Failed to cancel booking.');
             } finally {
@@ -740,12 +679,12 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
 
   const getStatusStyles = (status: StatusTone) => {
     if (status === 'accepted') {
-      return { bg: 'rgba(16,185,129,0.15)', text: '#10B981', label: 'Accepted' };
+      return { bg: '#DCFCE7', text: '#16A34A', label: 'Accepted' };
     }
     if (status === 'declined') {
-      return { bg: 'rgba(239,68,68,0.15)', text: '#EF4444', label: 'Declined' };
+      return { bg: '#FEE2E2', text: '#DC2626', label: 'Declined' };
     }
-    return { bg: 'rgba(251,146,60,0.15)', text: '#F97316', label: 'Pending' };
+    return { bg: '#FEF3C7', text: '#F97316', label: 'Pending' };
   };
 
   const pendingCount = useMemo(() => {
@@ -773,20 +712,21 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   }, [fetchBookings]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} translucent={false} />
-      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: '#FFFFFF', paddingTop: Platform.OS === 'ios' ? 10 : 10 }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         )}
         <View style={styles.headerTextGroup}>
-          <Text style={styles.headerTitle}>New Requests</Text>
-          <Text style={styles.headerSubtitle}>{headerSubtitle}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>New Requests</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{headerSubtitle}</Text>
         </View>
         <View style={styles.placeholder} />
       </View>
+
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
@@ -829,11 +769,11 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
           {requests.map((request) => {
             const statusStyles = getStatusStyles(request.status);
             return (
-              <View key={request.id} style={styles.requestCard}>
+              <View key={request.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
                 <View style={styles.cardHeader}>
                   <View>
-                    <Text style={styles.customerName}>{request.customerName}</Text>
-                    <Text style={styles.timeAgo}>{request.timeAgo}</Text>
+                    <Text style={[styles.customerName, { color: colors.text }]}>{request.customerName}</Text>
+                    <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>{request.timeAgo}</Text>
                   </View>
                   <View
                     style={[
@@ -851,132 +791,94 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
 
                 <View style={styles.infoRow}>
                   <View style={styles.infoIcon}>
-                    <Ionicons name="car-outline" size={16} color={BLUE_COLOR} />
+                    <Ionicons name="car-outline" size={20} color={colors.text} />
                   </View>
                   <View style={styles.infoText}>
-                      <Text style={styles.infoLabel}>VEHICLE</Text>
-                      <Text style={styles.infoValue}>
-                        {request.vehicle.plate || request.vehicle.model}
-                      </Text>
-                      {request.vehicle.plate && request.vehicle.model ? (
-                        <Text style={styles.infoSubValue}>{request.vehicle.model}</Text>
+                      <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Vehicle</Text>
+                      <Text style={[styles.infoValue, { color: colors.text }]}>{request.vehicle.primary}</Text>
+                      {request.vehicle.secondary ? (
+                        <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.vehicle.secondary}</Text>
+                      ) : null}
+                  </View>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <View style={styles.infoIcon}>
+                    <Ionicons name="location-outline" size={20} color={colors.text} />
+                  </View>
+                  <View style={styles.infoText}>
+                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Location</Text>
+                    <Text style={[styles.infoValue, { color: colors.text }]}>{request.location.address}</Text>
+                      {request.location.distance ? (
+                    <View style={styles.infoSubRow}>
+                      <Ionicons name="navigate-outline" size={12} color={colors.textSecondary} />
+                      <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.location.distance}</Text>
+                    </View>
                       ) : null}
                   </View>
                 </View>
 
                 <View style={styles.metaRow}>
                   <View style={styles.metaPill}>
-                    <Text style={styles.metaLabel}>SCHEDULED</Text>
+                    <Text style={styles.metaLabel}>Scheduled</Text>
                     <Text style={styles.metaValue}>{request.scheduled}</Text>
                   </View>
                   <View style={styles.metaPill}>
-                    <Text style={styles.metaLabel}>SERVICE</Text>
+                    <Text style={styles.metaLabel}>Service</Text>
                     <Text style={styles.metaValue}>{request.service}</Text>
                   </View>
                 </View>
 
-                {request.serviceId && (
-                  <View style={styles.serviceIdRow}>
-                    <Ionicons name="pricetag-outline" size={16} color={BLUE_COLOR} />
-                    <Text style={styles.serviceIdLabel}>Service ID:</Text>
-                    <Text style={styles.serviceIdValue}>{request.serviceId}</Text>
-                  </View>
-                )}
-
                 {request.notes ? (
-                  <View style={styles.notesContainer}>
-                    <Text style={styles.notesLabel}>Customer Notes</Text>
-                    <Text style={styles.notesValue}>{request.notes}</Text>
+                  <View style={[styles.notesContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Text style={[styles.notesLabel, { color: colors.text }]}>{'Customer Notes'}</Text>
+                    <Text style={[styles.notesValue, { color: colors.textSecondary }]}>{request.notes}</Text>
                   </View>
                 ) : null}
 
                 <View style={styles.footerRow}>
                   <View>
-                    <Text style={styles.amountLabel}>Amount</Text>
-                    <Text style={styles.amountValue}>{request.amount}</Text>
+                    <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>Amount</Text>
+                    <Text style={[styles.amountValue, { color: colors.text }]}>{request.amount}</Text>
                   </View>
                   <View style={styles.footerActions}>
-                    {request.status === 'accepted' ? (
-                      // For accepted requests: show only Cancel button
-                      <Pressable
-                        style={[
-                          styles.actionChip,
-                          styles.declineChip,
-                          cancellationLoading[request.id] && styles.actionChipDisabled,
-                        ]}
-                        disabled={!!cancellationLoading[request.id]}
-                        onPress={() => handleCancelBooking(request.id)}
-                      >
-                        {cancellationLoading[request.id] ? (
-                          <ActivityIndicator size="small" color="#1A1A1A" />
-                        ) : (
-                          <>
-                            <Ionicons name="close" size={14} color="#1A1A1A" />
-                            <Text style={styles.declineText}>Cancel</Text>
-                          </>
-                        )}
-                      </Pressable>
-                    ) : request.status === 'pending' ? (
-                      // For pending requests: show both Decline and Accept buttons
-                      <>
-                        <Pressable
-                          style={[
-                            styles.actionChip,
-                            styles.declineChip,
-                            cancellationLoading[request.id] && styles.actionChipDisabled,
-                          ]}
-                          disabled={!!cancellationLoading[request.id]}
-                          onPress={() => handleCancelBooking(request.id)}
-                        >
-                          {cancellationLoading[request.id] ? (
-                            <ActivityIndicator size="small" color="#1A1A1A" />
-                          ) : (
-                            <>
-                              <Ionicons name="close" size={14} color="#1A1A1A" />
-                              <Text style={styles.declineText}>Decline</Text>
-                            </>
-                          )}
-                        </Pressable>
-                        <Pressable
-                          style={[
-                            styles.actionChip,
-                            styles.acceptChip,
-                            cancellationLoading[request.id] && styles.actionChipDisabled,
-                          ]}
-                          disabled={!!cancellationLoading[request.id]}
-                          onPress={() => handleCompleteBooking(request.id)}
-                        >
-                          {cancellationLoading[request.id] ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                          ) : (
-                            <>
-                              <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-                              <Text style={styles.acceptText}>Accept</Text>
-                            </>
-                          )}
-                        </Pressable>
-                      </>
-                    ) : (
-                      // For declined requests: show only Cancel button
-                      <Pressable
-                        style={[
-                          styles.actionChip,
-                          styles.declineChip,
-                          cancellationLoading[request.id] && styles.actionChipDisabled,
-                        ]}
-                        disabled={!!cancellationLoading[request.id]}
-                        onPress={() => handleCancelBooking(request.id)}
-                      >
-                        {cancellationLoading[request.id] ? (
-                          <ActivityIndicator size="small" color="#1A1A1A" />
-                        ) : (
-                          <>
-                            <Ionicons name="close" size={14} color="#1A1A1A" />
-                            <Text style={styles.declineText}>Cancel</Text>
-                          </>
-                        )}
-                      </Pressable>
-                    )}
+                    <Pressable
+                      style={[
+                        styles.actionChip,
+                        styles.declineChip,
+                        cancellationLoading[request.id] && styles.actionChipDisabled,
+                      ]}
+                      disabled={!!cancellationLoading[request.id]}
+                      onPress={() => handleCancelBooking(request.id)}
+                    >
+                      {cancellationLoading[request.id] ? (
+                        <ActivityIndicator size="small" color={colors.text} />
+                      ) : (
+                        <>
+                          <Ionicons name="close" size={16} color={colors.text} />
+                          <Text style={[styles.declineText, { color: colors.text }]}>{'Decline'}</Text>
+                        </>
+                      )}
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.actionChip,
+                        styles.acceptChip,
+                        cancellationLoading[request.id] && styles.actionChipDisabled,
+                        { backgroundColor: colors.button, borderColor: colors.button },
+                      ]}
+                      disabled={!!cancellationLoading[request.id]}
+                      onPress={() => handleCompleteBooking(request.id)}
+                    >
+                      {cancellationLoading[request.id] ? (
+                        <ActivityIndicator size="small" color={colors.buttonText} />
+                      ) : (
+                        <>
+                          <Ionicons name="checkmark" size={16} color={colors.buttonText} />
+                          <Text style={[styles.acceptText, { color: colors.buttonText }]}>{'Accept'}</Text>
+                        </>
+                      )}
+                    </Pressable>
                   </View>
                 </View>
               </View>
@@ -985,7 +887,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -999,8 +901,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingBottom: Platform.select({ ios: 10, android: 8 }),
-    borderBottomWidth: 1,
+    paddingTop: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: Platform.select({ ios: 14, android: 12 }),
   },
   backButton: {
     width: 40,
@@ -1011,19 +913,16 @@ const styles = StyleSheet.create({
   headerTextGroup: {
     flex: 1,
     paddingHorizontal: 4,
-    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    color: '#1A1A1A',
+    fontSize: Platform.select({ ios: 26, android: 24 }),
+    fontWeight: '700',
+    color: '#0F172A',
   },
   headerSubtitle: {
-    marginTop: 2,
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
+    marginTop: 4,
+    fontSize: Platform.select({ ios: 15, android: 14 }),
+    color: '#6B7280',
   },
   placeholder: {
     width: 40,
@@ -1033,101 +932,80 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
-    paddingTop: Platform.select({ ios: 8, android: 6 }),
-    paddingBottom: Platform.select({ 
-      ios: 80, // Extra padding for iOS devices (5.4", 6.1", 6.3", 6.4", 6.5", 6.7")
-      android: 70 // Extra padding for Android devices (5.4", 5.5", 6.1", 6.3", 6.4", 6.5", 6.7")
-    }),
+    paddingTop: Platform.select({ ios: 16, android: 12 }),
+    paddingBottom: Platform.select({ ios: 60, android: 50 }),
   },
   requestsList: {
-    gap: 12,
+    gap: 14,
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
+    borderRadius: Platform.select({ ios: 20, android: 18 }),
+    padding: Platform.select({ ios: 20, android: 18 }),
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E7EB',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    marginBottom: 12,
-    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
+    shadowOpacity: Platform.select({ ios: 0.06, android: 0.05 }),
+    shadowRadius: Platform.select({ ios: 10, android: 8 }),
+    elevation: Platform.select({ ios: 0, android: 2 }),
+    gap: Platform.select({ ios: 16, android: 14 }),
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   customerName: {
-    fontSize: 16,
-    fontWeight: '500',
-    fontFamily: 'Montserrat-SemiBold',
-    color: '#1A1A1A',
-    marginBottom: 2,
+    fontSize: Platform.select({ ios: 19, android: 18 }),
+    fontWeight: '700',
+    color: '#111827',
   },
   timeAgo: {
-    fontSize: 11,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
+    marginTop: 4,
+    fontSize: 13,
+    color: '#6B7280',
   },
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 999,
   },
   statusBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Inter-Medium',
   },
   infoRow: {
     flexDirection: 'row',
+    gap: 12,
     alignItems: 'flex-start',
-    marginBottom: 12,
-    backgroundColor: '#FAFBFC',
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   infoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: 'rgba(3, 88, 168, 0.12)',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
     justifyContent: 'center',
     alignItems: 'center',
   },
   infoText: {
     flex: 1,
-    marginLeft: 10,
+    gap: 2,
   },
   infoLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
+    fontSize: 12,
+    color: '#9CA3AF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
   },
   infoValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
-    color: '#1A1A1A',
-    marginBottom: 2,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
   },
   infoSubValue: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#666666',
+    fontSize: 13,
+    color: '#6B7280',
   },
   infoSubRow: {
     flexDirection: 'row',
@@ -1136,110 +1014,72 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    gap: 12,
   },
   metaPill: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F6FA',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
   },
   metaLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
+    fontSize: 12,
+    color: '#9CA3AF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
   },
   metaValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
-    color: '#1A1A1A',
-  },
-  serviceIdRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(3, 88, 168, 0.05)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(3, 88, 168, 0.15)',
-  },
-  serviceIdLabel: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
-  },
-  serviceIdValue: {
-    fontSize: 13,
+    marginTop: 4,
+    fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-    color: BLUE_COLOR,
+    color: '#1F2937',
   },
   notesContainer: {
-    borderRadius: 10,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(3, 88, 168, 0.2)',
-    backgroundColor: 'rgba(3, 88, 168, 0.05)',
-    padding: 10,
-    marginBottom: 12,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    padding: 14,
+    gap: 6,
   },
   notesLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
-    color: BLUE_COLOR,
-    marginBottom: 4,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1D4ED8',
   },
   notesValue: {
-    fontSize: 13,
-    fontFamily: 'Inter-Regular',
-    color: '#1A1A1A',
-    lineHeight: 18,
+    fontSize: 14,
+    color: '#1E3A8A',
+    lineHeight: 20,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
   },
   amountLabel: {
-    fontSize: 11,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
-    marginBottom: 2,
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginBottom: 4,
   },
   amountValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-    color: '#1A1A1A',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
   },
   footerActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
   },
   actionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 14,
     borderWidth: 1,
-    minWidth: 85,
-    justifyContent: 'center',
   },
   actionChipDisabled: {
     opacity: 0.6,
@@ -1249,19 +1089,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   acceptChip: {
-    borderColor: BLUE_COLOR,
-    backgroundColor: BLUE_COLOR,
+    borderColor: '#000000',
+    backgroundColor: '#000000',
   },
   declineText: {
-    fontSize: 13,
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
-    color: '#1A1A1A',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
   },
   acceptText: {
-    fontSize: 13,
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
+    fontSize: 15,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   stateContainer: {
@@ -1275,19 +1113,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   stateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#111827',
     textAlign: 'center',
   },
   stateDescription: {
     marginTop: 6,
-    fontSize: 15,
-    fontFamily: 'Inter-Regular',
+    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   retryButton: {
     marginTop: 18,
@@ -1300,9 +1136,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   retryButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
 });
