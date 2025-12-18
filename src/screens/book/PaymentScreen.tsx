@@ -281,237 +281,237 @@ const PaymentScreen: React.FC<Props> = ({
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { borderBottomColor: '#E5E7EB' }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={26} color="#000000" />
+          <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
-        <View style={styles.titleContainer}>
-          <Text style={[styles.title, { color: '#000000' }]}>Payment</Text>
-        </View>
-        <View style={{ width: 26 }} />
+        <Text style={[styles.title, { color: colors.text }]}>Payment</Text>
+        <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        {/* Service Details */}
-        <View style={[styles.serviceCard, { backgroundColor: '#FFFFFF' }]}>
-          <Text style={[styles.serviceTitle, { color: '#000000' }]}>Service Details</Text>
-          <View style={styles.serviceRow}>
-            <Ionicons name="time" size={20} color={BLUE_COLOR} />
-            <Text style={[styles.serviceText, { color: '#000000' }]}>
-              {bookingData?.date && bookingData?.time
-                ? `${new Date(bookingData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${bookingData.time}`
-                : 'Service starts immediately'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Service Center Display (Read-only) */}
-        <View style={[styles.serviceCard, { backgroundColor: '#FFFFFF' }]}>
-          <Text style={[styles.serviceTitle, { color: '#000000' }]}>Service Center</Text>
-          <View style={[styles.separatorLine, { backgroundColor: '#E5E7EB' }]} />
-          <View style={[
-            styles.serviceCenterDisplay,
-            { 
-              borderColor: '#E5E7EB', 
-              backgroundColor: '#F9FAFB' 
-            }
-          ]}>
-            <Ionicons name="location" size={20} color={BLUE_COLOR} />
-            <Text style={[
-              styles.serviceCenterDisplayText,
-              { color: '#000000' }
-            ]}>
-              {selectedServiceCenter 
-                ? selectedServiceCenter.name 
-                : acceptedCenter?.name || 'Service Center'}
-            </Text>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Service Information Card */}
+        <View style={[styles.infoCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
+          <View style={styles.infoRow}>
+            <View style={[styles.infoIconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
+              <Ionicons name="time" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Service Date & Time</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>
+                {bookingData?.date && bookingData?.time
+                  ? `${new Date(bookingData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${bookingData.time}`
+                  : 'Service starts immediately'}
+              </Text>
+            </View>
           </View>
 
-          {/* Service Selection - Show when center is selected */}
+          <View style={[styles.infoRow, { marginTop: Platform.select({ ios: 16, android: 10 }) }]}>
+            <View style={[styles.infoIconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
+              <Ionicons name="location" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Service Center</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>
+                {selectedServiceCenter 
+                  ? selectedServiceCenter.name 
+                  : acceptedCenter?.name || 'Service Center'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Service Selection */}
           {selectedServiceCenter && selectedServiceCenter.services_offered && selectedServiceCenter.services_offered.length > 0 && (
-            <>
-              <Text style={[styles.serviceTitle, { color: colors.text, marginTop: 16 }]}>Select Service</Text>
-              <TouchableOpacity
-                style={[
-                  styles.dropdownButton,
-                  { 
-                    borderColor: BLUE_COLOR + '50', 
-                    backgroundColor: colors.surface 
-                  }
-                ]}
-                onPress={() => setShowServiceDropdown(true)}
-              >
+            <TouchableOpacity
+              style={[
+                styles.serviceButton,
+                { 
+                  borderColor: selectedService ? BLUE_COLOR : colors.border, 
+                  backgroundColor: selectedService ? BLUE_COLOR + '08' : colors.surface,
+                  marginTop: Platform.select({ ios: 16, android: 10 })
+                }
+              ]}
+              onPress={() => setShowServiceDropdown(true)}
+            >
+              <View style={styles.serviceButtonContent}>
                 <Text style={[
-                  styles.dropdownButtonText,
-                  { color: selectedService ? '#000000' : '#666666' }
+                  styles.serviceButtonText,
+                  { color: selectedService ? colors.text : colors.textSecondary }
                 ]}>
-                  {selectedService
-                    ? `${selectedService.name} - $${selectedService.offer_price || selectedService.price}` 
-                    : 'Select Service'}
+                  {selectedService ? selectedService.name : 'Select Service'}
                 </Text>
-                <Ionicons name="chevron-down" size={20} color={BLUE_COLOR} />
-              </TouchableOpacity>
-
-              {/* Selected Service Details */}
-              {selectedService && (
-                <View style={[styles.selectedServiceCard, { backgroundColor: colors.surface, borderColor: BLUE_COLOR + '30' }]}>
-                  {selectedService.image && (
-                    <Image 
-                      source={{ 
-                        uri: selectedService.image.startsWith('http') 
-                          ? selectedService.image 
-                          : `https://carwashapp.shoppypie.in/${selectedService.image}` 
-                      }} 
-                      style={styles.serviceImage}
-                      resizeMode="cover"
-                    />
-                  )}
-                  <View style={styles.selectedServiceInfo}>
-                    <Text style={[styles.selectedServiceName, { color: '#000000' }]}>{selectedService.name}</Text>
-                    {selectedService.description && (
-                      <Text style={[styles.selectedServiceDescription, { color: '#666666' }]} numberOfLines={2}>
-                        {selectedService.description}
-                      </Text>
-                    )}
-                    <View style={styles.priceContainer}>
-                      {selectedService.offer_price ? (
-                        <>
-                          <Text style={[styles.offerPrice, { color: BLUE_COLOR }]}>${selectedService.offer_price}</Text>
-                          <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>${selectedService.price}</Text>
-                        </>
-                      ) : (
-                        <Text style={[styles.offerPrice, { color: BLUE_COLOR }]}>${selectedService.price}</Text>
-                      )}
-                    </View>
-                  </View>
-                </View>
-              )}
-            </>
+                {selectedService && (
+                  <Text style={[styles.serviceButtonPrice, { color: BLUE_COLOR }]}>
+                    ${selectedService.offer_price || selectedService.price}
+                  </Text>
+                )}
+              </View>
+              <Ionicons name="chevron-forward" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} />
+            </TouchableOpacity>
           )}
           {selectedServiceCenter && (!selectedServiceCenter.services_offered || selectedServiceCenter.services_offered.length === 0) && (
-            <Text style={[styles.noServicesText, { color: '#666666' }]}>
-              No services available for this center
+            <Text style={[styles.noServicesText, { color: colors.textSecondary, marginTop: Platform.select({ ios: 12, android: 8 }) }]}>
+              No services available
             </Text>
           )}
         </View>
 
-        {/* Vehicle Details - Show for all payment methods */}
-        <View style={[styles.vehicleDetailsSection, { backgroundColor: '#FFFFFF' }]}>
-          <Text style={[styles.serviceTitle, { color: '#000000' }]}>Vehicle Details</Text>
-          <TextInput
-            style={[
-              styles.input, 
-              { 
-                borderColor: vehicleNumberError ? '#EF4444' : '#E5E7EB', 
-                color: '#000000', 
-                backgroundColor: '#F9FAFB' 
-              }
-            ]}
-            placeholder="Vehicle number (e.g., UP68 AB1234)"
-            placeholderTextColor="#666666"
-            value={vehicleNumber}
-            onChangeText={(text) => {
-              setVehicleNumber(text);
-              if (vehicleNumberError && text.trim()) {
-                setVehicleNumberError('');
-              }
-            }}
-            autoCapitalize="characters"
-          />
-          {vehicleNumberError ? (
-            <Text style={styles.errorText}>{vehicleNumberError}</Text>
-          ) : null}
-          <TextInput
-            style={[styles.input, { marginTop: 12, borderColor: '#E5E7EB', color: '#000000', backgroundColor: '#F9FAFB' }]}
-            placeholder="Notes (optional)"
-            placeholderTextColor="#666666"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-          />
+        {/* Vehicle Details Card */}
+        <View style={[styles.formCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 20, android: 16 }) }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Vehicle Information</Text>
+          
+          <View style={styles.inputWrapper}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Vehicle Number</Text>
+            <TextInput
+              style={[
+                styles.modernInput, 
+                { 
+                  borderColor: vehicleNumberError ? '#EF4444' : colors.border, 
+                  color: colors.text, 
+                  backgroundColor: colors.surface 
+                }
+              ]}
+              placeholder="Enter vehicle number"
+              placeholderTextColor={colors.textSecondary}
+              value={vehicleNumber}
+              onChangeText={(text) => {
+                setVehicleNumber(text);
+                if (vehicleNumberError && text.trim()) {
+                  setVehicleNumberError('');
+                }
+              }}
+              autoCapitalize="characters"
+            />
+            {vehicleNumberError ? (
+              <Text style={styles.errorText}>{vehicleNumberError}</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.inputWrapper}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Notes (Optional)</Text>
+            <TextInput
+              style={[
+                styles.modernInput, 
+                { 
+                  borderColor: colors.border, 
+                  color: colors.text, 
+                  backgroundColor: colors.surface,
+                  minHeight: Platform.select({ ios: 100, android: 80 })
+                }
+              ]}
+              placeholder="Add any special instructions"
+              placeholderTextColor={colors.textSecondary}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
         </View>
 
-        {/* Payment Method Selection */}
-        <View style={styles.paymentSection}>
-          <Text style={[styles.sectionTitle, { color: '#000000' }]}>Payment Method</Text>
+        {/* Payment Method Card */}
+        <View style={[styles.formCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 20, android: 16 }) }]}>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Payment Method</Text>
           
           <View style={styles.paymentMethodsContainer}>
             <TouchableOpacity 
               style={[
-                styles.paymentMethod,
-                { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' },
-                selectedPaymentMethod === 'card' && { borderColor: BLUE_COLOR, backgroundColor: '#F9FAFB' }
+                styles.paymentCard,
+                { 
+                  backgroundColor: selectedPaymentMethod === 'card' ? BLUE_COLOR : colors.surface,
+                  borderColor: selectedPaymentMethod === 'card' ? BLUE_COLOR : colors.border
+                }
               ]}
               onPress={() => setSelectedPaymentMethod('card')}
+              activeOpacity={0.7}
             >
-              <View style={styles.paymentMethodLeft}>
-                <Ionicons name="card" size={24} color={BLUE_COLOR} />
-                <Text style={[styles.paymentMethodText, { color: '#000000' }]}>Credit/Debit Card</Text>
-              </View>
-              <View style={[
-                styles.radioButton,
-                { borderColor: BLUE_COLOR + '50' },
-                selectedPaymentMethod === 'card' && { borderColor: BLUE_COLOR }
+                <Ionicons 
+                name="card" 
+                size={Platform.select({ ios: 24, android: 20 })} 
+                color={selectedPaymentMethod === 'card' ? '#FFFFFF' : BLUE_COLOR} 
+              />
+              <Text style={[
+                styles.paymentCardText,
+                { color: selectedPaymentMethod === 'card' ? '#FFFFFF' : colors.text }
               ]}>
-                {selectedPaymentMethod === 'card' && (
-                  <View style={[styles.radioButtonInner, { backgroundColor: BLUE_COLOR }]} />
-                )}
-              </View>
+                Card
+              </Text>
+              {selectedPaymentMethod === 'card' && (
+                <View style={styles.checkIcon}>
+                  <Ionicons name="checkmark-circle" size={Platform.select({ ios: 20, android: 18 })} color="#FFFFFF" />
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={[
-                styles.paymentMethod,
-                { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' },
-                selectedPaymentMethod === 'wallet' && { borderColor: BLUE_COLOR, backgroundColor: '#F9FAFB' }
+                styles.paymentCard,
+                { 
+                  backgroundColor: selectedPaymentMethod === 'wallet' ? BLUE_COLOR : colors.surface,
+                  borderColor: selectedPaymentMethod === 'wallet' ? BLUE_COLOR : colors.border
+                }
               ]}
               onPress={() => setSelectedPaymentMethod('wallet')}
+              activeOpacity={0.7}
             >
-              <View style={styles.paymentMethodLeft}>
-                <Ionicons name="wallet" size={24} color={BLUE_COLOR} />
-                <Text style={[styles.paymentMethodText, { color: '#000000' }]}>Digital Wallet</Text>
-              </View>
-              <View style={[
-                styles.radioButton,
-                { borderColor: BLUE_COLOR + '50' },
-                selectedPaymentMethod === 'wallet' && { borderColor: BLUE_COLOR }
+                <Ionicons 
+                name="wallet" 
+                size={Platform.select({ ios: 24, android: 20 })} 
+                color={selectedPaymentMethod === 'wallet' ? '#FFFFFF' : BLUE_COLOR} 
+              />
+              <Text style={[
+                styles.paymentCardText,
+                { color: selectedPaymentMethod === 'wallet' ? '#FFFFFF' : colors.text }
               ]}>
-                {selectedPaymentMethod === 'wallet' && (
-                  <View style={[styles.radioButtonInner, { backgroundColor: BLUE_COLOR }]} />
-                )}
-              </View>
+                Wallet
+              </Text>
+              {selectedPaymentMethod === 'wallet' && (
+                <View style={styles.checkIcon}>
+                  <Ionicons name="checkmark-circle" size={Platform.select({ ios: 20, android: 18 })} color="#FFFFFF" />
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity 
               style={[
-                styles.paymentMethod,
-                { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' },
-                selectedPaymentMethod === 'cash' && { borderColor: BLUE_COLOR, backgroundColor: '#F9FAFB' }
+                styles.paymentCard,
+                { 
+                  backgroundColor: selectedPaymentMethod === 'cash' ? BLUE_COLOR : colors.surface,
+                  borderColor: selectedPaymentMethod === 'cash' ? BLUE_COLOR : colors.border
+                }
               ]}
               onPress={() => setSelectedPaymentMethod('cash')}
+              activeOpacity={0.7}
             >
-              <View style={styles.paymentMethodLeft}>
-                <Ionicons name="cash" size={24} color={BLUE_COLOR} />
-                <Text style={[styles.paymentMethodText, { color: '#000000' }]}>Cash</Text>
-              </View>
-              <View style={[
-                styles.radioButton,
-                { borderColor: BLUE_COLOR + '50' },
-                selectedPaymentMethod === 'cash' && { borderColor: BLUE_COLOR }
+                <Ionicons 
+                name="cash" 
+                size={Platform.select({ ios: 24, android: 20 })} 
+                color={selectedPaymentMethod === 'cash' ? '#FFFFFF' : BLUE_COLOR} 
+              />
+              <Text style={[
+                styles.paymentCardText,
+                { color: selectedPaymentMethod === 'cash' ? '#FFFFFF' : colors.text }
               ]}>
-                {selectedPaymentMethod === 'cash' && (
-                  <View style={[styles.radioButtonInner, { backgroundColor: BLUE_COLOR }]} />
-                )}
-              </View>
+                Cash
+              </Text>
+              {selectedPaymentMethod === 'cash' && (
+                <View style={styles.checkIcon}>
+                  <Ionicons name="checkmark-circle" size={Platform.select({ ios: 20, android: 18 })} color="#FFFFFF" />
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Payment Summary (hidden for Cash) */}
         {selectedPaymentMethod !== 'cash' && selectedService && (
-          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.summaryTitle, { color: colors.text }]}>Payment Summary</Text>
+          <View style={[styles.summaryCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Payment Summary</Text>
             
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{selectedService.name}</Text>
@@ -523,7 +523,7 @@ const PaymentScreen: React.FC<Props> = ({
             {selectedService.offer_price && (
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Original Price</Text>
-                <Text style={[styles.summaryValue, { color: colors.textSecondary, textDecorationLine: 'line-through' }]}>
+                <Text style={[styles.summaryDiscount, { color: colors.textSecondary }]}>
                   ${selectedService.price}
                 </Text>
               </View>
@@ -531,8 +531,8 @@ const PaymentScreen: React.FC<Props> = ({
             
             <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
             <View style={styles.summaryRow}>
-              <Text style={[styles.summaryTotalLabel, { color: colors.text }]}>Total Amount</Text>
-              <Text style={[styles.summaryTotalValue, { color: colors.text }]}>
+              <Text style={[styles.summaryTotalLabel, { color: colors.text }]}>Total</Text>
+              <Text style={[styles.summaryTotalValue, { color: BLUE_COLOR }]}>
                 ${selectedService.offer_price || selectedService.price}
               </Text>
             </View>
@@ -611,7 +611,7 @@ const PaymentScreen: React.FC<Props> = ({
       </Modal>
 
       {/* Pay Button */}
-      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: '#FFFFFF', borderTopColor: '#E5E7EB' }]}>
+      <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity 
           style={[
             styles.payButton, 
@@ -645,144 +645,161 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
     borderBottomWidth: 1,
   },
   backButton: {
-    padding: 4,
-  },
-  titleContainer: {
-    flex: 1,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 26,
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
     fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
+    flex: 1,
+    textAlign: 'center',
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: Platform.select({ ios: 16, android: 12 }),
+    paddingBottom: Platform.select({ ios: 20, android: 16 }),
   },
-  serviceCard: {
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
+  infoCard: {
+    borderRadius: Platform.select({ ios: 16, android: 14 }),
+    padding: Platform.select({ ios: 20, android: 16 }),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
-  serviceTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '600',
-    marginBottom: 16,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.4,
-  },
-  separatorLine: {
-    height: 1,
-    width: '100%',
-    marginBottom: 16,
-  },
-  serviceRow: {
+  infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 12,
+    alignItems: 'flex-start',
   },
-  serviceText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+  infoIconContainer: {
+    width: Platform.select({ ios: 40, android: 32 }),
+    height: Platform.select({ ios: 40, android: 32 }),
+    borderRadius: Platform.select({ ios: 12, android: 8 }),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Platform.select({ ios: 12, android: 8 }),
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
+    marginBottom: Platform.select({ ios: 6, android: 4 }),
+  },
+  infoValue: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
   },
-  paymentSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '600',
-    marginBottom: 16,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.4,
-  },
-  paymentMethodsContainer: {
-    marginBottom: 0,
-  },
-  paymentMethod: {
+  serviceButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1.5,
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    padding: Platform.select({ ios: 16, android: 14 }),
+    minHeight: Platform.select({ ios: 56, android: 52 }),
   },
-  vehicleDetailsSection: {
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
+  serviceButtonContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+  serviceButtonText: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    marginBottom: 2,
+  },
+  serviceButtonPrice: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_MEDIUM }),
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '600',
+  },
+  formCard: {
+    borderRadius: Platform.select({ ios: 16, android: 14 }),
+    padding: Platform.select({ ios: 20, android: 16 }),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
-  paymentMethodSelected: {},
-  paymentMethodLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  cardTitle: {
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.BODY_LARGE }),
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontWeight: '600',
+    marginBottom: Platform.select({ ios: 18, android: 14 }),
   },
-  paymentMethodText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+  inputWrapper: {
+    marginBottom: Platform.select({ ios: 20, android: 16 }),
+  },
+  inputLabel: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
+    marginBottom: Platform.select({ ios: 10, android: 8 }),
+  },
+  modernInput: {
+    borderWidth: 1.5,
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
+    minHeight: Platform.select({ ios: 52, android: 48 }),
   },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    justifyContent: 'center',
+  paymentMethodsContainer: {
+    flexDirection: 'row',
+    gap: Platform.select({ ios: 12, android: 8 }),
+    marginTop: Platform.select({ ios: 8, android: 4 }),
+  },
+  paymentCard: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderRadius: Platform.select({ ios: 14, android: 10 }),
+    padding: Platform.select({ ios: 16, android: 10 }),
+    minHeight: Platform.select({ ios: 100, android: 70 }),
+    position: 'relative',
   },
-  radioButtonSelected: {},
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  paymentCardText: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_MEDIUM }),
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '600',
+    marginTop: Platform.select({ ios: 8, android: 4 }),
+  },
+  checkIcon: {
+    position: 'absolute',
+    top: Platform.select({ ios: 8, android: 4 }),
+    right: Platform.select({ ios: 8, android: 4 }),
   },
   summaryCard: {
-    padding: 20,
-    borderRadius: 16,
+    borderRadius: Platform.select({ ios: 16, android: 14 }),
+    padding: Platform.select({ ios: 20, android: 16 }),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
   },
   errorText: {
     color: '#EF4444',
@@ -791,49 +808,49 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontFamily: FONTS.INTER_REGULAR,
   },
-  summaryTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '700',
-    marginBottom: 12,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-  },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Platform.select({ ios: 10, android: 8 }),
   },
   summaryLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   summaryValue: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+  },
+  summaryDiscount: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
     fontFamily: FONTS.INTER_REGULAR,
+    textDecorationLine: 'line-through',
   },
   summaryDivider: {
     height: 1,
-    marginVertical: 8,
+    marginVertical: Platform.select({ ios: 12, android: 10 }),
   },
   summaryTotalLabel: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
     fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
   },
   summaryTotalValue: {
-    fontSize: FONT_SIZES.NUMBER_SMALL,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_SMALL, android: FONT_SIZES.BODY_LARGE }),
     fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
   },
   bottomContainer: {
-    padding: 20,
+    padding: Platform.select({ ios: 20, android: 16 }),
     borderTopWidth: 1,
-    paddingBottom: 24,
+    paddingBottom: Platform.select({ ios: 24, android: 20 }),
   },
   payButton: {
-    borderRadius: 16,
-    paddingVertical: 18,
+    borderRadius: Platform.select({ ios: 32, android: 28 }),
+    paddingVertical: Platform.select({ ios: 18, android: 14 }),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -866,27 +883,13 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     flex: 1,
   },
-  serviceCenterDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginTop: 0,
-    gap: 12,
-  },
-  serviceCenterDisplayText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
-    flex: 1,
-  },
   noServicesText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_MEDIUM }),
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    marginTop: 8,
+    marginTop: Platform.select({ ios: 8, android: 6 }),
+    fontStyle: 'italic',
+    marginLeft: Platform.select({ ios: 30, android: 28 }),
   },
   selectedServiceCard: {
     flexDirection: 'row',

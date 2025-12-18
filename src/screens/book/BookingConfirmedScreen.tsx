@@ -4,6 +4,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
@@ -66,21 +68,28 @@ const BookingConfirmedScreen: React.FC<Props> = ({
   };
   return (
     <SafeAreaView style={[styles.container,{ backgroundColor: theme.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { borderBottomColor: '#E5E7EB' }]}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={26} color="#000000" />
+          <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={[styles.title, { color: '#000000' }]}>Finding your car wash</Text>
-          <Text style={[styles.subtitle, { color: '#666666' }]}>Broadcasting to all nearby centers</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Finding your car wash</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Broadcasting to all nearby centers</Text>
         </View>
+        <View style={{ width: 32 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Booking Confirmed */}
         <View style={styles.confirmationSection}>
           <View style={[styles.confirmationIcon, { backgroundColor: BLUE_COLOR }]}>
-            <Ionicons name="checkmark" size={52} color="#FFFFFF" />
+            <Ionicons name="checkmark" size={Platform.select({ ios: 52, android: 48 })} color="#FFFFFF" />
           </View>
           <Text style={[styles.confirmationTitle, { color: '#000000' }]}>Booking Confirmed!</Text>
           <Text style={[styles.confirmationSubtitle, { color: '#666666' }]}>
@@ -108,7 +117,7 @@ const BookingConfirmedScreen: React.FC<Props> = ({
         </View>
 
         {/* Next Step Instructions removed as requested */}
-      </View>
+      </ScrollView>
 
       {/* Proceed to Payment Button */}
       <View style={[styles.bottomContainer,{ backgroundColor: theme.surface, borderTopColor: BLUE_COLOR + '30' }]}>
@@ -128,46 +137,57 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: Platform.select({ ios: 16, android: 14 }),
+    paddingBottom: Platform.select({ ios: 14, android: 12 }),
     borderBottomWidth: 1,
   },
   backButton: {
-    padding: 4,
-    marginRight: 14,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerContent: {
     flex: 1,
+    alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: Platform.select({ ios: 4, android: 3 }),
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_LARGE, android: FONT_SIZES.CAPTION_MEDIUM }),
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
+    textAlign: 'center',
   },
-  content: {
+  scrollView: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+  },
+  scrollContent: {
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: Platform.select({ ios: 20, android: 16 }),
+    paddingBottom: Platform.select({ ios: 20, android: 16 }),
   },
   confirmationSection: {
     alignItems: 'center',
-    marginVertical: 32,
-    paddingTop: 20,
+    marginVertical: Platform.select({ ios: 32, android: 24 }),
+    paddingTop: Platform.select({ ios: 20, android: 12 }),
   },
   confirmationIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: Platform.select({ ios: 100, android: 80 }),
+    height: Platform.select({ ios: 100, android: 80 }),
+    borderRadius: Platform.select({ ios: 50, android: 40 }),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: Platform.select({ ios: 28, android: 20 }),
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -175,35 +195,36 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   confirmationTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_LARGE, android: FONT_SIZES.HEADING_MEDIUM }),
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: Platform.select({ ios: 12, android: 10 }),
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.5,
     textAlign: 'center',
   },
   confirmationSubtitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
     textAlign: 'center',
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    lineHeight: 22,
-    paddingHorizontal: 20,
+    lineHeight: Platform.select({ ios: 22, android: 20 }),
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
   },
   detailsSection: {
-    marginBottom: 32,
+    marginTop: Platform.select({ ios: 24, android: 20 }),
+    marginBottom: Platform.select({ ios: 32, android: 24 }),
   },
   detailsTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_LARGE, android: FONT_SIZES.HEADING_MEDIUM }),
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: Platform.select({ ios: 20, android: 16 }),
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.4,
   },
   detailsCard: {
     backgroundColor: '#F9FAFB',
-    padding: 20,
-    borderRadius: 16,
+    padding: Platform.select({ ios: 20, android: 16 }),
+    borderRadius: Platform.select({ ios: 16, android: 12 }),
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -215,20 +236,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
   },
   detailRowWithBorder: {
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   detailLabel: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     flex: 1,
   },
   detailValue: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     flex: 1.5,
@@ -251,15 +272,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   bottomContainer: {
-    padding: 20,
+    padding: Platform.select({ ios: 20, android: 16 }),
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    paddingBottom: 24,
+    paddingBottom: Platform.select({ ios: 24, android: 20 }),
   },
   paymentButton: {
-    borderRadius: 16,
-    paddingVertical: 18,
+    borderRadius: Platform.select({ ios: 32, android: 28 }),
+    paddingVertical: Platform.select({ ios: 18, android: 14 }),
     alignItems: 'center',
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 4 },

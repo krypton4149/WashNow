@@ -239,16 +239,27 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       key={timeSlot.id}
       style={[
         styles.timeSlotButton,
-        { backgroundColor: colors.surface, borderColor: BLUE_COLOR + '30' },
-        selectedTime === timeSlot.id && [styles.timeSlotButtonSelected, { backgroundColor: BLUE_COLOR, borderColor: BLUE_COLOR }],
+        { 
+          backgroundColor: selectedTime === timeSlot.id ? BLUE_COLOR : colors.surface,
+          borderColor: selectedTime === timeSlot.id ? BLUE_COLOR : colors.border,
+        },
+        selectedTime === timeSlot.id && styles.timeSlotButtonSelected,
       ]}
       onPress={() => handleTimeSelect(timeSlot.id)}
       disabled={!timeSlot.isAvailable}
     >
+      {selectedTime === timeSlot.id && (
+        <Ionicons 
+          name="checkmark-circle" 
+          size={Platform.select({ ios: 18, android: 16 })} 
+          color="#FFFFFF" 
+          style={styles.checkIcon}
+        />
+      )}
       <Text style={[
         styles.timeSlotText,
-        { color: colors.text },
-        selectedTime === timeSlot.id && [styles.timeSlotTextSelected, { color: '#FFFFFF' }],
+        { color: selectedTime === timeSlot.id ? '#FFFFFF' : colors.text },
+        selectedTime === timeSlot.id && styles.timeSlotTextSelected,
       ]}>
         {timeSlot.time}
       </Text>
@@ -260,87 +271,88 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(16, Math.min(insets.bottom || 0, 24)) }} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: BLUE_COLOR + '30' }]}>
-          <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.surface }]} onPress={onBack}>
-            <Ionicons name="close" size={20} color={BLUE_COLOR} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>Schedule Booking</Text>
-          <View style={{ width: 40 }} />
-        </View>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.text }]}>Schedule Booking</Text>
+        <View style={{ width: 32 }} />
+      </View>
 
-        {/* Service Center */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Service Center</Text>
-          <View style={[styles.centerCard, { backgroundColor: colors.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }]}>
-            <Image source={{ uri: selectedCenter.image }} style={styles.centerImage} />
-            <View style={styles.centerInfo}>
-              <Text style={[styles.centerName, { color: colors.text }]}>{selectedCenter.name}</Text>
-              <View style={styles.centerAddressContainer}>
-                <Ionicons name="location" size={16} color={BLUE_COLOR} style={styles.centerAddressIcon} />
-                <Text style={[styles.centerAddress, { color: colors.textSecondary }]}>{selectedCenter.address}</Text>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* Service Center Card */}
+        <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+          <View style={styles.serviceCenterRow}>
+            <View style={[styles.serviceIconWrapper, { backgroundColor: BLUE_COLOR + '10' }]}>
+              <Image source={{ uri: selectedCenter.image }} style={styles.serviceIconImage} />
+            </View>
+            <View style={styles.serviceCenterInfo}>
+              <Text style={[styles.serviceCenterName, { color: colors.text }]}>{selectedCenter.name}</Text>
+              <View style={styles.addressRow}>
+                <Ionicons name="location" size={Platform.select({ ios: 14, android: 12 })} color={BLUE_COLOR} />
+                <Text style={[styles.serviceCenterAddress, { color: colors.textSecondary }]} numberOfLines={1}>
+                  {selectedCenter.address}
+                </Text>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Date Selection */}
-        <View style={styles.section}>
-          <View style={styles.dateHeader}>
-            <View style={styles.dateIconContainer}>
-              <Ionicons name="calendar-outline" size={20} color={BLUE_COLOR} />
-            </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Select Date</Text>
+        {/* Calendar Card */}
+        <View style={[styles.calendarCard, { backgroundColor: colors.card }]}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="calendar-outline" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Select Date</Text>
           </View>
-          <View style={[styles.calendarCard, { backgroundColor: colors.card, borderColor: BLUE_COLOR + '30', borderWidth: 1 }]}>
-            <View style={styles.calendarHeader}>
-              <TouchableOpacity style={[styles.calendarNavButton, { backgroundColor: BLUE_COLOR + '15' }]} onPress={handlePreviousMonth}>
-                <Ionicons name="chevron-back" size={18} color={BLUE_COLOR} />
-              </TouchableOpacity>
-              <Text style={[styles.calendarMonth, { color: colors.text }]}>{getMonthName(currentMonth)} {currentYear}</Text>
-              <TouchableOpacity style={[styles.calendarNavButton, { backgroundColor: BLUE_COLOR + '15' }]} onPress={handleNextMonth}>
-                <Ionicons name="chevron-forward" size={18} color={BLUE_COLOR} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.calendarDaysHeader}>
-              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                <Text key={day} style={[styles.calendarDayHeaderText, { color: colors.textSecondary }]}>{day}</Text>
-              ))}
-            </View>
-            <View style={styles.calendarGrid}>
-              {generateCalendarDays().map(renderCalendarDay)}
-            </View>
-            
-            {/* Selected Date Display */}
-            <View style={[styles.selectedDateContainer, { borderTopColor: BLUE_COLOR + '30' }]}>
-              <Text style={[styles.selectedDateLabel, { color: colors.textSecondary }]}>Selected Date</Text>
-              <Text style={[styles.selectedDateText, { color: colors.text }]}>
-                {new Date(currentYear, currentMonth, parseInt(selectedDate)).toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
+          <View style={styles.calendarHeader}>
+            <TouchableOpacity 
+              style={[styles.calendarNavButton, { backgroundColor: colors.surface }]} 
+              onPress={handlePreviousMonth}
+            >
+              <Ionicons name="chevron-back" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} />
+            </TouchableOpacity>
+            <Text style={[styles.calendarMonth, { color: colors.text }]}>
+              {getMonthName(currentMonth)} {currentYear}
+            </Text>
+            <TouchableOpacity 
+              style={[styles.calendarNavButton, { backgroundColor: colors.surface }]} 
+              onPress={handleNextMonth}
+            >
+              <Ionicons name="chevron-forward" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.calendarDaysHeader}>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+              <Text key={`day-${index}`} style={[styles.calendarDayHeaderText, { color: colors.textSecondary }]}>
+                {day}
               </Text>
-            </View>
+            ))}
+          </View>
+          <View style={styles.calendarGrid}>
+            {generateCalendarDays().map(renderCalendarDay)}
           </View>
         </View>
 
-        {/* Time Selection */}
-        <View style={styles.section}>
-          <View style={styles.timeHeader}>
-            <View style={styles.timeIconContainer}>
-              <Ionicons name="time-outline" size={20} color={BLUE_COLOR} />
+        {/* Time Slots Card - Redesigned */}
+        <View style={[styles.timeCard, { backgroundColor: colors.card }]}>
+          <View style={styles.cardHeader}>
+            <View style={[styles.iconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
+              <Ionicons name="time-outline" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Select Time</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Select Time</Text>
           </View>
-          <View style={styles.timeSlotsGrid}>
-            {timeSlots.map(renderTimeSlot)}
+          <View style={styles.timeSlotsContainer}>
+            <View style={styles.timeSlotsGrid}>
+              {timeSlots.map(renderTimeSlot)}
+            </View>
           </View>
         </View>
-
-        {/* Vehicle Number and Notes removed as requested */}
 
         {/* Book Now Button */}
         <TouchableOpacity 
@@ -361,85 +373,117 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  backButton: {
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
+    flex: 1,
+    textAlign: 'center',
+  },
+  scrollContent: {
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: Platform.select({ ios: 16, android: 12 }),
+    paddingBottom: Platform.select({ ios: 24, android: 20 }),
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: Platform.select({ ios: 16, android: 14 }),
+    paddingBottom: Platform.select({ ios: 14, android: 12 }),
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#6B7280',
-    fontWeight: 'bold',
-  },
-  title: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
-  },
-  section: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-  },
-  sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    marginBottom: 12,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
-  },
-  centerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    shadowColor: BLUE_COLOR,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+  infoCard: {
+    borderRadius: Platform.select({ ios: 16, android: 14 }),
+    padding: Platform.select({ ios: 16, android: 14 }),
+    marginBottom: Platform.select({ ios: 16, android: 12 }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
   },
-  centerImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
+  calendarCard: {
+    borderRadius: Platform.select({ ios: 16, android: 14 }),
+    padding: Platform.select({ ios: 16, android: 14 }),
+    marginBottom: Platform.select({ ios: 16, android: 12 }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  centerInfo: {
-    flex: 1,
+  timeCard: {
+    borderRadius: Platform.select({ ios: 16, android: 14 }),
+    padding: Platform.select({ ios: 16, android: 14 }),
+    marginBottom: Platform.select({ ios: 16, android: 12 }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  centerName: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
-    marginBottom: 8,
-    fontFamily: FONTS.INTER_BOLD,
-  },
-  centerAddressContainer: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    gap: Platform.select({ ios: 10, android: 8 }),
+    marginBottom: Platform.select({ ios: 16, android: 14 }),
   },
-  centerAddressIcon: {
-    marginRight: 6,
+  iconContainer: {
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 10, android: 8 }),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  centerAddress: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+  cardTitle: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+  },
+  serviceCenterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  serviceIconWrapper: {
+    width: Platform.select({ ios: 56, android: 50 }),
+    height: Platform.select({ ios: 56, android: 50 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    marginRight: Platform.select({ ios: 12, android: 10 }),
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  serviceIconImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  serviceCenterInfo: {
+    flex: 1,
+  },
+  serviceCenterName: {
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
+    fontWeight: '600',
+    marginBottom: Platform.select({ ios: 6, android: 4 }),
+    fontFamily: FONTS.INTER_SEMIBOLD,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Platform.select({ ios: 6, android: 4 }),
+  },
+  serviceCenterAddress: {
+    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_LARGE, android: FONT_SIZES.CAPTION_MEDIUM }),
     fontFamily: FONTS.INTER_REGULAR,
     flex: 1,
   },
@@ -499,69 +543,34 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  dateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  dateIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: BLUE_COLOR + '15',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  dateIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  calendarCard: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    shadowColor: BLUE_COLOR,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
   calendarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: Platform.select({ ios: 16, android: 14 }),
   },
   calendarNavButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: Platform.select({ ios: 32, android: 28 }),
+    height: Platform.select({ ios: 32, android: 28 }),
+    borderRadius: Platform.select({ ios: 8, android: 6 }),
     justifyContent: 'center',
     alignItems: 'center',
   },
-  calendarNavText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
   calendarMonth: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '700',
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
+    fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   calendarDaysHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: Platform.select({ ios: 10, android: 8 }),
     width: '100%',
   },
   calendarDayHeaderText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_MEDIUM, android: FONT_SIZES.CAPTION_SMALL }),
     fontWeight: '600',
-    width: '14.28%', // Match calendar day width for alignment
+    width: '14.28%',
     textAlign: 'center',
     fontFamily: FONTS.INTER_SEMIBOLD,
   },
@@ -571,108 +580,70 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   calendarDay: {
-    width: '14.28%', // 100% / 7 = 14.28% for exactly 7 items per row
+    width: '14.28%',
     aspectRatio: 1,
-    minHeight: 36,
-    maxHeight: 44,
+    minHeight: Platform.select({ ios: 36, android: 32 }),
+    maxHeight: Platform.select({ ios: 44, android: 38 }),
     justifyContent: 'center',
     alignItems: 'center',
     padding: 2,
   },
   calendarDaySelected: {
-    borderRadius: 22,
+    borderRadius: Platform.select({ ios: 22, android: 18 }),
   },
   calendarDayInactive: {
-    opacity: 0.3,
+    opacity: 0.2,
   },
   calendarDayText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_LARGE, android: FONT_SIZES.CAPTION_MEDIUM }),
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '500',
   },
   calendarDayTextSelected: {
     fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
   },
   calendarDayPast: {
-    opacity: 0.3,
+    opacity: 0.25,
   },
   calendarDayTextPast: {},
   calendarDayTextInactive: {},
-  inputContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  textInput: {
-    fontSize: 16,
-    color: '#000000',
-    paddingVertical: 8,
-  },
-  notesInput: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  selectedDateContainer: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    alignItems: 'center',
-  },
-  selectedDateLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    marginBottom: 4,
-    fontFamily: FONTS.INTER_MEDIUM,
-  },
-  selectedDateText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
-  },
-  timeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  timeIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: BLUE_COLOR + '15',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  timeIcon: {
-    fontSize: 16,
-    marginRight: 8,
+  timeSlotsContainer: {
+    width: '100%',
   },
   timeSlotsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: Platform.select({ ios: 10, android: 8 }),
   },
   timeSlotButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
-    minWidth: 90,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
+    justifyContent: 'center',
+    paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
+    paddingVertical: Platform.select({ ios: 12, android: 11 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    flexBasis: Platform.select({ ios: '31.5%', android: '31%' }),
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   timeSlotButtonSelected: {
     shadowColor: BLUE_COLOR,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 6,
+    elevation: 4,
+    transform: [{ scale: 1.02 }],
+  },
+  checkIcon: {
+    marginRight: Platform.select({ ios: 6, android: 4 }),
   },
   timeSlotText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
   },
@@ -680,37 +651,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
   },
-  scheduleInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E0F2FE',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  scheduleIcon: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  scheduleTextContainer: {
-    flex: 1,
-  },
-  scheduleTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  scheduleDescription: {
-    fontSize: 14,
-    color: '#666666',
-  },
   continueButton: {
-    marginHorizontal: 16,
-    marginVertical: 24,
-    paddingVertical: 16,
-    borderRadius: 16,
+    marginHorizontal: Platform.select({ ios: 16, android: 14 }),
+    marginTop: Platform.select({ ios: 24, android: 20 }),
+    marginBottom: Platform.select({ ios: 24, android: 16 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    borderRadius: Platform.select({ ios: 30, android: 28 }),
     alignItems: 'center',
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 4 },
@@ -719,7 +665,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   continueButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontSize: Platform.select({ ios: FONT_SIZES.BUTTON_MEDIUM, android: FONT_SIZES.BUTTON_SMALL }),
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.5,

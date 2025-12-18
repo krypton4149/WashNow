@@ -206,12 +206,12 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
 
   return (
     <SafeAreaView style={[styles.container,{backgroundColor: theme.background}]} edges={platformEdges as any}>
-      <View style={[styles.header, { borderBottomColor: BLUE_COLOR + '15' }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={26} color="#000000" />
+          <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: '#000000' }]}>Plan your wash</Text>
-        <View style={{ width: 26 }} />
+        <Text style={[styles.title, { color: colors.text }]}>Plan your wash</Text>
+        <View style={{ width: 32 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -221,14 +221,14 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
             style={[styles.selectionButton, { backgroundColor: theme.chip, borderColor: BLUE_COLOR + '40', borderWidth: 1.5 }]}
             onPress={() => setShowTimeModal(true)}
           >
-            <Ionicons name="time-outline" size={18} color="#000000" />
+            <Ionicons name="time-outline" size={Platform.select({ ios: 18, android: 16 })} color="#000000" />
             <Text style={[styles.selectionText, { color: '#000000' }]}>Wash now</Text>
-            <Ionicons name="chevron-down-outline" size={18} color="#000000" />
+            <Ionicons name="chevron-down-outline" size={Platform.select({ ios: 18, android: 16 })} color="#000000" />
           </TouchableOpacity>
           
           <TouchableOpacity style={[styles.selectionButton, { backgroundColor: theme.chip, borderColor: BLUE_COLOR + '40', borderWidth: 1.5 }]}> 
             <Text style={[styles.selectionText, { color: '#000000' }]}>For me</Text>
-            <Ionicons name="chevron-down-outline" size={18} color="#000000" />
+            <Ionicons name="chevron-down-outline" size={Platform.select({ ios: 18, android: 16 })} color="#000000" />
           </TouchableOpacity>
         </View>
 
@@ -416,18 +416,25 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
     justifyContent: 'space-between',
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
     borderBottomWidth: 1,
   },
   backButton: {
-    padding: 4,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
     fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.3,
+    flex: 1,
+    textAlign: 'center',
     letterSpacing: -0.5,
   },
   content: {
@@ -436,17 +443,18 @@ const styles = StyleSheet.create({
   },
   selectionContainer: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
+    gap: Platform.select({ ios: 12, android: 8 }),
+    marginBottom: Platform.select({ ios: 20, android: 12 }),
+    marginTop: Platform.select({ ios: 0, android: 8 }),
   },
   selectionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 24,
-    gap: 10,
+    paddingHorizontal: Platform.select({ ios: 18, android: 12 }),
+    paddingVertical: Platform.select({ ios: 14, android: 10 }),
+    borderRadius: Platform.select({ ios: 24, android: 16 }),
+    gap: Platform.select({ ios: 10, android: 6 }),
     flex: 1,
     borderWidth: 1.5,
     shadowColor: BLUE_COLOR,
@@ -456,17 +464,17 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   selectionText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
     fontWeight: '400',
     flex: 1,
     fontFamily: FONTS.INTER_REGULAR,
   },
   locationContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: Platform.select({ ios: 16, android: 12 }),
     borderWidth: 1.5,
-    padding: 18,
-    marginBottom: 24,
+    padding: Platform.select({ ios: 18, android: 12 }),
+    marginBottom: Platform.select({ ios: 24, android: 16 }),
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -476,13 +484,13 @@ const styles = StyleSheet.create({
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: Platform.select({ ios: 14, android: 10 }),
   },
   locationDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginRight: 14,
+    width: Platform.select({ ios: 14, android: 12 }),
+    height: Platform.select({ ios: 14, android: 12 }),
+    borderRadius: Platform.select({ ios: 7, android: 6 }),
+    marginRight: Platform.select({ ios: 14, android: 10 }),
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -490,21 +498,21 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   locationText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
     fontWeight: '400',
     flex: 1,
     fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 22,
+    lineHeight: Platform.select({ ios: 22, android: 20 }),
   },
   separatorLine: {
     height: 1,
     width: '100%',
-    marginVertical: 12,
+    marginVertical: Platform.select({ ios: 12, android: 8 }),
   },
   whereToWashRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: Platform.select({ ios: 8, android: 6 }),
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -512,18 +520,18 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_LARGE,
-    paddingVertical: 10,
-    paddingHorizontal: 6,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
+    paddingVertical: Platform.select({ ios: 10, android: 8 }),
+    paddingHorizontal: Platform.select({ ios: 6, android: 4 }),
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
   },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: Platform.select({ ios: 22, android: 20 }),
+    height: Platform.select({ ios: 22, android: 20 }),
+    borderRadius: Platform.select({ ios: 6, android: 5 }),
     borderWidth: 2,
-    marginRight: 14,
+    marginRight: Platform.select({ ios: 14, android: 10 }),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -539,17 +547,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_LARGE, android: FONT_SIZES.HEADING_MEDIUM }),
     fontWeight: '600',
-    marginBottom: 20,
+    marginBottom: Platform.select({ ios: 20, android: 14 }),
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.4,
   },
   centerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 18,
-    paddingHorizontal: 4,
+    paddingVertical: Platform.select({ ios: 18, android: 12 }),
+    paddingHorizontal: Platform.select({ ios: 4, android: 2 }),
     borderBottomWidth: 1.5,
     borderBottomColor: BLUE_COLOR + '20',
   },
@@ -639,7 +647,7 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: BLUE_COLOR,
-    borderRadius: 12,
+    borderRadius: 30,
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 8,
@@ -758,7 +766,7 @@ const styles = StyleSheet.create({
     backgroundColor: BLUE_COLOR,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 20,
   },
   retryButtonText: {
     color: '#FFFFFF',

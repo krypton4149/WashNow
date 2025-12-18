@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import BackButton from '../../components/ui/BackButton';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
@@ -213,18 +212,18 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
         activeOpacity={0.7}
       >
         <View style={[styles.centerLocationIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
-          <Ionicons name="location" size={18} color={BLUE_COLOR} />
+          <Ionicons name="location" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
         </View>
         <View style={styles.centerInfo}>
           <View style={styles.centerHeader}>
-            <Text style={[styles.centerName, { color: '#000000' }]}>{center.name || 'Service Center'}</Text>
+            <Text style={[styles.centerName, { color: colors.text }]} numberOfLines={1}>{center.name || 'Service Center'}</Text>
             {minPrice && (
-              <View style={[styles.priceBadge, { backgroundColor: '#F5F5F5' }]}>
-                <Text style={[styles.minPrice, { color: '#000000' }]}>{minPrice}</Text>
+              <View style={[styles.priceBadge, { backgroundColor: BLUE_COLOR + '10' }]}>
+                <Text style={[styles.minPrice, { color: BLUE_COLOR }]}>{minPrice}</Text>
               </View>
             )}
           </View>
-          <Text style={[styles.centerAddress, { color: '#666666' }]}>{center.address || 'Address not available'}</Text>
+          <Text style={[styles.centerAddress, { color: colors.textSecondary }]} numberOfLines={2}>{center.address || 'Address not available'}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -236,34 +235,31 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
       <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: Math.max(12, Math.min(insets.bottom || 0, 20)) }} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: '#E5E7EB' }]}>
-          <BackButton onPress={onBack} />
-          <View style={styles.headerContent}>
-            <Text style={[styles.title, { color: '#000000' }]}>Schedule for Later</Text>
-            <Text style={[styles.subtitle, { color: '#666666' }]}>Choose location and center first</Text>
-          </View>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>Schedule for Later</Text>
+          <View style={{ width: 32 }} />
         </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: '#E5E7EB' }]}>
-            <Ionicons name="search-outline" size={20} color="#000000" style={styles.searchIcon} />
+          <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="search-outline" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} style={styles.searchIcon} />
             <TextInput
-              style={[styles.searchInput, { color: '#000000' }]}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholder="Where do you want the car wash?"
-              placeholderTextColor="#666666"
+              placeholderTextColor={colors.textSecondary}
               value={searchText}
               onChangeText={setSearchText}
             />
           </View>
         </View>
 
-        {/* Separator Line */}
-        <View style={styles.separatorLine} />
-
-            {/* Car Wash Centers */}
-            <View style={styles.centersContainer}>
-              <Text style={[styles.sectionTitle, { color: '#000000' }]}>
+        {/* Car Wash Centers */}
+        <View style={styles.centersContainer}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {searchText.length > 0 
                   ? `Service Centers matching "${searchText}" (${centersCount})` 
                   : `Available Service Centers (${centersCount})`
@@ -283,8 +279,10 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
                   </TouchableOpacity>
                 </View>
               ) : filteredCenters.length > 0 ? (
-                <View style={styles.centersList}>
-                  {filteredCenters.map((center, index) => renderCarWashCenter(center, index))}
+                <View style={styles.centersListContainer}>
+                  <View style={styles.centersList}>
+                    {filteredCenters.map((center, index) => renderCarWashCenter(center, index))}
+                  </View>
                 </View>
               ) : (
                 <View style={styles.noResultsContainer}>
@@ -319,70 +317,66 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
     borderBottomWidth: 1,
   },
-  headerContent: {
-    flex: 1,
-    marginLeft: 16,
+  backButton: {
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
     fontWeight: '600',
-    marginBottom: 6,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
+    letterSpacing: -0.3,
+    flex: 1,
+    textAlign: 'center',
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 20,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    marginTop: Platform.select({ ios: 16, android: 12 }),
+    marginBottom: Platform.select({ ios: 12, android: 10 }),
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderWidth: 1,
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    paddingHorizontal: Platform.select({ ios: 14, android: 12 }),
+    paddingVertical: Platform.select({ ios: 8, android: 6 }),
+    borderWidth: 1.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
-  },
-  separatorLine: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 20,
-    marginBottom: 20,
+    minHeight: Platform.select({ ios: 44, android: 40 }),
   },
   searchIcon: {
-    marginRight: 12,
+    marginRight: Platform.select({ ios: 10, android: 8 }),
   },
   searchInput: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
+    paddingVertical: 0,
+    marginVertical: 0,
   },
   locationsContainer: {
     paddingHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.BODY_LARGE }),
     fontWeight: '600',
-    marginBottom: 20,
+    marginBottom: Platform.select({ ios: 16, android: 14 }),
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   locationsList: {
     gap: 16,
@@ -420,7 +414,9 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   centersContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: Platform.select({ ios: 8, android: 6 }),
+    paddingBottom: Platform.select({ ios: 24, android: 20 }),
   },
   locationSubtitle: {
     fontSize: 16,
@@ -429,34 +425,43 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontFamily: 'System',
   },
+  centersListContainer: {
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: Platform.select({ ios: 0, android: 0 }),
+  },
   centersList: {
-    // Container for center cards
+    width: '100%',
+    maxWidth: Platform.select({ ios: 580, android: '100%' }),
+    gap: Platform.select({ ios: 12, android: 10 }),
+    alignItems: 'stretch',
   },
   centerCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-    borderRadius: 16,
-    borderWidth: 1,
+    alignItems: 'flex-start',
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    paddingHorizontal: Platform.select({ ios: 16, android: 14 }),
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    minHeight: Platform.select({ ios: 80, android: 72 }),
   },
   centerCardSpacing: {
-    marginBottom: 12,
+    marginBottom: 0,
   },
   centerLocationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: Platform.select({ ios: 44, android: 40 }),
+    height: Platform.select({ ios: 44, android: 40 }),
+    borderRadius: Platform.select({ ios: 22, android: 20 }),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: Platform.select({ ios: 12, android: 10 }),
+    flexShrink: 0,
   },
   centerLocationIconText: {
     fontSize: 16,
@@ -464,37 +469,41 @@ const styles = StyleSheet.create({
   },
   centerInfo: {
     flex: 1,
+    minWidth: 0,
   },
   centerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    marginBottom: Platform.select({ ios: 6, android: 5 }),
+    gap: Platform.select({ ios: 8, android: 6 }),
   },
   centerName: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
     fontWeight: '600',
     flex: 1,
     fontFamily: FONTS.INTER_SEMIBOLD,
-    lineHeight: 22,
+    lineHeight: Platform.select({ ios: 22, android: 20 }),
+    marginBottom: Platform.select({ ios: 4, android: 3 }),
+    flexShrink: 1,
   },
   priceBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginLeft: 8,
+    paddingHorizontal: Platform.select({ ios: 12, android: 10 }),
+    paddingVertical: Platform.select({ ios: 5, android: 4 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    flexShrink: 0,
   },
   minPrice: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
   },
   centerAddress: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
     fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 20,
-    marginTop: 2,
+    lineHeight: Platform.select({ ios: 18, android: 16 }),
+    marginTop: Platform.select({ ios: 2, android: 1 }),
+    flexShrink: 1,
   },
   scheduleInfo: {
     flexDirection: 'row',
@@ -550,7 +559,7 @@ const styles = StyleSheet.create({
         backgroundColor: BLUE_COLOR,
         paddingHorizontal: 24,
         paddingVertical: 12,
-        borderRadius: 12,
+        borderRadius: 24,
         shadowColor: BLUE_COLOR,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,

@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 30,
     alignItems: 'center',
   },
   confirmButtonDisabled: {

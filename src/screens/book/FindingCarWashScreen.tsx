@@ -366,14 +366,16 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
 
   return (
     <SafeAreaView style={[styles.container,{backgroundColor: theme.background}]} edges={platformEdges as any}>
-      <View style={styles.header}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={BLUE_COLOR} />
+          <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={[styles.title,{color: theme.textPrimary}]}>Finding your car wash</Text>
-          <Text style={[styles.subtitle,{color: theme.textSecondary}]}>Broadcasting to all nearby centers.</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Finding your car wash</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Broadcasting to all nearby centers.</Text>
         </View>
+        <View style={{ width: 32 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -463,30 +465,36 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: Platform.select({ ios: 16, android: 14 }),
+    paddingBottom: Platform.select({ ios: 14, android: 12 }),
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    padding: 4,
-    marginRight: 12,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerContent: {
     flex: 1,
+    alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 4,
+    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
+    fontWeight: '600',
+    marginBottom: Platform.select({ ios: 4, android: 3 }),
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.3,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#666666',
+    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_LARGE, android: FONT_SIZES.CAPTION_MEDIUM }),
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textAlign: 'center',
   },
   content: {
     flex: 1,
@@ -683,8 +691,8 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: Platform.select({ ios: 30, android: 28 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
     alignItems: 'center',
     marginBottom: 8,
   },
