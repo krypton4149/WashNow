@@ -20,6 +20,7 @@ interface Booking {
   service_price?: string;
   service_offer_price?: string;
   vehicle_no: string;
+  carmodel?: string;
   booking_date: string;
   booking_time: string;
   notes: string;
@@ -239,6 +240,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
       serviceOfferPrice: serviceOfferPrice ? String(serviceOfferPrice) : undefined,
       serviceId: finalServiceId ? String(finalServiceId) : undefined,
       vehicle_no: booking.vehicle_no,
+      carmodel: booking.carmodel || '',
       notes: booking.notes,
       address: centerAddress,
       duration: getDuration(booking.booking_date, booking.booking_time),
@@ -562,6 +564,16 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                     Vehicle: {booking.vehicle_no}
                   </Text>
                 </View>
+                
+                {/* Car Model */}
+                {booking.carmodel && (
+                  <View style={styles.infoRow}>
+                    <Ionicons name="car-sport-outline" size={16} color={colors.textSecondary} />
+                    <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                      Model: {booking.carmodel}
+                    </Text>
+                  </View>
+                )}
                 
                 {/* Booking ID */}
                 <View style={styles.infoRow}>

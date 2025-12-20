@@ -31,6 +31,9 @@ interface UserData {
   phone?: string;
   type?: string;
   carModel?: string;
+  carmake?: string;
+  carmodel?: string;
+  vehicle_no?: string;
   licensePlate?: string;
   status?: string;
   createdAt?: string;
@@ -278,6 +281,53 @@ const ProfileScreen: React.FC<Props> = ({
             <View style={styles.contactInfo}>
               <Text style={styles.contactLabel}>Member Since</Text>
               <Text style={styles.contactValue}>{memberSinceDate}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Car Details Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Car Details</Text>
+          
+          <View style={styles.contactCard}>
+            <View style={styles.contactIconCar}>
+              <View style={styles.carGradientBackground} />
+              <View style={styles.carGradientOverlay} />
+              <Ionicons name="car-outline" size={16} color="#FFFFFF" style={styles.iconContent} />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactLabel}>Vehicle Number</Text>
+              <Text style={styles.contactValue}>
+                {userData?.vehicle_no || 'Not provided'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.contactCard}>
+            <View style={styles.contactIconCarMake}>
+              <View style={styles.carMakeGradientBackground} />
+              <View style={styles.carMakeGradientOverlay} />
+              <Ionicons name="construct-outline" size={16} color="#FFFFFF" style={styles.iconContent} />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactLabel}>Car Make</Text>
+              <Text style={styles.contactValue}>
+                {userData?.carmake || 'Not provided'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.contactCard}>
+            <View style={styles.contactIconCarModel}>
+              <View style={styles.carModelGradientBackground} />
+              <View style={styles.carModelGradientOverlay} />
+              <Ionicons name="car-sport-outline" size={16} color="#FFFFFF" style={styles.iconContent} />
+            </View>
+            <View style={styles.contactInfo}>
+              <Text style={styles.contactLabel}>Car Model</Text>
+              <Text style={styles.contactValue}>
+                {userData?.carmodel || 'Not provided'}
+              </Text>
             </View>
           </View>
         </View>
@@ -559,6 +609,90 @@ const styles = StyleSheet.create({
     width: '50%',
     height: '100%',
     backgroundColor: '#fbbf24',
+    opacity: 0.6,
+  },
+  contactIconCar: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  carGradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#10B981',
+  },
+  carGradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '50%',
+    height: '100%',
+    backgroundColor: '#059669',
+    opacity: 0.6,
+  },
+  contactIconCarMake: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#8B5CF6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  carMakeGradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#8B5CF6',
+  },
+  carMakeGradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '50%',
+    height: '100%',
+    backgroundColor: '#7C3AED',
+    opacity: 0.6,
+  },
+  contactIconCarModel: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#F59E0B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  carModelGradientBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#F59E0B',
+  },
+  carModelGradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '50%',
+    height: '100%',
+    backgroundColor: '#D97706',
     opacity: 0.6,
   },
   iconContent: {

@@ -38,6 +38,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [carmake, setCarmake] = useState('');
+  const [carmodel, setCarmodel] = useState('');
+  const [vehicleNo, setVehicleNo] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -111,6 +114,9 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
       fullName: fullName.trim(),
       email: email.trim(),
       phoneNumber: finalPhoneNumber,
+      carmake: carmake.trim(),
+      carmodel: carmodel.trim(),
+      vehicle_no: vehicleNo.trim(),
       password: password.trim(),
       passwordConfirmation: confirmPassword.trim(), // Add password confirmation
     };
@@ -160,6 +166,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
           const phoneError = validationErrors.phone || validationErrors.phone_number;
           apiErrors.phone = Array.isArray(phoneError) ? phoneError[0] : String(phoneError);
           console.log('✅ Mapped phone error:', apiErrors.phone);
+        }
+        if (validationErrors.carmake) {
+          apiErrors.carmake = Array.isArray(validationErrors.carmake) ? validationErrors.carmake[0] : String(validationErrors.carmake);
+          console.log('✅ Mapped carmake error:', apiErrors.carmake);
+        }
+        if (validationErrors.carmodel) {
+          apiErrors.carmodel = Array.isArray(validationErrors.carmodel) ? validationErrors.carmodel[0] : String(validationErrors.carmodel);
+          console.log('✅ Mapped carmodel error:', apiErrors.carmodel);
+        }
+        if (validationErrors.vehicle_no) {
+          apiErrors.vehicle_no = Array.isArray(validationErrors.vehicle_no) ? validationErrors.vehicle_no[0] : String(validationErrors.vehicle_no);
+          console.log('✅ Mapped vehicle_no error:', apiErrors.vehicle_no);
         }
         if (validationErrors.password) {
           apiErrors.password = Array.isArray(validationErrors.password) ? validationErrors.password[0] : String(validationErrors.password);
@@ -251,6 +269,15 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
         // Always prepend +44 if there are digits
         const phoneDigits = value.replace(/\D/g, '');
         setPhoneNumber(phoneDigits ? UK_COUNTRY_CODE + phoneDigits : '');
+        break;
+      case 'carmake':
+        setCarmake(value);
+        break;
+      case 'carmodel':
+        setCarmodel(value);
+        break;
+      case 'vehicle_no':
+        setVehicleNo(value.toUpperCase());
         break;
       case 'password':
         setPassword(value);
@@ -387,6 +414,60 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({
                   ) : (
                     <Text style={styles.helperText}>Phone number must include UK country code (+44)</Text>
                   )}
+                </View>
+
+                {/* Car Make Field */}
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Car Make</Text>
+                  <View style={[styles.inputField, errors.carmake && styles.inputFieldError]}>
+                    <Ionicons name="car-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter car make (e.g., Toyota, Honda)"
+                      placeholderTextColor="#9CA3AF"
+                      value={carmake}
+                      onChangeText={(value) => handleInputChange('carmake', value)}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {errors.carmake && <Text style={styles.errorText}>{errors.carmake}</Text>}
+                </View>
+
+                {/* Car Model Field */}
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Car Model</Text>
+                  <View style={[styles.inputField, errors.carmodel && styles.inputFieldError]}>
+                    <Ionicons name="car-sport-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter car model (e.g., Camry, Civic)"
+                      placeholderTextColor="#9CA3AF"
+                      value={carmodel}
+                      onChangeText={(value) => handleInputChange('carmodel', value)}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {errors.carmodel && <Text style={styles.errorText}>{errors.carmodel}</Text>}
+                </View>
+
+                {/* Vehicle Number Field */}
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Vehicle Number</Text>
+                  <View style={[styles.inputField, errors.vehicle_no && styles.inputFieldError]}>
+                    <Ionicons name="document-text-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter vehicle registration number"
+                      placeholderTextColor="#9CA3AF"
+                      value={vehicleNo}
+                      onChangeText={(value) => handleInputChange('vehicle_no', value)}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  {errors.vehicle_no && <Text style={styles.errorText}>{errors.vehicle_no}</Text>}
                 </View>
 
                 {/* Password Field */}

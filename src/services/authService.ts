@@ -304,6 +304,9 @@ class AuthService {
           email: userData?.email || emailOrPhone,
           fullName: userData?.name || 'User',
           phoneNumber: userData?.phone || '',
+          carmake: userData?.carmake || '',
+          carmodel: userData?.carmodel || '',
+          vehicle_no: userData?.vehicle_no || '',
           type: 'customer',
           loginType: loginType,
           status: userData?.status || 'Active',
@@ -350,6 +353,9 @@ class AuthService {
         name: userData.fullName,
         email: userData.email,
         phone: userData.phoneNumber,
+        carmake: userData.carmake || '',
+        carmodel: userData.carmodel || '',
+        vehicle_no: userData.vehicle_no || '',
         password: userData.password,
         password_confirmation: userData.passwordConfirmation || userData.password,
         device_token: 'mobile-app',
@@ -376,6 +382,9 @@ class AuthService {
           email: apiUserData?.email || userData.email,
           fullName: apiUserData?.name || userData.fullName,
           phoneNumber: apiUserData?.phone || userData.phoneNumber,
+          carmake: apiUserData?.carmake || userData.carmake || '',
+          carmodel: apiUserData?.carmodel || userData.carmodel || '',
+          vehicle_no: apiUserData?.vehicle_no || userData.vehicle_no || '',
           type: 'customer',
           loginType: data.data?.loginType || 'visitor',
           status: apiUserData?.status || 'Active',
@@ -528,6 +537,9 @@ class AuthService {
           email: apiUserData?.email || phone + '@phone.com',
           fullName: apiUserData?.name || 'Phone User',
           phoneNumber: phone,
+          carmake: apiUserData?.carmake || '',
+          carmodel: apiUserData?.carmodel || '',
+          vehicle_no: apiUserData?.vehicle_no || '',
           type: 'customer',
           loginType: data.data?.loginType || 'visitor',
           status: apiUserData?.status || 'Active',
@@ -571,6 +583,7 @@ class AuthService {
     booking_date: string;
     booking_time: string;
     vehicle_no: string;
+    carmodel?: string;
     notes?: string;
     service_id?: string;
   }): Promise<{ success: boolean; bookingId?: string; error?: string }> {
@@ -585,6 +598,10 @@ class AuthService {
       formData.append('booking_date', bookingData.booking_date);
       formData.append('booking_time', bookingData.booking_time);
       formData.append('vehicle_no', bookingData.vehicle_no);
+      formData.append('carmake', ''); // Always send empty string for carmake
+      if (bookingData.carmodel) {
+        formData.append('carmodel', bookingData.carmodel);
+      }
       if (bookingData.notes) {
         formData.append('notes', bookingData.notes);
       }
@@ -1476,17 +1493,20 @@ class AuthService {
 
       if (response.ok && data.success) {
         const currentUser = await this.getUser();
-        
+
         const updatedUser = {
           id: currentUser?.id || '1',
           email: currentUser?.email || '',
           fullName: name.trim(),
           phoneNumber: phone.trim(),
+          carmake: currentUser?.carmake || '',
+          carmodel: currentUser?.carmodel || '',
+          vehicle_no: currentUser?.vehicle_no || '',
           type: currentUser?.type || 'customer',
           status: currentUser?.status || 'Active',
           createdAt: currentUser?.createdAt || new Date().toISOString()
         };
-        
+
         await this.setUser(updatedUser);
 
         return {

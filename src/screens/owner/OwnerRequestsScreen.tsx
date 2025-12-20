@@ -18,6 +18,7 @@ import authService from '../../services/authService';
 import apiClient from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 interface OwnerRequestsScreenProps {
   onBack?: () => void;
@@ -33,6 +34,9 @@ interface BookingRequestCard {
   vehicle: {
     model: string;
     plate: string;
+    primary: string;
+    secondary: string;
+    carmodel?: string;
   };
   location: {
     address: string;
@@ -235,11 +239,12 @@ const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
     booking?.vehicle_no
   );
 
-  const vehicleModel = ensureString('Vehicle not specified',
+  const vehicleModel = ensureString('',
+    booking?.carmodel,
+    booking?.car_model,
     booking?.vehicleModel,
     booking?.vehicle_model,
     booking?.vehicle?.model,
-    booking?.car_model,
     booking?.car?.model,
     booking?.vehicleType,
     booking?.vehicle_type,
@@ -289,8 +294,9 @@ const mapBookingToCard = (booking: any, index: number): BookingRequestCard => {
     timeAgo,
     status,
     vehicle: {
-      primary: vehiclePlate !== 'Plate not provided' ? vehiclePlate : vehicleModel,
-      secondary: vehiclePlate !== 'Plate not provided' ? vehicleModel : '',
+      primary: vehiclePlate !== 'Plate not provided' ? vehiclePlate : (vehicleModel || 'Vehicle not specified'),
+      secondary: vehicleModel && vehiclePlate !== 'Plate not provided' ? vehicleModel : '',
+      carmodel: vehicleModel || undefined,
     },
     location: {
       address: locationAddress,
@@ -714,10 +720,10 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
           </TouchableOpacity>
         )}
         <View style={styles.headerTextGroup}>
@@ -796,7 +802,9 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                   <View style={styles.infoText}>
                       <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Vehicle</Text>
                       <Text style={[styles.infoValue, { color: colors.text }]}>{request.vehicle.primary}</Text>
-                      {request.vehicle.secondary ? (
+                      {request.vehicle.carmodel ? (
+                        <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>Model: {request.vehicle.carmodel}</Text>
+                      ) : request.vehicle.secondary ? (
                         <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.vehicle.secondary}</Text>
                       ) : null}
                   </View>
@@ -900,29 +908,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 20, android: 18 }),
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
     paddingTop: Platform.select({ ios: 10, android: 8 }),
-    paddingBottom: Platform.select({ ios: 14, android: 12 }),
+    paddingBottom: Platform.select({ ios: 10, android: 8 }),
+    borderBottomWidth: 1,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   headerTextGroup: {
     flex: 1,
-    paddingHorizontal: 4,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: Platform.select({ ios: 26, android: 24 }),
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   headerSubtitle: {
-    marginTop: 4,
-    fontSize: Platform.select({ ios: 15, android: 14 }),
-    color: '#6B7280',
+    marginTop: Platform.select({ ios: 4, android: 3 }),
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textAlign: 'center',
   },
   placeholder: {
     width: 40,
@@ -957,13 +971,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   customerName: {
-    fontSize: Platform.select({ ios: 19, android: 18 }),
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
   },
   timeAgo: {
     marginTop: 4,
-    fontSize: 13,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     color: '#6B7280',
   },
   statusBadge: {
@@ -972,8 +989,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   infoRow: {
     flexDirection: 'row',
@@ -993,18 +1011,23 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
     color: '#9CA3AF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   infoValue: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
   },
   infoSubValue: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     color: '#6B7280',
   },
   infoSubRow: {
@@ -1024,15 +1047,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   metaLabel: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
     color: '#9CA3AF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   metaValue: {
     marginTop: 4,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#1F2937',
   },
   notesContainer: {
@@ -1044,12 +1070,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   notesLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#1D4ED8',
   },
   notesValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     color: '#1E3A8A',
     lineHeight: 20,
   },
@@ -1059,13 +1088,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   amountLabel: {
-    fontSize: 13,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     color: '#9CA3AF',
     marginBottom: 4,
   },
   amountValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#0F172A',
   },
   footerActions: {
@@ -1093,13 +1125,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   declineText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
   },
   acceptText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#FFFFFF',
   },
   stateContainer: {
@@ -1113,14 +1147,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   stateTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#111827',
     textAlign: 'center',
   },
   stateDescription: {
     marginTop: 6,
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
@@ -1136,8 +1173,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   retryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#FFFFFF',
   },
 });

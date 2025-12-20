@@ -65,18 +65,18 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   ];
 
   const timeSlots: TimeSlot[] = [
-    { id: '08:00', time: '08:00 AM', isAvailable: true },
-    { id: '09:00', time: '09:00 AM', isAvailable: true },
+    { id: '08:00', time: '8:00 AM', isAvailable: true },
+    { id: '09:00', time: '9:00 AM', isAvailable: true },
     { id: '10:00', time: '10:00 AM', isAvailable: true },
     { id: '11:00', time: '11:00 AM', isAvailable: true },
     { id: '12:00', time: '12:00 PM', isAvailable: true },
-    { id: '13:00', time: '01:00 PM', isAvailable: true },
-    { id: '14:00', time: '02:00 PM', isAvailable: true },
-    { id: '15:00', time: '03:00 PM', isAvailable: true },
-    { id: '16:00', time: '04:00 PM', isAvailable: true },
-    { id: '17:00', time: '05:00 PM', isAvailable: true },
-    { id: '18:00', time: '06:00 PM', isAvailable: true },
-    { id: '19:00', time: '07:00 PM', isAvailable: true },
+    { id: '13:00', time: '1:00 PM', isAvailable: true },
+    { id: '14:00', time: '2:00 PM', isAvailable: true },
+    { id: '15:00', time: '3:00 PM', isAvailable: true },
+    { id: '16:00', time: '4:00 PM', isAvailable: true },
+    { id: '17:00', time: '5:00 PM', isAvailable: true },
+    { id: '18:00', time: '6:00 PM', isAvailable: true },
+    { id: '19:00', time: '7:00 PM', isAvailable: true },
   ];
 
 
@@ -381,10 +381,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',
   },
@@ -398,8 +398,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingTop: Platform.select({ ios: 16, android: 14 }),
-    paddingBottom: Platform.select({ ios: 14, android: 12 }),
+    paddingTop: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: Platform.select({ ios: 10, android: 8 }),
     borderBottomWidth: 1,
   },
   infoCard: {
@@ -446,9 +446,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardTitle: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   serviceCenterRow: {
     flexDirection: 'row',
@@ -472,10 +472,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   serviceCenterName: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
     marginBottom: Platform.select({ ios: 6, android: 4 }),
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   addressRow: {
     flexDirection: 'row',
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     gap: Platform.select({ ios: 6, android: 4 }),
   },
   serviceCenterAddress: {
-    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_LARGE, android: FONT_SIZES.CAPTION_MEDIUM }),
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
     flex: 1,
   },
@@ -557,8 +557,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calendarMonth: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   calendarDaysHeader: {
@@ -568,11 +568,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   calendarDayHeaderText: {
-    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_MEDIUM, android: FONT_SIZES.CAPTION_SMALL }),
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
     width: '14.28%',
     textAlign: 'center',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -595,9 +595,9 @@ const styles = StyleSheet.create({
     opacity: 0.2,
   },
   calendarDayText: {
-    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_LARGE, android: FONT_SIZES.CAPTION_MEDIUM }),
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   calendarDayTextSelected: {
     fontWeight: '700',
@@ -615,15 +615,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Platform.select({ ios: 10, android: 8 }),
+    justifyContent: 'space-between',
   },
   timeSlotButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
-    paddingVertical: Platform.select({ ios: 12, android: 11 }),
+    paddingHorizontal: Platform.select({ ios: 12, android: 10 }),
+    paddingVertical: Platform.select({ ios: 8, android: 7 }),
     borderRadius: Platform.select({ ios: 12, android: 10 }),
-    flexBasis: Platform.select({ ios: '31.5%', android: '31%' }),
+    width: Platform.select({ ios: '31%', android: '31%' }),
+    minHeight: Platform.select({ ios: 40, android: 38 }),
     borderWidth: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -643,9 +645,9 @@ const styles = StyleSheet.create({
     marginRight: Platform.select({ ios: 6, android: 4 }),
   },
   timeSlotText: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   timeSlotTextSelected: {
     fontWeight: '700',

@@ -35,8 +35,10 @@ const PaymentScreen: React.FC<Props> = ({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState('');
+  const [carModel, setCarModel] = useState('');
   const [notes, setNotes] = useState('');
   const [vehicleNumberError, setVehicleNumberError] = useState('');
+  const [editableBookingTime, setEditableBookingTime] = useState<string>('');
   const { colors } = useTheme();
 
   // Service center and service selection states
@@ -82,6 +84,33 @@ const PaymentScreen: React.FC<Props> = ({
     // If format not recognized, return as is
     return timeStr;
   };
+
+  // Load user data and pre-fill vehicle number and car model
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const user = await authService.getUser();
+        if (user) {
+          if (user.vehicle_no) {
+            setVehicleNumber(user.vehicle_no);
+          }
+          if (user.carmodel) {
+            setCarModel(user.carmodel);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+    loadUserData();
+  }, []);
+
+  // Initialize editable booking time from bookingData
+  useEffect(() => {
+    if (bookingData?.time) {
+      setEditableBookingTime(bookingData.time);
+    }
+  }, [bookingData?.time]);
 
   // Fetch service center details on mount
   useEffect(() => {
@@ -156,9 +185,9 @@ const PaymentScreen: React.FC<Props> = ({
         let bookingTime: string;
         
         if (isScheduledBooking && bookingData.date && bookingData.time) {
-          // Use scheduled date and time
+          // Use scheduled date and time (use editable time if changed)
           bookingDate = new Date(bookingData.date);
-          bookingTime = convertTimeTo24Hour(bookingData.time);
+          bookingTime = editableBookingTime ? convertTimeTo24Hour(editableBookingTime) : convertTimeTo24Hour(bookingData.time);
         } else {
           // Use current date and time for instant booking
           const now = new Date();
@@ -186,6 +215,7 @@ const PaymentScreen: React.FC<Props> = ({
           booking_date: formatDate(bookingDate),
           booking_time: bookingTime,
           vehicle_no: vehicleNumber.trim(),
+          carmodel: carModel.trim() || '',
           notes: notes?.trim() ? notes.trim() : 'Payment method: Cash',
           service_id: String(selectedService.id),
         };
@@ -198,7 +228,7 @@ const PaymentScreen: React.FC<Props> = ({
           // Pass booking date and time (either scheduled or current for instant)
           const bookingDataForResponse = {
             date: bookingDate.toISOString(),
-            time: isScheduledBooking && bookingData?.time ? bookingData.time : getCurrentTime(bookingDate),
+            time: isScheduledBooking && (editableBookingTime || bookingData?.time) ? (editableBookingTime || bookingData.time) : getCurrentTime(bookingDate),
           };
           onPaymentSuccess?.(bookingId, bookingDataForResponse);
         } else {
@@ -234,9 +264,9 @@ const PaymentScreen: React.FC<Props> = ({
         let bookingTime: string;
         
         if (isScheduledBooking && bookingData.date && bookingData.time) {
-          // Use scheduled date and time
+          // Use scheduled date and time (use editable time if changed)
           bookingDate = new Date(bookingData.date);
-          bookingTime = convertTimeTo24Hour(bookingData.time);
+          bookingTime = editableBookingTime ? convertTimeTo24Hour(editableBookingTime) : convertTimeTo24Hour(bookingData.time);
         } else {
           // Use current date and time for instant booking
           const now = new Date();
@@ -249,6 +279,7 @@ const PaymentScreen: React.FC<Props> = ({
           booking_date: formatDate(bookingDate),
           booking_time: bookingTime,
           vehicle_no: vehicleNumber.trim(),
+          carmodel: carModel.trim() || '',
           notes: notes?.trim() || '',
           service_id: String(selectedService.id),
         };
@@ -261,7 +292,7 @@ const PaymentScreen: React.FC<Props> = ({
           // Pass booking date and time (either scheduled or current for instant)
           const bookingDataForResponse = {
             date: bookingDate.toISOString(),
-            time: isScheduledBooking && bookingData?.time ? bookingData.time : getCurrentTime(bookingDate),
+            time: isScheduledBooking && (editableBookingTime || bookingData?.time) ? (editableBookingTime || bookingData.time) : getCurrentTime(bookingDate),
           };
           onPaymentSuccess?.(bookingId, bookingDataForResponse);
         } else {
@@ -296,23 +327,45 @@ const PaymentScreen: React.FC<Props> = ({
       >
         {/* Service Information Card */}
         <View style={[styles.infoCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
-          <View style={styles.infoRow}>
+          <View style={styles.cardHeaderSection}>
+            <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
+              <Ionicons name="calendar" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
+            </View>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Booking Details</Text>
+          </View>
+
+          <View style={[styles.infoRow, { marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
             <View style={[styles.infoIconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
-              <Ionicons name="time" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} />
+              <Ionicons name="time" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
             </View>
             <View style={styles.infoContent}>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Service Date & Time</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
-                {bookingData?.date && bookingData?.time
-                  ? `${new Date(bookingData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at ${bookingData.time}`
-                  : 'Service starts immediately'}
-              </Text>
+              {bookingData?.date && bookingData?.time ? (
+                <View style={styles.timeEditContainer}>
+                  <Text style={[styles.infoValue, { color: colors.text, flex: 1 }]}>
+                    {new Date(bookingData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at{' '}
+                  </Text>
+                  <View style={[styles.timeInputContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                    <TextInput
+                      style={[styles.timeInput, { color: colors.text }]}
+                      value={editableBookingTime || bookingData.time}
+                      onChangeText={setEditableBookingTime}
+                      placeholder="Time"
+                      placeholderTextColor={colors.textSecondary}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  Service starts immediately
+                </Text>
+              )}
             </View>
           </View>
 
-          <View style={[styles.infoRow, { marginTop: Platform.select({ ios: 16, android: 10 }) }]}>
+          <View style={[styles.infoRow, { marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
             <View style={[styles.infoIconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
-              <Ionicons name="location" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} />
+              <Ionicons name="location" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
             </View>
             <View style={styles.infoContent}>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Service Center</Text>
@@ -362,61 +415,116 @@ const PaymentScreen: React.FC<Props> = ({
 
         {/* Vehicle Details Card */}
         <View style={[styles.formCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 20, android: 16 }) }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Vehicle Information</Text>
+          <View style={styles.cardHeaderSection}>
+            <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
+              <Ionicons name="car" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
+            </View>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Vehicle Information</Text>
+          </View>
           
           <View style={styles.inputWrapper}>
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Vehicle Number</Text>
-            <TextInput
-              style={[
-                styles.modernInput, 
-                { 
-                  borderColor: vehicleNumberError ? '#EF4444' : colors.border, 
-                  color: colors.text, 
-                  backgroundColor: colors.surface 
-                }
-              ]}
-              placeholder="Enter vehicle number"
-              placeholderTextColor={colors.textSecondary}
-              value={vehicleNumber}
-              onChangeText={(text) => {
-                setVehicleNumber(text);
-                if (vehicleNumberError && text.trim()) {
-                  setVehicleNumberError('');
-                }
-              }}
-              autoCapitalize="characters"
-            />
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Vehicle Number <Text style={{ color: '#EF4444' }}>*</Text></Text>
+            <View style={[
+              styles.inputContainer,
+              { 
+                borderColor: vehicleNumberError ? '#EF4444' : colors.border,
+                backgroundColor: colors.surface,
+              }
+            ]}>
+              <Ionicons name="car-sport" size={Platform.select({ ios: 18, android: 16 })} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={[
+                  styles.modernInput, 
+                  { 
+                    color: colors.text,
+                    flex: 1,
+                  }
+                ]}
+                placeholder="Enter vehicle number"
+                placeholderTextColor={colors.textSecondary}
+                value={vehicleNumber}
+                onChangeText={(text) => {
+                  setVehicleNumber(text);
+                  if (vehicleNumberError && text.trim()) {
+                    setVehicleNumberError('');
+                  }
+                }}
+                autoCapitalize="characters"
+              />
+            </View>
             {vehicleNumberError ? (
               <Text style={styles.errorText}>{vehicleNumberError}</Text>
             ) : null}
           </View>
 
           <View style={styles.inputWrapper}>
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Notes (Optional)</Text>
-            <TextInput
-              style={[
-                styles.modernInput, 
-                { 
-                  borderColor: colors.border, 
-                  color: colors.text, 
-                  backgroundColor: colors.surface,
-                  minHeight: Platform.select({ ios: 100, android: 80 })
-                }
-              ]}
-              placeholder="Add any special instructions"
-              placeholderTextColor={colors.textSecondary}
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Car Model</Text>
+            <View style={[
+              styles.inputContainer,
+              { 
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+              }
+            ]}>
+              <Ionicons name="construct" size={Platform.select({ ios: 18, android: 16 })} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={[
+                  styles.modernInput, 
+                  { 
+                    color: colors.text,
+                    flex: 1,
+                  }
+                ]}
+                placeholder="Enter car model (e.g., Camry)"
+                placeholderTextColor={colors.textSecondary}
+                value={carModel}
+                onChangeText={setCarModel}
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputWrapper}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Notes (Optional)</Text>
+            <View style={[
+              styles.inputContainer,
+              { 
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                minHeight: Platform.select({ ios: 100, android: 80 }),
+                alignItems: 'flex-start',
+                paddingTop: Platform.select({ ios: 14, android: 12 }),
+              }
+            ]}>
+              <Ionicons name="document-text" size={Platform.select({ ios: 18, android: 16 })} color={colors.textSecondary} style={[styles.inputIcon, { marginTop: 2 }]} />
+              <TextInput
+                style={[
+                  styles.modernInput, 
+                  { 
+                    color: colors.text,
+                    flex: 1,
+                    textAlignVertical: 'top',
+                  }
+                ]}
+                placeholder="Add any special instructions"
+                placeholderTextColor={colors.textSecondary}
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
           </View>
         </View>
 
         {/* Payment Method Card */}
         <View style={[styles.formCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 20, android: 16 }) }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Payment Method</Text>
+          <View style={styles.cardHeaderSection}>
+            <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
+              <Ionicons name="wallet" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
+            </View>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Payment Method</Text>
+          </View>
           
           <View style={styles.paymentMethodsContainer}>
             <TouchableOpacity 
@@ -647,7 +755,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    paddingTop: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: Platform.select({ ios: 10, android: 8 }),
     borderBottomWidth: 1,
   },
   backButton: {
@@ -658,10 +767,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',
   },
@@ -674,97 +783,145 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.select({ ios: 20, android: 16 }),
   },
   infoCard: {
-    borderRadius: Platform.select({ ios: 16, android: 14 }),
-    padding: Platform.select({ ios: 20, android: 16 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    padding: Platform.select({ ios: 22, android: 18 }),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(3, 88, 168, 0.08)',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   infoIconContainer: {
-    width: Platform.select({ ios: 40, android: 32 }),
-    height: Platform.select({ ios: 40, android: 32 }),
-    borderRadius: Platform.select({ ios: 12, android: 8 }),
+    width: Platform.select({ ios: 44, android: 40 }),
+    height: Platform.select({ ios: 44, android: 40 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Platform.select({ ios: 12, android: 8 }),
+    marginRight: Platform.select({ ios: 14, android: 12 }),
   },
   infoContent: {
     flex: 1,
   },
   infoLabel: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_MEDIUM,
     fontWeight: '500',
     marginBottom: Platform.select({ ios: 6, android: 4 }),
   },
   infoValue: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
+  },
+  timeEditContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  timeInputContainer: {
+    borderWidth: 1.5,
+    borderRadius: Platform.select({ ios: 8, android: 6 }),
+    paddingHorizontal: Platform.select({ ios: 10, android: 8 }),
+    paddingVertical: Platform.select({ ios: 6, android: 5 }),
+    minWidth: Platform.select({ ios: 80, android: 70 }),
+    marginLeft: Platform.select({ ios: 4, android: 3 }),
+  },
+  timeInput: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    padding: 0,
   },
   serviceButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1.5,
-    borderRadius: Platform.select({ ios: 12, android: 10 }),
-    padding: Platform.select({ ios: 16, android: 14 }),
-    minHeight: Platform.select({ ios: 56, android: 52 }),
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    padding: Platform.select({ ios: 18, android: 16 }),
+    minHeight: Platform.select({ ios: 60, android: 56 }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   serviceButtonContent: {
     flex: 1,
     marginRight: 8,
   },
   serviceButtonText: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     marginBottom: 2,
   },
   serviceButtonPrice: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_MEDIUM }),
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   formCard: {
-    borderRadius: Platform.select({ ios: 16, android: 14 }),
-    padding: Platform.select({ ios: 20, android: 16 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    padding: Platform.select({ ios: 22, android: 18 }),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(3, 88, 168, 0.08)',
+  },
+  cardHeaderSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Platform.select({ ios: 18, android: 14 }),
+  },
+  cardHeaderIcon: {
+    width: Platform.select({ ios: 40, android: 36 }),
+    height: Platform.select({ ios: 40, android: 36 }),
+    borderRadius: Platform.select({ ios: 10, android: 8 }),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Platform.select({ ios: 12, android: 10 }),
   },
   cardTitle: {
-    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.BODY_LARGE }),
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    fontWeight: '600',
-    marginBottom: Platform.select({ ios: 18, android: 14 }),
+    fontWeight: '500',
+    flex: 1,
   },
   inputWrapper: {
     marginBottom: Platform.select({ ios: 20, android: 16 }),
   },
   inputLabel: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_MEDIUM,
     fontWeight: '500',
     marginBottom: Platform.select({ ios: 10, android: 8 }),
   },
-  modernInput: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1.5,
     borderRadius: Platform.select({ ios: 12, android: 10 }),
-    paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
-    paddingVertical: Platform.select({ ios: 16, android: 14 }),
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_LARGE, android: FONT_SIZES.BODY_MEDIUM }),
+    paddingHorizontal: Platform.select({ ios: 14, android: 12 }),
+    minHeight: Platform.select({ ios: 52, android: 48 }),
+  },
+  inputIcon: {
+    marginRight: Platform.select({ ios: 10, android: 8 }),
+  },
+  modernInput: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    minHeight: Platform.select({ ios: 52, android: 48 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
   },
   paymentMethodsContainer: {
     flexDirection: 'row',
@@ -776,15 +933,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderRadius: Platform.select({ ios: 14, android: 10 }),
-    padding: Platform.select({ ios: 16, android: 10 }),
-    minHeight: Platform.select({ ios: 100, android: 70 }),
+    borderRadius: Platform.select({ ios: 16, android: 12 }),
+    padding: Platform.select({ ios: 18, android: 14 }),
+    minHeight: Platform.select({ ios: 110, android: 85 }),
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   paymentCardText: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_MEDIUM }),
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     marginTop: Platform.select({ ios: 8, android: 4 }),
   },
   checkIcon: {
@@ -793,13 +955,16 @@ const styles = StyleSheet.create({
     right: Platform.select({ ios: 8, android: 4 }),
   },
   summaryCard: {
-    borderRadius: Platform.select({ ios: 16, android: 14 }),
-    padding: Platform.select({ ios: 20, android: 16 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    padding: Platform.select({ ios: 22, android: 18 }),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(3, 88, 168, 0.08)',
+    backgroundColor: BLUE_COLOR + '05',
   },
   errorText: {
     color: '#EF4444',
@@ -815,17 +980,17 @@ const styles = StyleSheet.create({
     marginBottom: Platform.select({ ios: 10, android: 8 }),
   },
   summaryLabel: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
   },
   summaryValue: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
   },
   summaryDiscount: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_LARGE }),
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
     textDecorationLine: 'line-through',
   },
@@ -834,14 +999,14 @@ const styles = StyleSheet.create({
     marginVertical: Platform.select({ ios: 12, android: 10 }),
   },
   summaryTotalLabel: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_MEDIUM, android: FONT_SIZES.BODY_SMALL }),
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   summaryTotalValue: {
-    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_SMALL, android: FONT_SIZES.BODY_LARGE }),
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   bottomContainer: {
     padding: Platform.select({ ios: 20, android: 16 }),
@@ -884,7 +1049,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   noServicesText: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BODY_SMALL, android: FONT_SIZES.CAPTION_MEDIUM }),
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     marginTop: Platform.select({ ios: 8, android: 6 }),
@@ -908,9 +1073,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedServiceName: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     marginBottom: 4,
   },
   selectedServiceDescription: {
@@ -924,9 +1089,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   offerPrice: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   originalPrice: {
     fontSize: FONT_SIZES.BODY_SMALL,
@@ -959,8 +1124,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5E5',
   },
   modalTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   modalItem: {
@@ -975,9 +1140,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   modalItemTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     marginBottom: 4,
   },
   modalItemSubtitle: {

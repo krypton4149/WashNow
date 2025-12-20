@@ -16,6 +16,9 @@ export interface FormErrors {
   name?: string;
   email?: string;
   phone?: string;
+  carmake?: string;
+  carmodel?: string;
+  vehicle_no?: string;
   password?: string;
   password_confirmation?: string;
 }

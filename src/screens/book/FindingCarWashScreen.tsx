@@ -467,8 +467,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingTop: Platform.select({ ios: 16, android: 14 }),
-    paddingBottom: Platform.select({ ios: 14, android: 12 }),
+    paddingTop: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: Platform.select({ ios: 10, android: 8 }),
     borderBottomWidth: 1,
   },
   backButton: {
@@ -483,15 +483,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_MEDIUM, android: FONT_SIZES.HEADING_SMALL }),
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     marginBottom: Platform.select({ ios: 4, android: 3 }),
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: Platform.select({ ios: FONT_SIZES.CAPTION_LARGE, android: FONT_SIZES.CAPTION_MEDIUM }),
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     textAlign: 'center',
@@ -522,11 +522,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchingText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
     color: '#000',
     marginBottom: 4,
-    fontFamily: FONTS.INTER_BOLD,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   timeText: {
     fontSize: FONT_SIZES.BODY_SMALL,
@@ -537,12 +537,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     color: '#000',
     marginBottom: 12,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   requestCard: {
     backgroundColor: '#F9FAFB',
@@ -563,10 +563,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   requestText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
     color: '#000',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   requestSubtext: {
     fontSize: FONT_SIZES.BODY_SMALL,
@@ -628,11 +628,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   centerName: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
     color: '#000',
     flex: 1,
-    fontFamily: FONTS.INTER_BOLD,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -640,9 +640,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   centerRating: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#000',
-    fontWeight: '500',
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   centerDistance: {
     fontSize: FONT_SIZES.BODY_SMALL,
@@ -653,8 +654,8 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   bottomContainer: {
     padding: 16,
@@ -680,14 +681,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   centerSimpleName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
     color: '#000',
     marginBottom: 4,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   centerSimpleAddress: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   cancelButton: {
     backgroundColor: '#F3F4F6',
