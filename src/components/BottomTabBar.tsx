@@ -35,23 +35,31 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
   const bottomPadding = Math.max(12, Math.min((insets.bottom || 0) + 8, 28));
 
   return (
+    <View style={[styles.tabBarContainer, { backgroundColor: colors.background }]}>
       <View style={[
-      styles.tabBar, 
-      { 
-        paddingBottom: bottomPadding, 
-        backgroundColor: colors.background,
-        borderTopColor: colors.border || '#E0E0E0'
-      }
-    ]}>
-      <TabButton keyId="home" icon="home-outline" label="Home" />
-      <TabButton keyId="bookings" icon="calendar-outline" label="Bookings" />
-      <TabButton keyId="activity" icon="notifications-outline" label="Activity" />
-      <TabButton keyId="account" icon="person-outline" label="Account" />
+        styles.tabBar, 
+        { 
+          paddingBottom: bottomPadding, 
+          backgroundColor: colors.background,
+          borderTopColor: colors.border || '#E0E0E0'
+        }
+      ]}>
+        <TabButton keyId="home" icon="home-outline" label="Home" />
+        <TabButton keyId="bookings" icon="calendar-outline" label="Bookings" />
+        <TabButton keyId="activity" icon="notifications-outline" label="Activity" />
+        <TabButton keyId="account" icon="person-outline" label="Account" />
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',

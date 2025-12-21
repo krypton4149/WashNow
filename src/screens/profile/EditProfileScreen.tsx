@@ -383,23 +383,37 @@ const EditProfileScreen: React.FC<Props> = ({
   return (
     <SafeAreaView 
       style={[styles.container, { backgroundColor: colors.background }]} 
-      edges={platformEdges as any}
+      edges={['bottom', 'left', 'right']}
     >
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <View style={styles.headerContent}>
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.background, 
+          borderBottomColor: colors.border,
+          paddingTop: insets.top + Platform.select({ ios: 0.5, android: 0.5 }),
+        }
+      ]}>
+        {onBack && (
           <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
+            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
           </TouchableOpacity>
+        )}
+        <View style={styles.headerTextGroup}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Profile</Text>
         </View>
+        <View style={styles.headerRightPlaceholder} />
       </View>
 
       <ScrollView 
-        style={styles.content} 
+        style={[styles.content, { backgroundColor: colors.background }]} 
         contentContainerStyle={[
           styles.contentContainer,
-          onTabChange && styles.contentContainerWithTabBar
+          onTabChange && styles.contentContainerWithTabBar,
+          { 
+            backgroundColor: colors.background,
+            paddingBottom: onTabChange ? 120 : 24,
+          }
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -509,15 +523,17 @@ const EditProfileScreen: React.FC<Props> = ({
       </View>
 
       {/* Bottom Tab Bar */}
-      <BottomTabBar 
-        activeTab={activeTab || 'account'} 
-        onTabChange={onTabChange || ((tab) => {
-          // Default navigation handler if not provided
-          if (onBack && tab === 'account') {
-            onBack();
-          }
-        })} 
-      />
+      {onTabChange && (
+        <BottomTabBar 
+          activeTab={activeTab || 'account'} 
+          onTabChange={onTabChange || ((tab) => {
+            // Default navigation handler if not provided
+            if (onBack && tab === 'account') {
+              onBack();
+            }
+          })} 
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -527,32 +543,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'ios' ? 12 : 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingBottom: Platform.select({ ios: 6, android: 5 }),
+    paddingTop: 0,
+    borderBottomWidth: 1,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
-    marginLeft: -8,
+  },
+  headerTextGroup: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
+    letterSpacing: -0.2,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    textAlign: 'center',
   },
   content: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   contentContainer: {
     paddingHorizontal: 24,
@@ -560,7 +579,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   contentContainerWithTabBar: {
-    paddingBottom: 16,
+    paddingBottom: 120,
   },
   profilePhotoSection: {
     alignItems: 'center',
@@ -627,11 +646,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     marginBottom: 16,
-    letterSpacing: 0.3,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.2,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   infoRow: {
     flexDirection: 'row',
@@ -669,15 +688,16 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   bottomContainerWithTabBar: {
-    paddingBottom: 12,
+    paddingBottom: Platform.select({ ios: 100, android: 90 }),
   },
   saveButton: {
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: Platform.select({ ios: 30, android: 28 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    paddingHorizontal: Platform.select({ ios: 24, android: 20 }),
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    minHeight: 56,
+    minHeight: Platform.select({ ios: 56, android: 52 }),
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -685,11 +705,14 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   saveButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
     color: '#FFFFFF',
-    letterSpacing: 0.3,
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: -0.2,
+    fontFamily: FONTS.INTER_MEDIUM,
+    textAlign: 'center',
+    lineHeight: Platform.select({ ios: 24, android: 22 }),
+    includeFontPadding: false,
   },
   saveButtonDisabled: {
     opacity: 0.6,

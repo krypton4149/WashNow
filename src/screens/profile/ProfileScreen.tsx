@@ -251,7 +251,10 @@ const ProfileScreen: React.FC<Props> = ({
       <SafeAreaView style={styles.safeAreaBottom} edges={['bottom']}>
       <ScrollView 
         style={styles.content}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[
+          styles.contentContainer,
+          onTabChange && styles.contentContainerWithTabBar
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Contact Details Section */}
@@ -385,7 +388,6 @@ const ProfileScreen: React.FC<Props> = ({
           <Text style={[styles.editProfileButtonText, { color: '#000000' }]}>Edit Profile</Text>
         </TouchableOpacity>
 
-        <View style={styles.bottomSpacing} />
       </ScrollView>
 
       {/* Bottom Tab Bar */}
@@ -457,7 +459,10 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 24,
-    paddingBottom: 0, // Bottom padding handled by bottomSpacing
+    paddingBottom: 24,
+  },
+  contentContainerWithTabBar: {
+    paddingBottom: 120,
   },
   profileSummary: {
     flexDirection: 'row',
@@ -789,9 +794,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     letterSpacing: 0.3,
     fontFamily: FONTS.INTER_MEDIUM,
-  },
-  bottomSpacing: {
-    minHeight: 20,
   },
   loadingContainer: {
     flex: 1,

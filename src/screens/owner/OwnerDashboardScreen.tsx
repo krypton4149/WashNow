@@ -37,6 +37,7 @@ interface Activity {
   bookingDate?: string;
   bookingTime?: string;
   vehicleNo?: string;
+  carmodel?: string;
   bookingCode?: string;
   paymentMethod?: string;
   customerName?: string;
@@ -58,6 +59,7 @@ interface Booking {
   service_centre_id: number;
   service_type: string;
   vehicle_no: string;
+  carmodel?: string;
   booking_date: string;
   booking_time: string;
   notes: string;
@@ -256,6 +258,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
       bookingDate: booking.booking_date,
       bookingTime: booking.booking_time,
       vehicleNo: booking.vehicle_no,
+      carmodel: booking.carmodel || undefined,
       bookingCode: booking.booking_id,
       paymentMethod: booking.notes || undefined,
       customerName: booking.visitor?.name,
@@ -303,6 +306,12 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
             <View style={styles.recentRow}>
               <Ionicons name="car-outline" size={16} color={colors.textSecondary} style={styles.recentIcon} />
               <Text style={[styles.recentText, { color: colors.textSecondary }]}>Vehicle: {activity.vehicleNo}</Text>
+            </View>
+          ) : null}
+          {activity.carmodel && activity.carmodel.trim() !== '' ? (
+            <View style={styles.recentRow}>
+              <Ionicons name="car-sport-outline" size={16} color={colors.textSecondary} style={styles.recentIcon} />
+              <Text style={[styles.recentText, { color: colors.textSecondary }]}>Model: {activity.carmodel}</Text>
             </View>
           ) : null}
           {activity.bookingCode ? (

@@ -11,9 +11,10 @@ import {
   Switch,
   Platform,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
-import { StatusBar } from 'react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -83,6 +84,8 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
   onBack,
   onSave,
 }) => {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [storedOwner, setStoredOwner] = useState<any | null>(ownerData ?? null);
   const [isLoading, setIsLoading] = useState<boolean>(!ownerData);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -329,18 +332,28 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Business Profile</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
+      <View style={[
+        styles.header,
+        {
+          backgroundColor: colors.background,
+          borderBottomColor: colors.border,
+          paddingTop: insets.top + Platform.select({ ios: 0.5, android: 0.5 }),
+        }
+      ]}>
+        {onBack && (
+          <TouchableOpacity style={styles.backButton} onPress={onBack}>
+            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
+          </TouchableOpacity>
+        )}
+        <View style={styles.headerTextGroup}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Business Profile</Text>
+        </View>
         <View style={styles.headerRightPlaceholder} />
       </View>
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
+        contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.sectionCard}>
@@ -463,14 +476,13 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   loadingContainer: {
     flex: 1,
@@ -482,29 +494,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 22, android: 20 }),
-    paddingTop: Platform.OS === 'ios' ? 10 : 10,
-    paddingBottom: Platform.select({ ios: 14, android: 12 }),
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingBottom: Platform.select({ ios: 6, android: 5 }),
+    paddingTop: 0,
+    borderBottomWidth: 1,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  headerTextGroup: {
+    flex: 1,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    color: '#111827',
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   headerRightPlaceholder: {
-    width: 40,
+    width: Platform.select({ ios: 36, android: 32 }),
   },
   scrollView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -513,6 +531,7 @@ const styles = StyleSheet.create({
       ios: 100,
       android: 90
     }),
+    backgroundColor: 'transparent',
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
@@ -541,8 +560,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
   },
   infoField: {
@@ -550,8 +569,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#111827',
     marginBottom: 8,
   },
@@ -569,8 +588,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   valueText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     color: '#111827',
     flexShrink: 1,
   },
@@ -595,14 +615,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   switchLabel: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
   },
   switchDescription: {
     fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     color: '#6B7280',
     marginTop: 4,
   },
@@ -615,14 +636,15 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   statLabel: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     color: '#6B7280',
   },
   statValue: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
   },
   verifiedRow: {
@@ -631,9 +653,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   verifiedText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#22C55E',
   },
   footer: {
@@ -645,16 +667,21 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: BLUE_COLOR,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: Platform.select({ ios: 30, android: 28 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    paddingHorizontal: Platform.select({ ios: 24, android: 20 }),
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: Platform.select({ ios: 56, android: 52 }),
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+    textAlign: 'center',
+    lineHeight: Platform.select({ ios: 24, android: 22 }),
+    includeFontPadding: false,
   },
   saveButtonDisabled: {
     opacity: 0.7,
