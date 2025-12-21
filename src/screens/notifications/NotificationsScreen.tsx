@@ -10,7 +10,7 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
@@ -40,6 +40,7 @@ interface Notification {
 
 const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -265,11 +266,20 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { backgroundColor: colors.card || colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.background, 
+          borderBottomColor: colors.border,
+          paddingTop: insets.top + Platform.select({ ios: 2, android: 2 }),
+        }
+      ]}>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
+          </TouchableOpacity>
+        )}
         <View style={styles.headerCenter}>
           <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
           <Text style={[styles.unreadCount, { color: colors.textSecondary }]}>
@@ -301,8 +311,8 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
         </View>
       ) : (
         <ScrollView 
-          style={styles.content} 
-          contentContainerStyle={styles.scrollContent}
+          style={[styles.content, { backgroundColor: colors.background }]} 
+          contentContainerStyle={[styles.scrollContent, { backgroundColor: colors.background }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -339,14 +349,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingBottom: Platform.select({ ios: 6, android: 5 }),
     borderBottomWidth: 1,
   },
   backButton: {
-    padding: 4,
-    width: 40,
-    height: 40,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -355,30 +365,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   unreadCount: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    marginTop: Platform.select({ ios: 2, android: 2 }),
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textAlign: 'center',
   },
   markAllButton: {
     padding: 4,
-    minWidth: 80,
+    minWidth: Platform.select({ ios: 90, android: 80 }),
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   markAllText: {
-    fontSize: FONT_SIZES.BUTTON_SMALL,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   content: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: 16,
+    backgroundColor: 'transparent',
   },
   notificationsList: {
     gap: 12,
@@ -428,11 +445,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notificationTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     flex: 1,
     marginBottom: 4,
-    fontFamily: FONTS.INTER_BOLD,
   },
   notificationDescription: {
     fontSize: FONT_SIZES.BODY_SMALL,

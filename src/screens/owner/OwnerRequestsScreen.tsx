@@ -11,7 +11,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import authService from '../../services/authService';
@@ -462,6 +462,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   onBack,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [rawBookings, setRawBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -718,9 +719,16 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   }, [fetchBookings]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.background, 
+          borderBottomColor: colors.border,
+          paddingTop: Platform.select({ ios: 0.5, android: 0.5 }),
+        }
+      ]}>
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
@@ -909,8 +917,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingTop: Platform.select({ ios: 10, android: 8 }),
-    paddingBottom: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: Platform.select({ ios: 4, android: 4 }),
+    paddingTop: 0,
     borderBottomWidth: 1,
   },
   backButton: {
@@ -932,7 +940,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   headerSubtitle: {
-    marginTop: Platform.select({ ios: 4, android: 3 }),
+    marginTop: Platform.select({ ios: 2, android: 2 }),
     fontSize: FONT_SIZES.CAPTION_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',

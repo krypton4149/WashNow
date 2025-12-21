@@ -9,12 +9,13 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
-  StatusBar,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { platformEdges } from '../../utils/responsive';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -42,6 +43,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
   onBack,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<ActivityNotification[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -247,19 +249,23 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <View style={styles.header}>
-        {onBack ? (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.background, 
+          borderBottomColor: colors.border,
+          paddingTop: Platform.select({ ios: 0.5, android: 0.5 }),
+        }
+      ]}>
+        {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={24} color="#000000" />
+            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
           </TouchableOpacity>
-        ) : (
-          <View style={styles.backButtonPlaceholder} />
         )}
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
             {unreadCount} {unreadCount === 1 ? 'unread notification' : 'unread notifications'}
           </Text>
         </View>
@@ -272,7 +278,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
           <Text style={[
             styles.markAllReadText,
             { 
-              color: unreadCount === 0 ? '#9CA3AF' : BLUE_COLOR,
+              color: unreadCount === 0 ? colors.textSecondary : BLUE_COLOR,
               opacity: unreadCount === 0 ? 0.5 : 1
             }
           ]}>
@@ -370,65 +376,62 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
           )}
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 10 : 10,
-    paddingBottom: 12,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingBottom: Platform.select({ ios: 4, android: 4 }),
+    paddingTop: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
   },
   backButton: {
-    padding: 4,
-    width: 40,
-    height: 40,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  backButtonPlaceholder: {
-    width: 40,
-    height: 40,
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    color: '#000000',
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
   headerSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    marginTop: Platform.select({ ios: 2, android: 2 }),
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
-    color: '#6B7280',
+    fontWeight: '400',
+    textAlign: 'center',
   },
   markAllButton: {
     padding: 4,
-    minWidth: 80,
+    minWidth: Platform.select({ ios: 90, android: 80 }),
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   markAllReadText: {
-    fontSize: FONT_SIZES.BUTTON_SMALL,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   scrollView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: 16,
@@ -436,6 +439,7 @@ const styles = StyleSheet.create({
       ios: 80,
       android: 70
     }),
+    backgroundColor: 'transparent',
   },
   notificationsList: {
     gap: 12,
@@ -475,11 +479,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notificationTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     flex: 1,
     marginBottom: 4,
-    fontFamily: FONTS.INTER_BOLD,
     color: '#000000',
   },
   notificationMessage: {
