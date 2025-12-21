@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
@@ -48,6 +48,7 @@ interface Props {
 
 const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'Ongoing' | 'Completed' | 'Canceled'>('Ongoing');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -416,14 +417,25 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Booking History ({bookings.length})</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
+      <View style={[
+        styles.header, 
+        { 
+          backgroundColor: colors.background, 
+          borderBottomColor: colors.border,
+          paddingTop: insets.top + Platform.select({ ios: 0.5, android: 0.5 }),
+        }
+      ]}>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
+          </TouchableOpacity>
+        )}
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <Text style={[styles.title, { color: colors.text }]}>Booking History ({bookings.length})</Text>
+        </View>
         <TouchableOpacity onPress={loadBookings} style={styles.refreshButton} activeOpacity={0.7}>
-          <Ionicons name="refresh" size={24} color={colors.text} />
+          <Ionicons name="refresh" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -646,20 +658,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingBottom: Platform.select({ ios: 6, android: 5 }),
+    paddingTop: 0,
     borderBottomWidth: 1,
   },
   backButton: {
-    padding: 4,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   refreshButton: {
-    padding: 4,
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '500',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.2,
+    textAlign: 'center',
+    flex: 1,
   },
   tabsContainer: {
     flexDirection: 'row',

@@ -110,30 +110,40 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
     );
   };
 
-  const bottomPadding = Math.max(8, Math.min(insets.bottom || 0, 18));
+  const bottomPadding = Math.max(12, Math.min((insets.bottom || 0) + 8, 28));
   
   // For dashboard (home tab) and account tab, don't apply top safe area so blue header can extend to top
-  const safeAreaEdges = (activeTab === 'home' || activeTab === 'account') ? ['bottom'] : ['top', 'bottom'];
+  const safeAreaEdges = (activeTab === 'home' || activeTab === 'account') ? [] : ['top'];
 
+  const safeAreaEdgesForContent = (activeTab === 'home' || activeTab === 'account') ? [] : ['top'];
+  
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background || '#FFFFFF' }]}
-      edges={safeAreaEdges}
-    >
-      <View style={styles.content}>{renderContent()}</View>
-      <View style={[styles.tabBar, { paddingBottom: bottomPadding, backgroundColor: colors.card || '#FFFFFF', borderTopColor: colors.border || '#E5E7EB' }]}>
-        <TabButton keyId="home" icon="home-outline" label="Home" />
-        <TabButton keyId="requests" icon="calendar-outline" label="Requests" />
-        <TabButton keyId="activity" icon="notifications-outline" label="Activity" />
-        <TabButton keyId="account" icon="person-outline" label="Account" />
+    <View style={[styles.container, { backgroundColor: colors.background || '#FFFFFF' }]}>
+      <SafeAreaView style={styles.contentContainer} edges={safeAreaEdgesForContent}>
+        <View style={[styles.content, { paddingBottom: 80 }]}>{renderContent()}</View>
+      </SafeAreaView>
+      <View style={[styles.tabBarContainer, { backgroundColor: colors.background, paddingBottom: 0 }]}>
+        <View style={[styles.tabBar, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: colors.border || '#E5E7EB' }]}>
+          <TabButton keyId="home" icon="home-outline" label="Home" />
+          <TabButton keyId="requests" icon="calendar-outline" label="Requests" />
+          <TabButton keyId="activity" icon="notifications-outline" label="Activity" />
+          <TabButton keyId="account" icon="person-outline" label="Account" />
+        </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  contentContainer: { flex: 1 },
   content: { flex: 1 },
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -141,8 +151,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 8,
     paddingBottom: 16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
     borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },

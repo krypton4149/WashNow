@@ -32,14 +32,14 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
     );
   };
 
-  const bottomPadding = Math.max(8, Math.min(insets.bottom || 0, 18));
+  const bottomPadding = Math.max(12, Math.min((insets.bottom || 0) + 8, 28));
 
   return (
-    <View style={[
+      <View style={[
       styles.tabBar, 
       { 
         paddingBottom: bottomPadding, 
-        backgroundColor: colors.card || colors.surface,
+        backgroundColor: colors.background,
         borderTopColor: colors.border || '#E0E0E0'
       }
     ]}>
@@ -59,8 +59,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 8,
     paddingBottom: 16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
     borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },

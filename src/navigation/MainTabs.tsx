@@ -125,24 +125,32 @@ const MainTabs: React.FC<MainTabsProps> = ({
     );
   };
 
-  const bottomPadding = Math.max(8, Math.min(insets.bottom || 0, 18));
+  const bottomPadding = Math.max(12, Math.min((insets.bottom || 0) + 8, 28));
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["bottom"]}>
-      <View style={styles.content}>{renderContent()}</View>
-      <View style={[styles.tabBar, { paddingBottom: bottomPadding, backgroundColor: colors.card, borderTopColor: colors.border }]}>
-        <TabButton keyId="home" icon="home-outline" label="Home" />
-        <TabButton keyId="bookings" icon="calendar-outline" label="Bookings" />
-        <TabButton keyId="activity" icon="notifications-outline" label="Activity" />
-        <TabButton keyId="account" icon="person-outline" label="Account" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.content, { paddingBottom: 80 }]}>{renderContent()}</View>
+      <View style={[styles.tabBarContainer, { backgroundColor: colors.background, paddingBottom: 0 }]}>
+        <View style={[styles.tabBar, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: colors.border }]}>
+          <TabButton keyId="home" icon="home-outline" label="Home" />
+          <TabButton keyId="bookings" icon="calendar-outline" label="Bookings" />
+          <TabButton keyId="activity" icon="notifications-outline" label="Activity" />
+          <TabButton keyId="account" icon="person-outline" label="Account" />
+        </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1 },
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -150,8 +158,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 8,
     paddingBottom: 16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
     borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
