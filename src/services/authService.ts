@@ -593,22 +593,50 @@ class AuthService {
         return { success: false, error: 'Please login to book a service' };
       }
 
-      const formData = new FormData();
-      formData.append('service_centre_id', bookingData.service_centre_id);
-      formData.append('booking_date', bookingData.booking_date);
-      formData.append('booking_time', bookingData.booking_time);
-      formData.append('vehicle_no', bookingData.vehicle_no);
-      formData.append('carmake', ''); // Always send empty string for carmake
-      if (bookingData.carmodel) {
-        formData.append('carmodel', bookingData.carmodel);
+      // Validate required fields
+      if (!bookingData.service_centre_id || bookingData.service_centre_id.trim() === '') {
+        return { success: false, error: 'Service center ID is required' };
       }
-      if (bookingData.notes) {
-        formData.append('notes', bookingData.notes);
+      if (!bookingData.booking_date || bookingData.booking_date.trim() === '') {
+        return { success: false, error: 'Booking date is required' };
       }
-      if (bookingData.service_id) {
-        formData.append('service_id', bookingData.service_id);
+      if (!bookingData.booking_time || bookingData.booking_time.trim() === '') {
+        return { success: false, error: 'Booking time is required' };
+      }
+      if (!bookingData.vehicle_no || bookingData.vehicle_no.trim() === '') {
+        return { success: false, error: 'Vehicle number is required' };
       }
 
+      const formData = new FormData();
+      formData.append('service_centre_id', bookingData.service_centre_id.trim());
+      formData.append('booking_date', bookingData.booking_date.trim());
+      formData.append('booking_time', bookingData.booking_time.trim());
+      formData.append('vehicle_no', bookingData.vehicle_no.trim());
+      formData.append('carmake', ''); // Always send empty string for carmake
+      
+      // Always send carmodel, even if empty
+      formData.append('carmodel', (bookingData.carmodel || '').trim());
+      
+      // Always send notes, even if empty
+      formData.append('notes', (bookingData.notes || '').trim());
+      
+      // Always send service_id if provided
+      if (bookingData.service_id && bookingData.service_id.trim() !== '') {
+        formData.append('service_id', bookingData.service_id.trim());
+      }
+      
+      console.log('[authService.bookNow] FormData fields:', {
+        service_centre_id: bookingData.service_centre_id.trim(),
+        booking_date: bookingData.booking_date.trim(),
+        booking_time: bookingData.booking_time.trim(),
+        vehicle_no: bookingData.vehicle_no.trim(),
+        carmodel: (bookingData.carmodel || '').trim(),
+        notes: (bookingData.notes || '').trim(),
+        service_id: bookingData.service_id ? bookingData.service_id.trim() : 'not provided',
+      });
+
+      console.log('[authService.bookNow] Making API call with token:', token ? 'Token exists' : 'No token');
+      
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/booknow`, {
         method: 'POST',
         headers: {
@@ -618,9 +646,48 @@ class AuthService {
         body: formData,
       });
 
-      const data = await response.json();
+      console.log('[authService.bookNow] Response status:', response.status, 'ok:', response.ok);
+
+      let data;
+      try {
+        data = await response.json();
+        console.log('[authService.bookNow] Response data:', JSON.stringify(data, null, 2));
+      } catch (parseError) {
+        console.error('[authService.bookNow] Error parsing response:', parseError);
+        // If response is not ok and we can't parse JSON, check status
+        if (!response.ok && response.status === 401) {
+          console.log('[authService.bookNow] 401 Unauthorized - session expired');
+          return {
+            success: false,
+            error: 'Your session has expired. Please login again to complete your booking.'
+          };
+        }
+        return {
+          success: false,
+          error: 'Failed to book service. Please try again.'
+        };
+      }
+
+      // Handle 401 Unauthorized - token expired or invalid
+      if (response.status === 401) {
+        console.log('[authService.bookNow] 401 Unauthorized response');
+        const errorMessage = data?.message || data?.error || 'Your session has expired. Please login again to complete your booking.';
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
 
       if (response.ok && data.success) {
+        console.log('[authService.bookNow] ✅ API Response: Booking successful');
+        console.log('[authService.bookNow] 📦 Full API Response:', JSON.stringify(data, null, 2));
+        
+        const bookingId = data.data?.bookingData?.booking_id || data.data?.booking_id || 'unknown';
+        const bookingStatus = data.data?.bookingData?.status || data.data?.status || 'confirmed';
+        
+        console.log('[authService.bookNow] 🆔 Booking ID from API:', bookingId);
+        console.log('[authService.bookNow] 📊 Booking Status from API:', bookingStatus);
+        
         // Invalidate booking caches
         await Promise.all([
           AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
@@ -629,12 +696,53 @@ class AuthService {
         
         return { 
           success: true, 
-          bookingId: data.data?.bookingData?.booking_id || data.data?.booking_id || 'unknown'
+          bookingId: bookingId
         };
       } else {
+        console.error('[authService.bookNow] ❌ Booking failed');
+        console.error('[authService.bookNow] 📦 Full API Error Response:', JSON.stringify(data, null, 2));
+        console.error('[authService.bookNow] Response status:', response.status);
+        
+        // Handle validation errors with detailed messages
+        let errorMessage = data?.message || data?.error || 'Failed to book service. Please try again.';
+        
+        // Check for validation errors in the response
+        if (data?.errors && typeof data.errors === 'object') {
+          // Extract validation error messages
+          const validationErrors: string[] = [];
+          Object.keys(data.errors).forEach((key) => {
+            const fieldErrors = data.errors[key];
+            if (Array.isArray(fieldErrors)) {
+              validationErrors.push(...fieldErrors);
+            } else if (typeof fieldErrors === 'string') {
+              validationErrors.push(fieldErrors);
+            }
+          });
+          
+          if (validationErrors.length > 0) {
+            errorMessage = `Validation failed: ${validationErrors.join(', ')}`;
+          }
+        } else if (data?.data?.errors && typeof data.data.errors === 'object') {
+          // Check nested errors
+          const validationErrors: string[] = [];
+          Object.keys(data.data.errors).forEach((key) => {
+            const fieldErrors = data.data.errors[key];
+            if (Array.isArray(fieldErrors)) {
+              validationErrors.push(...fieldErrors);
+            } else if (typeof fieldErrors === 'string') {
+              validationErrors.push(fieldErrors);
+            }
+          });
+          
+          if (validationErrors.length > 0) {
+            errorMessage = `Validation failed: ${validationErrors.join(', ')}`;
+          }
+        }
+        
+        console.error('[authService.bookNow] Final error message:', errorMessage);
         return {
           success: false,
-          error: data.message || data.error || 'Failed to book service. Please try again.'
+          error: errorMessage
         };
       }
     } catch (error: any) {

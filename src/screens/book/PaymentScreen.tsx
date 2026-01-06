@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView,
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
+import paymentService, { PaymentMethod } from '../../services/paymentService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
@@ -32,7 +33,7 @@ const PaymentScreen: React.FC<Props> = ({
   },
   bookingData,
 }) => {
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('stripe');
   const [isProcessing, setIsProcessing] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [carModel, setCarModel] = useState('');
@@ -46,6 +47,35 @@ const PaymentScreen: React.FC<Props> = ({
   const [selectedService, setSelectedService] = useState<any>(null);
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [loadingCenters, setLoadingCenters] = useState(false);
+
+  // Payment details modal states
+  const [showPaymentDetailsModal, setShowPaymentDetailsModal] = useState(false);
+  
+  // Card details states (for Stripe payments)
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [cardholderName, setCardholderName] = useState('');
+  const [cardErrors, setCardErrors] = useState<{
+    cardNumber?: string;
+    expiryDate?: string;
+    cvv?: string;
+    cardholderName?: string;
+  }>({});
+
+  // PayPal details states
+  const [paypalEmail, setPaypalEmail] = useState('');
+  const [paypalPassword, setPaypalPassword] = useState('');
+  const [paypalErrors, setPaypalErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
+
+  // Apple Pay details states (for testing/demo)
+  const [applePayEmail, setApplePayEmail] = useState('');
+  const [applePayErrors, setApplePayErrors] = useState<{
+    email?: string;
+  }>({});
 
   const formatDate = (d: Date) => {
     const day = d.getDate().toString().padStart(2, '0');
@@ -158,26 +188,187 @@ const PaymentScreen: React.FC<Props> = ({
     return true;
   };
 
+  // Format card number with spaces (XXXX XXXX XXXX XXXX)
+  const formatCardNumber = (text: string): string => {
+    const cleaned = text.replace(/\s/g, '').replace(/\D/g, '');
+    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
+    return formatted.substring(0, 19); // Max 16 digits + 3 spaces
+  };
+
+  // Format expiry date (MM/YY)
+  const formatExpiryDate = (text: string): string => {
+    const cleaned = text.replace(/\D/g, '');
+    if (cleaned.length >= 2) {
+      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
+    }
+    return cleaned;
+  };
+
+  // Validate card details
+  const validateCardDetails = (): boolean => {
+    const errors: typeof cardErrors = {};
+
+    // Validate card number (should be 16 digits)
+    const cardNumberDigits = cardNumber.replace(/\s/g, '');
+    if (!cardNumberDigits || cardNumberDigits.length !== 16) {
+      errors.cardNumber = 'Card number must be 16 digits';
+    } else if (!/^\d{16}$/.test(cardNumberDigits)) {
+      errors.cardNumber = 'Invalid card number';
+    }
+
+    // Validate expiry date (MM/YY format)
+    if (!expiryDate || !/^\d{2}\/\d{2}$/.test(expiryDate)) {
+      errors.expiryDate = 'Invalid expiry date (MM/YY)';
+        } else {
+      const [month, year] = expiryDate.split('/').map(Number);
+      const currentYear = new Date().getFullYear() % 100;
+      const currentMonth = new Date().getMonth() + 1;
+      
+      if (month < 1 || month > 12) {
+        errors.expiryDate = 'Invalid month';
+      } else if (year < currentYear || (year === currentYear && month < currentMonth)) {
+        errors.expiryDate = 'Card has expired';
+      }
+    }
+
+    // Validate CVV (3 or 4 digits)
+    if (!cvv || !/^\d{3,4}$/.test(cvv)) {
+      errors.cvv = 'CVV must be 3 or 4 digits';
+    }
+
+    // Validate cardholder name
+    if (!cardholderName.trim()) {
+      errors.cardholderName = 'Cardholder name is required';
+    }
+
+    setCardErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle card number input
+  const handleCardNumberChange = (text: string) => {
+    const formatted = formatCardNumber(text);
+    setCardNumber(formatted);
+    if (cardErrors.cardNumber) {
+      setCardErrors({ ...cardErrors, cardNumber: undefined });
+    }
+  };
+
+  // Handle expiry date input
+  const handleExpiryDateChange = (text: string) => {
+    const formatted = formatExpiryDate(text);
+    setExpiryDate(formatted);
+    if (cardErrors.expiryDate) {
+      setCardErrors({ ...cardErrors, expiryDate: undefined });
+    }
+  };
+
+  // Handle CVV input
+  const handleCvvChange = (text: string) => {
+    const cleaned = text.replace(/\D/g, '').substring(0, 4);
+    setCvv(cleaned);
+    if (cardErrors.cvv) {
+      setCardErrors({ ...cardErrors, cvv: undefined });
+    }
+  };
+
+  // Handle cardholder name input
+  const handleCardholderNameChange = (text: string) => {
+    setCardholderName(text);
+    if (cardErrors.cardholderName) {
+      setCardErrors({ ...cardErrors, cardholderName: undefined });
+    }
+  };
+
   const handlePayment = async () => {
     if (isProcessing) return;
     
     // Validate vehicle number for all payment methods
     if (!validateVehicleNumber()) {
-      Alert.alert('Validation Required', 'Please enter your vehicle number to proceed with payment.');
+          Alert.alert('Validation Required', 'Please enter your vehicle number to proceed with payment.');
+          return;
+        }
+
+    // Validate service center and service
+        const centerId = selectedServiceCenter?.id || bookingData?.center?.id || acceptedCenter?.id;
+        if (!centerId) {
+          Alert.alert('Error', 'Please select a service center.');
+          return;
+        }
+
+        if (!selectedService?.id) {
+          Alert.alert('Error', 'Please select a service.');
+          return;
+        }
+        
+    // For Stripe, PayPal, and Apple Pay, show payment details modal first
+    if (selectedPaymentMethod === 'stripe' || selectedPaymentMethod === 'paypal' || selectedPaymentMethod === 'applepay') {
+      setShowPaymentDetailsModal(true);
       return;
     }
+
+    // For cash, proceed directly
+    processPayment();
+  };
+
+  // Validate PayPal details
+  const validatePayPalDetails = (): boolean => {
+    const errors: typeof paypalErrors = {};
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!paypalEmail.trim()) {
+      errors.email = 'PayPal email is required';
+    } else if (!emailRegex.test(paypalEmail.trim())) {
+      errors.email = 'Invalid email address';
+    }
+
+    // Validate password
+    if (!paypalPassword.trim()) {
+      errors.password = 'PayPal password is required';
+    } else if (paypalPassword.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+
+    setPaypalErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Validate Apple Pay details
+  const validateApplePayDetails = (): boolean => {
+    const errors: typeof applePayErrors = {};
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!applePayEmail.trim()) {
+      errors.email = 'Email is required';
+    } else if (!emailRegex.test(applePayEmail.trim())) {
+      errors.email = 'Invalid email address';
+    }
+
+    setApplePayErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Process payment after payment details are entered
+  const processPayment = async () => {
+    if (isProcessing) return;
+    
+    // Validate service center and service
+        const centerId = selectedServiceCenter?.id || bookingData?.center?.id || acceptedCenter?.id;
+        if (!centerId) {
+          Alert.alert('Error', 'Please select a service center.');
+          return;
+        }
+
+        if (!selectedService?.id) {
+          Alert.alert('Error', 'Please select a service.');
+          return;
+        }
 
     setIsProcessing(true);
 
     try {
-      if (selectedPaymentMethod === 'cash') {
-        // Validate required inputs
-        if (!acceptedCenter?.id) {
-          Alert.alert('Error', 'Service center is missing.');
-          setIsProcessing(false);
-          return;
-        }
-
         // Determine if this is a scheduled booking or instant booking
         const isScheduledBooking = bookingData?.date && bookingData?.time;
         
@@ -195,114 +386,211 @@ const PaymentScreen: React.FC<Props> = ({
           bookingTime = getCurrentTime(now);
         }
         
-        // Use center from selectedServiceCenter or bookingData or acceptedCenter
-        const centerId = selectedServiceCenter?.id || bookingData?.center?.id || acceptedCenter?.id;
-        
-        if (!centerId) {
-          Alert.alert('Error', 'Please select a service center.');
-          setIsProcessing(false);
-          return;
-        }
+      const amount = selectedService.offer_price || selectedService.price;
+      
+      // Process payment based on selected method
+      const paymentDetails = {
+        amount,
+        currency: 'USD',
+        description: `Car wash service: ${selectedService.name}`,
+        vehicleNumber: vehicleNumber.trim(),
+        carModel: carModel.trim() || '',
+        notes: notes?.trim() || '',
+      };
 
-        if (!selectedService?.id) {
-          Alert.alert('Error', 'Please select a service.');
-          setIsProcessing(false);
-          return;
-        }
-        
-        const payload = {
-          service_centre_id: String(centerId),
-          booking_date: formatDate(bookingDate),
-          booking_time: bookingTime,
-          vehicle_no: vehicleNumber.trim(),
-          carmodel: carModel.trim() || '',
-          notes: notes?.trim() ? notes.trim() : 'Payment method: Cash',
-          service_id: String(selectedService.id),
-        };
+      console.log(`\n🔄 Processing ${selectedPaymentMethod} payment...`);
+      
+      // For Stripe, pass card token (in real implementation, this would be a token from Stripe SDK)
+      const cardToken = selectedPaymentMethod === 'stripe' && cardNumber 
+        ? `card_token_${cardNumber.replace(/\s/g, '').substring(0, 4)}_${Date.now()}`
+        : undefined;
+      
+      const paymentResult = await paymentService.processPayment(
+        selectedPaymentMethod,
+        paymentDetails,
+        cardToken
+      );
 
-        console.log('PaymentScreen: Calling bookNow API with payload:', JSON.stringify(payload, null, 2));
-        
-        const result = await authService.bookNow(payload);
-        if (result.success) {
-          const bookingId = result.bookingId || 'N/A';
-          // Pass booking date and time (either scheduled or current for instant)
-          const bookingDataForResponse = {
-            date: bookingDate.toISOString(),
-            time: isScheduledBooking && (editableBookingTime || bookingData?.time) ? (editableBookingTime || bookingData.time) : getCurrentTime(bookingDate),
-          };
-          onPaymentSuccess?.(bookingId, bookingDataForResponse);
-        } else {
-          Alert.alert('Booking Failed', result.error || 'Please try again later.');
-          setIsProcessing(false);
-        }
-      } else {
-        // Validate vehicle number for card/wallet payment
-        if (!vehicleNumber.trim()) {
-          Alert.alert('Validation Required', 'Please enter your vehicle number to proceed with payment.');
-          setIsProcessing(false);
-          return;
-        }
-
-        // Validate service center and service for card/wallet payment
-        const centerId = selectedServiceCenter?.id || bookingData?.center?.id || acceptedCenter?.id;
-        if (!centerId) {
-          Alert.alert('Error', 'Please select a service center.');
-          setIsProcessing(false);
-          return;
-        }
-
-        if (!selectedService?.id) {
-          Alert.alert('Error', 'Please select a service.');
-          setIsProcessing(false);
-          return;
-        }
-
-        // Determine if this is a scheduled booking or instant booking
-        const isScheduledBooking = bookingData?.date && bookingData?.time;
-        
-        let bookingDate: Date;
-        let bookingTime: string;
-        
-        if (isScheduledBooking && bookingData.date && bookingData.time) {
-          // Use scheduled date and time (use editable time if changed)
-          bookingDate = new Date(bookingData.date);
-          bookingTime = editableBookingTime ? convertTimeTo24Hour(editableBookingTime) : convertTimeTo24Hour(bookingData.time);
-        } else {
-          // Use current date and time for instant booking
-          const now = new Date();
-          bookingDate = now;
-          bookingTime = getCurrentTime(now);
-        }
-        
-        const payload = {
-          service_centre_id: String(centerId),
-          booking_date: formatDate(bookingDate),
-          booking_time: bookingTime,
-          vehicle_no: vehicleNumber.trim(),
-          carmodel: carModel.trim() || '',
-          notes: notes?.trim() || '',
-          service_id: String(selectedService.id),
-        };
-
-        console.log('PaymentScreen: Calling bookNow API with payload:', JSON.stringify(payload, null, 2));
-        
-        const result = await authService.bookNow(payload);
-        if (result.success) {
-          const bookingId = result.bookingId || 'N/A';
-          // Pass booking date and time (either scheduled or current for instant)
-          const bookingDataForResponse = {
-            date: bookingDate.toISOString(),
-            time: isScheduledBooking && (editableBookingTime || bookingData?.time) ? (editableBookingTime || bookingData.time) : getCurrentTime(bookingDate),
-          };
-          onPaymentSuccess?.(bookingId, bookingDataForResponse);
-        } else {
-          Alert.alert('Booking Failed', result.error || 'Please try again later.');
-          setIsProcessing(false);
-        }
+      if (!paymentResult.success) {
+        console.error('❌ Payment Failed:', paymentResult.error);
+        Alert.alert(
+          'Payment Failed',
+          paymentResult.error || `Failed to process ${paymentService.getPaymentMethodName(selectedPaymentMethod)} payment. Please try again.`
+        );
+        setIsProcessing(false);
+        return;
       }
-    } catch (e) {
-      Alert.alert('Error', 'Unable to process payment.');
-    } finally {
+
+      // Payment successful, proceed with booking
+      const paymentNote = `Payment method: ${paymentService.getPaymentMethodName(selectedPaymentMethod)}${paymentResult.transactionId ? ` (Transaction ID: ${paymentResult.transactionId})` : ''}`;
+      
+      console.log('\n📦 Creating booking with payment details...');
+        
+        // Ensure all required fields are present and valid
+        const payload = {
+          service_centre_id: String(centerId || '').trim(),
+          booking_date: formatDate(bookingDate),
+          booking_time: bookingTime.trim(),
+          vehicle_no: vehicleNumber.trim(),
+          carmodel: (carModel.trim() || '').trim(),
+          notes: (notes?.trim() ? `${notes.trim()}\n${paymentNote}` : paymentNote).trim(),
+          service_id: String(selectedService.id || '').trim(),
+        };
+
+        // Validate payload before sending
+        if (!payload.service_centre_id || payload.service_centre_id === '') {
+          Alert.alert('Validation Error', 'Service center ID is required.');
+          setIsProcessing(false);
+          return;
+        }
+
+        if (!payload.vehicle_no || payload.vehicle_no === '') {
+          Alert.alert('Validation Error', 'Vehicle number is required.');
+          setIsProcessing(false);
+          return;
+        }
+
+        if (!payload.service_id || payload.service_id === '') {
+          Alert.alert('Validation Error', 'Service ID is required.');
+          setIsProcessing(false);
+          return;
+        }
+
+        if (!payload.booking_date || !payload.booking_time) {
+          Alert.alert('Validation Error', 'Booking date and time are required.');
+          setIsProcessing(false);
+          return;
+        }
+
+      console.log('📤 Booking Payload:', JSON.stringify(payload, null, 2));
+      console.log('📤 Payload validation:', {
+        hasServiceCentreId: !!payload.service_centre_id,
+        hasVehicleNo: !!payload.vehicle_no,
+        hasServiceId: !!payload.service_id,
+        hasBookingDate: !!payload.booking_date,
+        hasBookingTime: !!payload.booking_time,
+      });
+      
+      // Get token before making the call to verify it exists
+      const token = await authService.getToken();
+      if (!token) {
+        Alert.alert(
+          'Authentication Required',
+          'Please login to complete your booking.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                onBack?.();
+              }
+            }
+          ]
+        );
+        setIsProcessing(false);
+        return;
+      }
+      
+      console.log('\n🌐 Calling bookNow API...');
+        const result = await authService.bookNow(payload);
+      
+        if (result.success) {
+          const bookingId = result.bookingId || 'N/A';
+        
+        console.log('\n');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🎉 BOOKING CONFIRMED SUCCESSFULLY!');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('📋 BOOKING DETAILS:');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🆔 Booking ID:', bookingId);
+        console.log('📅 Booking Date:', formatDate(bookingDate));
+        console.log('⏰ Booking Time:', bookingTime);
+        console.log('🚗 Vehicle Number:', vehicleNumber.trim());
+        console.log('🚙 Car Model:', carModel.trim() || 'N/A');
+        console.log('🏢 Service Center ID:', centerId);
+        console.log('🔧 Service ID:', selectedService.id);
+        console.log('📝 Service Name:', selectedService.name);
+        console.log('💵 Service Price: $' + (selectedService.offer_price || selectedService.price));
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('💳 PAYMENT INFORMATION:');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('💳 Payment Method:', paymentService.getPaymentMethodName(selectedPaymentMethod));
+        console.log('🆔 Transaction ID:', paymentResult.transactionId || 'N/A');
+        console.log('✅ Payment Status: SUCCESS');
+        console.log('💵 Amount Paid: $' + amount);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('✅ BOOKING STATUS: CONFIRMED');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('\n');
+        
+          // Pass booking date and time (either scheduled or current for instant)
+          const bookingDataForResponse = {
+            date: bookingDate.toISOString(),
+            time: isScheduledBooking && (editableBookingTime || bookingData?.time) ? (editableBookingTime || bookingData.time) : getCurrentTime(bookingDate),
+          };
+          onPaymentSuccess?.(bookingId, bookingDataForResponse);
+        } else {
+        console.error('\n❌ Booking Failed:', result.error);
+        console.error('📦 Full error details:', JSON.stringify(result, null, 2));
+        
+        // Show error message from API
+        let errorMessage = result.error || 'Payment was successful but booking failed. Please contact support.';
+        
+        // Check if it's a validation error and provide helpful message
+        if (errorMessage.toLowerCase().includes('validation')) {
+          errorMessage = errorMessage + '\n\nPlease check:\n• All required fields are filled\n• Vehicle number is correct\n• Service and center are selected\n• Date and time are valid';
+        }
+        
+        // Only show session expired alert if the error specifically mentions session expiration
+        // Check for exact phrases to avoid false positives
+        const isSessionError = 
+          errorMessage.toLowerCase().includes('session expired') || 
+          errorMessage.toLowerCase().includes('session has expired') ||
+          errorMessage.toLowerCase().includes('please login again');
+        
+        if (isSessionError) {
+          Alert.alert(
+            'Session Expired',
+            errorMessage,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Navigate back to allow user to login again
+                  onBack?.();
+                }
+              }
+            ]
+          );
+        } else {
+          // For validation and other errors, show detailed message
+          Alert.alert(
+            'Booking Failed', 
+            errorMessage,
+            [{ text: 'OK' }]
+          );
+        }
+          setIsProcessing(false);
+        }
+    } catch (e: any) {
+      console.error('Payment error:', e);
+      const errorMessage = e.message || 'Unable to process payment. Please try again.';
+      if (errorMessage.toLowerCase().includes('session') || errorMessage.toLowerCase().includes('expired')) {
+        Alert.alert(
+          'Session Expired',
+          'Your session has expired. Please login again to complete your booking.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                onBack?.();
+              }
+            }
+          ]
+        );
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
       setIsProcessing(false);
     }
   };
@@ -527,64 +815,99 @@ const PaymentScreen: React.FC<Props> = ({
           </View>
           
           <View style={styles.paymentMethodsContainer}>
+            {/* Stripe Payment Method */}
             <TouchableOpacity 
               style={[
                 styles.paymentCard,
                 { 
-                  backgroundColor: selectedPaymentMethod === 'card' ? BLUE_COLOR : colors.surface,
-                  borderColor: selectedPaymentMethod === 'card' ? BLUE_COLOR : colors.border
+                  backgroundColor: selectedPaymentMethod === 'stripe' ? BLUE_COLOR : colors.surface,
+                  borderColor: selectedPaymentMethod === 'stripe' ? BLUE_COLOR : colors.border
                 }
               ]}
-              onPress={() => setSelectedPaymentMethod('card')}
+              onPress={() => setSelectedPaymentMethod('stripe')}
               activeOpacity={0.7}
             >
                 <Ionicons 
                 name="card" 
                 size={Platform.select({ ios: 24, android: 20 })} 
-                color={selectedPaymentMethod === 'card' ? '#FFFFFF' : BLUE_COLOR} 
+                color={selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR} 
               />
               <Text style={[
                 styles.paymentCardText,
-                { color: selectedPaymentMethod === 'card' ? '#FFFFFF' : colors.text }
+                { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.text }
               ]}>
-                Card
+                Stripe
               </Text>
-              {selectedPaymentMethod === 'card' && (
+              {selectedPaymentMethod === 'stripe' && (
                 <View style={styles.checkIcon}>
                   <Ionicons name="checkmark-circle" size={Platform.select({ ios: 20, android: 18 })} color="#FFFFFF" />
                 </View>
               )}
             </TouchableOpacity>
 
+            {/* PayPal Payment Method */}
             <TouchableOpacity 
               style={[
                 styles.paymentCard,
                 { 
-                  backgroundColor: selectedPaymentMethod === 'wallet' ? BLUE_COLOR : colors.surface,
-                  borderColor: selectedPaymentMethod === 'wallet' ? BLUE_COLOR : colors.border
+                  backgroundColor: selectedPaymentMethod === 'paypal' ? BLUE_COLOR : colors.surface,
+                  borderColor: selectedPaymentMethod === 'paypal' ? BLUE_COLOR : colors.border
                 }
               ]}
-              onPress={() => setSelectedPaymentMethod('wallet')}
+              onPress={() => setSelectedPaymentMethod('paypal')}
               activeOpacity={0.7}
             >
                 <Ionicons 
-                name="wallet" 
+                name="logo-paypal" 
                 size={Platform.select({ ios: 24, android: 20 })} 
-                color={selectedPaymentMethod === 'wallet' ? '#FFFFFF' : BLUE_COLOR} 
+                color={selectedPaymentMethod === 'paypal' ? '#FFFFFF' : BLUE_COLOR} 
               />
               <Text style={[
                 styles.paymentCardText,
-                { color: selectedPaymentMethod === 'wallet' ? '#FFFFFF' : colors.text }
+                { color: selectedPaymentMethod === 'paypal' ? '#FFFFFF' : colors.text }
               ]}>
-                Wallet
+                PayPal
               </Text>
-              {selectedPaymentMethod === 'wallet' && (
+              {selectedPaymentMethod === 'paypal' && (
                 <View style={styles.checkIcon}>
                   <Ionicons name="checkmark-circle" size={Platform.select({ ios: 20, android: 18 })} color="#FFFFFF" />
                 </View>
               )}
             </TouchableOpacity>
 
+            {/* Apple Pay Payment Method (iOS only) */}
+            {paymentService.isPaymentMethodAvailable('applepay') && (
+              <TouchableOpacity 
+                style={[
+                  styles.paymentCard,
+                  { 
+                    backgroundColor: selectedPaymentMethod === 'applepay' ? BLUE_COLOR : colors.surface,
+                    borderColor: selectedPaymentMethod === 'applepay' ? BLUE_COLOR : colors.border
+                  }
+                ]}
+                onPress={() => setSelectedPaymentMethod('applepay')}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name="logo-apple" 
+                  size={Platform.select({ ios: 24, android: 20 })} 
+                  color={selectedPaymentMethod === 'applepay' ? '#FFFFFF' : BLUE_COLOR} 
+                />
+                <Text style={[
+                  styles.paymentCardText,
+                  { color: selectedPaymentMethod === 'applepay' ? '#FFFFFF' : colors.text }
+                ]}>
+                  Apple Pay
+                </Text>
+                {selectedPaymentMethod === 'applepay' && (
+                  <View style={styles.checkIcon}>
+                    <Ionicons name="checkmark-circle" size={Platform.select({ ios: 20, android: 18 })} color="#FFFFFF" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Cash Payment Method */}
             <TouchableOpacity 
               style={[
                 styles.paymentCard,
@@ -718,6 +1041,384 @@ const PaymentScreen: React.FC<Props> = ({
         </TouchableOpacity>
       </Modal>
 
+      {/* Payment Details Modal (Stripe, PayPal, Apple Pay) */}
+      <Modal
+        visible={showPaymentDetailsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowPaymentDetailsModal(false);
+          setCardErrors({});
+          setPaypalErrors({});
+          setApplePayErrors({});
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => {
+              setShowPaymentDetailsModal(false);
+              setCardErrors({});
+              setPaypalErrors({});
+              setApplePayErrors({});
+            }}
+          />
+          <View 
+            style={[styles.paymentModalContent, { backgroundColor: colors.card }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <View style={[styles.modalHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
+                  <Ionicons 
+                    name={
+                      selectedPaymentMethod === 'stripe' ? 'card' :
+                      selectedPaymentMethod === 'paypal' ? 'logo-paypal' :
+                      'logo-apple'
+                    } 
+                    size={24} 
+                    color={BLUE_COLOR} 
+                  />
+                </View>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  {selectedPaymentMethod === 'stripe' ? 'Enter Card Details' :
+                   selectedPaymentMethod === 'paypal' ? 'PayPal Login' :
+                   'Apple Pay'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => {
+                setShowPaymentDetailsModal(false);
+                setCardErrors({});
+                setPaypalErrors({});
+                setApplePayErrors({});
+              }}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              style={styles.cardDetailsScroll}
+              contentContainerStyle={[styles.cardDetailsContent, { paddingBottom: Platform.select({ ios: 20, android: 16 }) }]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Stripe Card Details Form */}
+              {selectedPaymentMethod === 'stripe' && (
+                <>
+                  <View style={styles.paymentMethodInfo}>
+                    <Ionicons name="shield-checkmark" size={20} color={BLUE_COLOR} />
+                    <Text style={[styles.paymentMethodInfoText, { color: colors.textSecondary }]}>
+                      Your card details are secure and encrypted
+                    </Text>
+                  </View>
+
+                  {/* Card Number */}
+                  <View style={styles.cardInputWrapper}>
+                <Text style={[styles.cardInputLabel, { color: colors.text }]}>
+                  Card Number <Text style={{ color: '#EF4444' }}>*</Text>
+                </Text>
+                <View style={[
+                  styles.cardInputContainer,
+                  { 
+                    borderColor: cardErrors.cardNumber ? '#EF4444' : colors.border,
+                    backgroundColor: colors.surface,
+                  }
+                ]}>
+                  <Ionicons name="card" size={Platform.select({ ios: 20, android: 18 })} color={colors.textSecondary} style={styles.cardInputIcon} />
+                  <TextInput
+                    style={[styles.cardInput, { color: colors.text }]}
+                    placeholder="1234 5678 9012 3456"
+                    placeholderTextColor={colors.textSecondary}
+                    value={cardNumber}
+                    onChangeText={handleCardNumberChange}
+                    keyboardType="number-pad"
+                    maxLength={19}
+                    autoComplete="cc-number"
+                  />
+                </View>
+                {cardErrors.cardNumber && (
+                  <Text style={styles.cardErrorText}>{cardErrors.cardNumber}</Text>
+                )}
+              </View>
+
+              {/* Cardholder Name */}
+              <View style={styles.cardInputWrapper}>
+                <Text style={[styles.cardInputLabel, { color: colors.text }]}>
+                  Cardholder Name <Text style={{ color: '#EF4444' }}>*</Text>
+                </Text>
+                <View style={[
+                  styles.cardInputContainer,
+                  { 
+                    borderColor: cardErrors.cardholderName ? '#EF4444' : colors.border,
+                    backgroundColor: colors.surface,
+                  }
+                ]}>
+                  <Ionicons name="person" size={Platform.select({ ios: 20, android: 18 })} color={colors.textSecondary} style={styles.cardInputIcon} />
+                  <TextInput
+                    style={[styles.cardInput, { color: colors.text }]}
+                    placeholder="John Doe"
+                    placeholderTextColor={colors.textSecondary}
+                    value={cardholderName}
+                    onChangeText={handleCardholderNameChange}
+                    autoCapitalize="words"
+                    autoComplete="name"
+                  />
+                </View>
+                {cardErrors.cardholderName && (
+                  <Text style={styles.cardErrorText}>{cardErrors.cardholderName}</Text>
+                )}
+              </View>
+
+              {/* Expiry Date and CVV Row */}
+              <View style={styles.cardRow}>
+                {/* Expiry Date */}
+                <View style={[styles.cardInputWrapper, { flex: 1, marginRight: Platform.select({ ios: 12, android: 8 }) }]}>
+                  <Text style={[styles.cardInputLabel, { color: colors.text }]}>
+                    Expiry Date <Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
+                  <View style={[
+                    styles.cardInputContainer,
+                    { 
+                      borderColor: cardErrors.expiryDate ? '#EF4444' : colors.border,
+                      backgroundColor: colors.surface,
+                    }
+                  ]}>
+                    <Ionicons name="calendar" size={Platform.select({ ios: 20, android: 18 })} color={colors.textSecondary} style={styles.cardInputIcon} />
+                    <TextInput
+                      style={[styles.cardInput, { color: colors.text }]}
+                      placeholder="MM/YY"
+                      placeholderTextColor={colors.textSecondary}
+                      value={expiryDate}
+                      onChangeText={handleExpiryDateChange}
+                      keyboardType="number-pad"
+                      maxLength={5}
+                    />
+                  </View>
+                  {cardErrors.expiryDate && (
+                    <Text style={styles.cardErrorText}>{cardErrors.expiryDate}</Text>
+                  )}
+                </View>
+
+                {/* CVV */}
+                <View style={[styles.cardInputWrapper, { flex: 1 }]}>
+                  <Text style={[styles.cardInputLabel, { color: colors.text }]}>
+                    CVV <Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
+                  <View style={[
+                    styles.cardInputContainer,
+                    { 
+                      borderColor: cardErrors.cvv ? '#EF4444' : colors.border,
+                      backgroundColor: colors.surface,
+                    }
+                  ]}>
+                    <Ionicons name="lock-closed" size={Platform.select({ ios: 20, android: 18 })} color={colors.textSecondary} style={styles.cardInputIcon} />
+                    <TextInput
+                      style={[styles.cardInput, { color: colors.text }]}
+                      placeholder="123"
+                      placeholderTextColor={colors.textSecondary}
+                      value={cvv}
+                      onChangeText={handleCvvChange}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      secureTextEntry
+                    />
+                  </View>
+                  {cardErrors.cvv && (
+                    <Text style={styles.cardErrorText}>{cardErrors.cvv}</Text>
+                  )}
+                </View>
+              </View>
+
+                  {/* Pay Button */}
+                  <TouchableOpacity
+                    style={[styles.cardPayButton, { backgroundColor: BLUE_COLOR }]}
+                    onPress={() => {
+                      if (validateCardDetails()) {
+                        setShowPaymentDetailsModal(false);
+                        processPayment();
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="lock-closed" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.cardPayButtonText}>
+                      Pay ${selectedService?.offer_price || selectedService?.price || '0.00'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* PayPal Login Form */}
+              {selectedPaymentMethod === 'paypal' && (
+                <>
+                  <View style={styles.paymentMethodInfo}>
+                    <Ionicons name="logo-paypal" size={24} color={BLUE_COLOR} />
+                    <Text style={[styles.paymentMethodInfoText, { color: colors.textSecondary }]}>
+                      Sign in to your PayPal account to continue
+                    </Text>
+                  </View>
+
+                  {/* PayPal Email */}
+                  <View style={styles.cardInputWrapper}>
+                    <Text style={[styles.cardInputLabel, { color: colors.text }]}>
+                      PayPal Email <Text style={{ color: '#EF4444' }}>*</Text>
+                    </Text>
+                    <View style={[
+                      styles.cardInputContainer,
+                      { 
+                        borderColor: paypalErrors.email ? '#EF4444' : colors.border,
+                        backgroundColor: colors.surface,
+                      }
+                    ]}>
+                      <Ionicons name="mail" size={Platform.select({ ios: 20, android: 18 })} color={colors.textSecondary} style={styles.cardInputIcon} />
+                      <TextInput
+                        style={[styles.cardInput, { color: colors.text }]}
+                        placeholder="your.email@example.com"
+                        placeholderTextColor={colors.textSecondary}
+                        value={paypalEmail}
+                        onChangeText={(text) => {
+                          setPaypalEmail(text);
+                          if (paypalErrors.email) {
+                            setPaypalErrors({ ...paypalErrors, email: undefined });
+                          }
+                        }}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                      />
+                    </View>
+                    {paypalErrors.email && (
+                      <Text style={styles.cardErrorText}>{paypalErrors.email}</Text>
+                    )}
+                  </View>
+
+                  {/* PayPal Password */}
+                  <View style={styles.cardInputWrapper}>
+                    <Text style={[styles.cardInputLabel, { color: colors.text }]}>
+                      PayPal Password <Text style={{ color: '#EF4444' }}>*</Text>
+                    </Text>
+                    <View style={[
+                      styles.cardInputContainer,
+                      { 
+                        borderColor: paypalErrors.password ? '#EF4444' : colors.border,
+                        backgroundColor: colors.surface,
+                      }
+                    ]}>
+                      <Ionicons name="lock-closed" size={Platform.select({ ios: 20, android: 18 })} color={colors.textSecondary} style={styles.cardInputIcon} />
+                      <TextInput
+                        style={[styles.cardInput, { color: colors.text }]}
+                        placeholder="Enter your password"
+                        placeholderTextColor={colors.textSecondary}
+                        value={paypalPassword}
+                        onChangeText={(text) => {
+                          setPaypalPassword(text);
+                          if (paypalErrors.password) {
+                            setPaypalErrors({ ...paypalErrors, password: undefined });
+                          }
+                        }}
+                        secureTextEntry
+                        autoComplete="password"
+                      />
+                    </View>
+                    {paypalErrors.password && (
+                      <Text style={styles.cardErrorText}>{paypalErrors.password}</Text>
+                    )}
+                  </View>
+
+                  {/* Pay Button */}
+                  <TouchableOpacity
+                    style={[styles.cardPayButton, { backgroundColor: '#0070BA' }]}
+                    onPress={() => {
+                      if (validatePayPalDetails()) {
+                        setShowPaymentDetailsModal(false);
+                        processPayment();
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="logo-paypal" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.cardPayButtonText}>
+                      Pay ${selectedService?.offer_price || selectedService?.price || '0.00'} with PayPal
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {/* Apple Pay Form */}
+              {selectedPaymentMethod === 'applepay' && (
+                <>
+                  <View style={styles.paymentMethodInfo}>
+                    <Ionicons name="logo-apple" size={24} color={BLUE_COLOR} />
+                    <Text style={[styles.paymentMethodInfoText, { color: colors.textSecondary }]}>
+                      Use your Apple ID to complete payment
+                    </Text>
+                  </View>
+
+                  {/* Apple Pay Email */}
+                  <View style={styles.cardInputWrapper}>
+                    <Text style={[styles.cardInputLabel, { color: colors.text }]}>
+                      Apple ID Email <Text style={{ color: '#EF4444' }}>*</Text>
+                    </Text>
+                    <View style={[
+                      styles.cardInputContainer,
+                      { 
+                        borderColor: applePayErrors.email ? '#EF4444' : colors.border,
+                        backgroundColor: colors.surface,
+                      }
+                    ]}>
+                      <Ionicons name="mail" size={Platform.select({ ios: 20, android: 18 })} color={colors.textSecondary} style={styles.cardInputIcon} />
+                      <TextInput
+                        style={[styles.cardInput, { color: colors.text }]}
+                        placeholder="your.email@icloud.com"
+                        placeholderTextColor={colors.textSecondary}
+                        value={applePayEmail}
+                        onChangeText={(text) => {
+                          setApplePayEmail(text);
+                          if (applePayErrors.email) {
+                            setApplePayErrors({ ...applePayErrors, email: undefined });
+                          }
+                        }}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                      />
+                    </View>
+                    {applePayErrors.email && (
+                      <Text style={styles.cardErrorText}>{applePayErrors.email}</Text>
+                    )}
+                  </View>
+
+                  <View style={[styles.applePayNote, { backgroundColor: colors.surface }]}>
+                    <Ionicons name="information-circle" size={18} color={colors.textSecondary} />
+                    <Text style={[styles.applePayNoteText, { color: colors.textSecondary }]}>
+                      You'll be redirected to authenticate with Face ID, Touch ID, or passcode
+                    </Text>
+                  </View>
+
+                  {/* Pay Button */}
+                  <TouchableOpacity
+                    style={[styles.cardPayButton, { backgroundColor: '#000000' }]}
+                    onPress={() => {
+                      if (validateApplePayDetails()) {
+                        setShowPaymentDetailsModal(false);
+                        processPayment();
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="logo-apple" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.cardPayButtonText}>
+                      Pay ${selectedService?.offer_price || selectedService?.price || '0.00'} with Apple Pay
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Pay Button */}
       <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity 
@@ -736,7 +1437,7 @@ const PaymentScreen: React.FC<Props> = ({
               {selectedPaymentMethod === 'cash' 
                 ? 'Confirm Cash Payment' 
                 : selectedService 
-                  ? `Pay $${selectedService.offer_price || selectedService.price}`
+                  ? `Pay $${selectedService.offer_price || selectedService.price} with ${paymentService.getPaymentMethodName(selectedPaymentMethod)}`
                   : 'Pay'}
             </Text>
           )}
@@ -925,11 +1626,12 @@ const styles = StyleSheet.create({
   },
   paymentMethodsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Platform.select({ ios: 12, android: 8 }),
     marginTop: Platform.select({ ios: 8, android: 4 }),
   },
   paymentCard: {
-    flex: 1,
+    width: Platform.select({ ios: '47%', android: '47%' }),
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -942,6 +1644,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    marginBottom: Platform.select({ ios: 8, android: 6 }),
   },
   paymentCardText: {
     fontSize: FONT_SIZES.BODY_SMALL,
@@ -1115,6 +1818,18 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
   },
+  paymentModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    minHeight: '50%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 16,
+    overflow: 'hidden',
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1122,6 +1837,47 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
+  },
+  modalHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modalHeaderIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  paymentMethodInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BLUE_COLOR + '10',
+    padding: Platform.select({ ios: 16, android: 14 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    marginBottom: Platform.select({ ios: 24, android: 20 }),
+  },
+  paymentMethodInfoText: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    marginLeft: 10,
+    flex: 1,
+  },
+  applePayNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: Platform.select({ ios: 14, android: 12 }),
+    borderRadius: Platform.select({ ios: 10, android: 8 }),
+    marginBottom: Platform.select({ ios: 20, android: 16 }),
+  },
+  applePayNoteText: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 20,
   },
   modalTitle: {
     fontSize: FONT_SIZES.BODY_LARGE,
@@ -1157,6 +1913,77 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
+  },
+  cardDetailsScroll: {
+    flexGrow: 1,
+  },
+  cardDetailsContent: {
+    padding: Platform.select({ ios: 20, android: 16 }),
+    flexGrow: 1,
+  },
+  cardInputWrapper: {
+    marginBottom: Platform.select({ ios: 20, android: 16 }),
+  },
+  cardInputLabel: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
+    marginBottom: Platform.select({ ios: 10, android: 8 }),
+  },
+  cardInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    paddingHorizontal: Platform.select({ ios: 16, android: 14 }),
+    minHeight: Platform.select({ ios: 56, android: 52 }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  cardInputIcon: {
+    marginRight: Platform.select({ ios: 10, android: 8 }),
+  },
+  cardInput: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    flex: 1,
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+  },
+  cardErrorText: {
+    color: '#EF4444',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    marginTop: 6,
+    marginLeft: 4,
+    fontFamily: FONTS.INTER_REGULAR,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  cardPayButton: {
+    borderRadius: Platform.select({ ios: 16, android: 14 }),
+    paddingVertical: Platform.select({ ios: 18, android: 16 }),
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginTop: Platform.select({ ios: 12, android: 10 }),
+    marginBottom: Platform.select({ ios: 20, android: 16 }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  cardPayButtonText: {
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
 });
 
