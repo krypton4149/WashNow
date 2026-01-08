@@ -10,6 +10,27 @@ import {
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { STRIPE_PUBLISHABLE_KEY, MERCHANT_IDENTIFIER } from './src/services/paymentService';
+
+// Import StripeProvider with error handling for native module linking
+let StripeProvider: React.ComponentType<{ 
+  publishableKey: string; 
+  merchantIdentifier?: string;
+  children: React.ReactNode 
+}>;
+try {
+  const stripeModule = require('@stripe/stripe-react-native');
+  if (stripeModule && stripeModule.StripeProvider) {
+    StripeProvider = stripeModule.StripeProvider;
+  } else {
+    throw new Error('StripeProvider not found in module');
+  }
+} catch (error) {
+  console.warn('⚠️ Stripe native module not linked. Please rebuild the app after running pod install.');
+  console.warn('Error:', error);
+  // Fallback: Create a no-op provider component that just passes children through
+  StripeProvider = ({ children }: { publishableKey: string; merchantIdentifier?: string; children: React.ReactNode }) => <>{children}</>;
+}
 import OnboardingScreen from './src/screens/onboarding/OnboardingScreen';
 import UserChoiceScreen from './src/screens/user/UserChoiceScreen';
 import AuthNavigator from './src/navigation/AuthNavigator';
@@ -771,9 +792,14 @@ const styles = StyleSheet.create({
 
 function App(): React.JSX.Element {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <StripeProvider 
+      publishableKey={STRIPE_PUBLISHABLE_KEY}
+      merchantIdentifier={MERCHANT_IDENTIFIER}
+    >
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </StripeProvider>
   );
 }
 

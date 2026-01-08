@@ -1,5 +1,7 @@
 PODS:
   - boost (1.84.0)
+  - BVLinearGradient (2.8.3):
+    - React-Core
   - DoubleConversion (1.1.6)
   - fast_float (8.0.0)
   - FBLazyVector (0.82.0)
@@ -2637,10 +2639,131 @@ PODS:
     - SocketRocket
     - Yoga
   - SocketRocket (0.7.1)
+  - Stripe (25.0.1):
+    - StripeApplePay (= 25.0.1)
+    - StripeCore (= 25.0.1)
+    - StripePayments (= 25.0.1)
+    - StripePaymentsUI (= 25.0.1)
+    - StripeUICore (= 25.0.1)
+  - stripe-react-native (0.57.2):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - stripe-react-native/Core (= 0.57.2)
+    - stripe-react-native/NewArch (= 0.57.2)
+    - Yoga
+  - stripe-react-native/Core (0.57.2):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Stripe (~> 25.0.1)
+    - StripeApplePay (~> 25.0.1)
+    - StripeFinancialConnections (~> 25.0.1)
+    - StripePayments (~> 25.0.1)
+    - StripePaymentSheet (~> 25.0.1)
+    - StripePaymentsUI (~> 25.0.1)
+    - Yoga
+  - stripe-react-native/NewArch (0.57.2):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
+  - StripeApplePay (25.0.1):
+    - StripeCore (= 25.0.1)
+  - StripeCore (25.0.1)
+  - StripeFinancialConnections (25.0.1):
+    - StripeCore (= 25.0.1)
+    - StripeUICore (= 25.0.1)
+  - StripePayments (25.0.1):
+    - StripeCore (= 25.0.1)
+    - StripePayments/Stripe3DS2 (= 25.0.1)
+  - StripePayments/Stripe3DS2 (25.0.1):
+    - StripeCore (= 25.0.1)
+  - StripePaymentSheet (25.0.1):
+    - StripeApplePay (= 25.0.1)
+    - StripeCore (= 25.0.1)
+    - StripePayments (= 25.0.1)
+    - StripePaymentsUI (= 25.0.1)
+  - StripePaymentsUI (25.0.1):
+    - StripeCore (= 25.0.1)
+    - StripePayments (= 25.0.1)
+    - StripeUICore (= 25.0.1)
+  - StripeUICore (25.0.1):
+    - StripeCore (= 25.0.1)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
   - boost (from `../node_modules/react-native/third-party-podspecs/boost.podspec`)
+  - BVLinearGradient (from `../node_modules/react-native-linear-gradient`)
   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
   - fast_float (from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
@@ -2721,15 +2844,26 @@ DEPENDENCIES:
   - RNSVG (from `../node_modules/react-native-svg`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
   - SocketRocket (~> 0.7.1)
+  - "stripe-react-native (from `../node_modules/@stripe/stripe-react-native`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
   trunk:
     - SocketRocket
+    - Stripe
+    - StripeApplePay
+    - StripeCore
+    - StripeFinancialConnections
+    - StripePayments
+    - StripePaymentSheet
+    - StripePaymentsUI
+    - StripeUICore
 
 EXTERNAL SOURCES:
   boost:
     :podspec: "../node_modules/react-native/third-party-podspecs/boost.podspec"
+  BVLinearGradient:
+    :path: "../node_modules/react-native-linear-gradient"
   DoubleConversion:
     :podspec: "../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec"
   fast_float:
@@ -2887,11 +3021,14 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-svg"
   RNVectorIcons:
     :path: "../node_modules/react-native-vector-icons"
+  stripe-react-native:
+    :path: "../node_modules/@stripe/stripe-react-native"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
+  BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: b32c788ed9c6a8c584d114d0047beda9664e7cc6
   FBLazyVector: 41b4dd99afd0aad861444ee141abdedaa6c3d238
@@ -2971,6 +3108,15 @@ SPEC CHECKSUMS:
   RNSVG: 8c0bbfa480a24b24468f1c76bd852a4aac3178e6
   RNVectorIcons: 791f13226ec4a3fd13062eda9e892159f0981fae
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
+  Stripe: 4728e3e0dd8df134e4a420ab504e929a93a815f0
+  stripe-react-native: 9720ab827a3dae62096df8dd160661d5fdf41a4f
+  StripeApplePay: 43997281ace138a1c75a8f2d7be11925ea28644c
+  StripeCore: 457c30e2fd3a7c4b274a5ad53d1ff03661eef2a0
+  StripeFinancialConnections: 8c2e326f767fb014b53174b3a5f8592c0a45fa56
+  StripePayments: 6955de4298a5265e66f02cffcc7954475ac7f6c8
+  StripePaymentSheet: 3f93ce6ea84afde770d3c7e18a9b8f99aed63896
+  StripePaymentsUI: 626726a01255a6458c35436f7f6431dacee82684
+  StripeUICore: 30f8352fd7a5cf1541b7777a57b3ad1133bf6763
   Yoga: edeb9900b9e5bb5b27b9a6a2d5914e4fe4033c1b
 
 PODFILE CHECKSUM: 0df02c7ac79379875013a466e86c8b4bf1dc5617

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../config/env';
 
-const BASE_URL = 'https://carwashapp.shoppypie.in';
+const BASE_URL = API_URL;
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user_data';
 
@@ -682,11 +683,60 @@ class AuthService {
         console.log('[authService.bookNow] ✅ API Response: Booking successful');
         console.log('[authService.bookNow] 📦 Full API Response:', JSON.stringify(data, null, 2));
         
-        const bookingId = data.data?.bookingData?.booking_id || data.data?.booking_id || 'unknown';
+        // Try multiple possible paths for booking_id and bookingno
+        // Log the full response structure first to understand what we're working with
+        console.log('[authService.bookNow] 🔍 Full API Response Structure:');
+        console.log('  data.data:', JSON.stringify(data.data, null, 2));
+        console.log('  data.data?.bookingData:', JSON.stringify(data.data?.bookingData, null, 2));
+        
+        let bookingId = data.data?.bookingData?.booking_id || 
+                         data.data?.booking_id || 
+                         data.data?.bookingData?.id ||
+                         data.data?.id ||
+                         data.booking_id ||
+                         data.id ||
+                         null;
+        
+        let bookingNo = data.data?.bookingData?.bookingno || 
+                         data.data?.bookingno || 
+                         data.data?.bookingData?.booking_no ||
+                         data.data?.booking_no ||
+                         data.bookingno ||
+                         data.booking_no ||
+                         null;
+        
+        // If bookingNo is not found, use bookingId
+        if (!bookingNo && bookingId) {
+          bookingNo = bookingId;
+        }
+        
+        // If still no bookingId, try to extract from any nested structure
+        if (!bookingId) {
+          // Try to find any ID field in the response
+          const findId = (obj: any, depth = 0): string | null => {
+            if (depth > 3 || !obj || typeof obj !== 'object') return null;
+            if (obj.booking_id) return String(obj.booking_id);
+            if (obj.bookingId) return String(obj.bookingId);
+            if (obj.id && typeof obj.id !== 'object') return String(obj.id);
+            for (const key in obj) {
+              if (obj.hasOwnProperty(key) && typeof obj[key] === 'object') {
+                const found = findId(obj[key], depth + 1);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+          bookingId = findId(data) || 'unknown';
+          if (bookingId !== 'unknown' && !bookingNo) {
+            bookingNo = bookingId;
+          }
+        }
+        
         const bookingStatus = data.data?.bookingData?.status || data.data?.status || 'confirmed';
         
-        console.log('[authService.bookNow] 🆔 Booking ID from API:', bookingId);
-        console.log('[authService.bookNow] 📊 Booking Status from API:', bookingStatus);
+        console.log('[authService.bookNow] 🆔 Booking ID extracted:', bookingId, '(type:', typeof bookingId, ')');
+        console.log('[authService.bookNow] 📋 Booking No extracted:', bookingNo, '(type:', typeof bookingNo, ')');
+        console.log('[authService.bookNow] 📊 Booking Status:', bookingStatus);
         
         // Invalidate booking caches
         await Promise.all([
@@ -696,7 +746,8 @@ class AuthService {
         
         return { 
           success: true, 
-          bookingId: bookingId
+          bookingId: bookingId,
+          bookingNo: bookingNo // Return bookingNo separately
         };
       } else {
         console.error('[authService.bookNow] ❌ Booking failed');
@@ -2191,6 +2242,62 @@ class AuthService {
       return {
         success: false,
         error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Create Payment Intent API (for Stripe)
+  // This should be called from your backend to create a Payment Intent
+  // See: https://stripe.com/docs/payments/accept-a-payment?platform=react-native
+  // 
+  // Example backend endpoint implementation:
+  // POST /api/create-payment-intent
+  // Body: { amount: 10000, currency: 'usd', booking_id: '123' }
+  // Response: { clientSecret: 'pi_xxx_secret_xxx' }
+  async createPaymentIntent(paymentData: {
+    amount: number;
+    currency?: string;
+    booking_id?: string;
+  }): Promise<{ success: boolean; clientSecret?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to create payment intent' };
+      }
+
+      // TODO: Replace with your actual backend endpoint
+      // Example: POST /api/create-payment-intent
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/create-payment-intent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: Math.round(paymentData.amount * 100), // Convert to cents
+          currency: paymentData.currency || 'usd',
+          booking_id: paymentData.booking_id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.clientSecret) {
+        return {
+          success: true,
+          clientSecret: data.clientSecret,
+        };
+      } else {
+        return {
+          success: false,
+          error: data.error || data.message || 'Failed to create payment intent',
+        };
+      }
+    } catch (error: any) {
+      console.error('[authService.createPaymentIntent] Error:', error);
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.',
       };
     }
   }
