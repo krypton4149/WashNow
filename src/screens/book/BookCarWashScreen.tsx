@@ -104,6 +104,27 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     return `$${minPrice.toFixed(2)}`;
   };
 
+  // Helper function to format weekoff days for display
+  const formatWeekoffDays = (weekoffDays: string[] | null | undefined): string | null => {
+    if (!weekoffDays || !Array.isArray(weekoffDays) || weekoffDays.length === 0) {
+      return null;
+    }
+    
+    // Shorten day names for display (e.g., "Monday" -> "Mon")
+    const dayAbbreviations: { [key: string]: string } = {
+      'Sunday': 'Sun',
+      'Monday': 'Mon',
+      'Tuesday': 'Tue',
+      'Wednesday': 'Wed',
+      'Thursday': 'Thu',
+      'Friday': 'Fri',
+      'Saturday': 'Sat',
+    };
+    
+    const abbreviatedDays = weekoffDays.map(day => dayAbbreviations[day] || day);
+    return abbreviatedDays.join(', ');
+  };
+
   const filteredCenters = React.useMemo(() => {
     if (!searchText.trim()) {
       return serviceCenters;
@@ -124,7 +145,17 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
       const result = await authService.getServiceCenters();
       
       if (result.success && result.serviceCenters) {
-        setServiceCenters(result.serviceCenters);
+        // Filter out centers with empty services_offered array
+        // Only show centers that have at least one service
+        const centersWithServices = result.serviceCenters.filter((center: any) => {
+          const hasServices = center.services_offered && 
+                             Array.isArray(center.services_offered) && 
+                             center.services_offered.length > 0;
+          return hasServices;
+        });
+        
+        console.log(`Filtered ${result.serviceCenters.length} centers to ${centersWithServices.length} centers with services`);
+        setServiceCenters(centersWithServices);
         setCentersError(null);
       } else {
         // Fallback to mock data if API fails
@@ -301,6 +332,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
           ) : (
             filteredCenters.map((center, index) => {
               const minPrice = getMinPrice(center);
+              const weekoffDaysFormatted = formatWeekoffDays(center.weekoff_days);
               return (
                 <View 
                   key={center.id || index} 
@@ -321,6 +353,14 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                       )}
                     </View>
                     <Text style={[styles.centerAddress, { color: '#000000' }]}>{center.address || center.location || 'Address not available'}</Text>
+                    {weekoffDaysFormatted && (
+                      <View style={styles.weekoffContainer}>
+                        <Ionicons name="close-circle-outline" size={Platform.select({ ios: 14, android: 12 })} color="#FF6B6B" />
+                        <Text style={[styles.weekoffText, { color: '#FF6B6B' }]}>
+                          Closed: {weekoffDaysFormatted}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
               );
@@ -613,6 +653,18 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.INTER_REGULAR,
     lineHeight: 18,
     marginTop: 2,
+  },
+  weekoffContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Platform.select({ ios: 6, android: 5 }),
+    gap: Platform.select({ ios: 6, android: 4 }),
+  },
+  weekoffText: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    flex: 1,
   },
   centerDistance: {
     fontSize: 14,

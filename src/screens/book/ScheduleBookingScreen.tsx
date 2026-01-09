@@ -18,6 +18,7 @@ interface ScheduleBookingScreenProps {
     distance: string;
     address: string;
     image: string;
+    weekoff_days?: string[] | null;
   };
 }
 
@@ -48,11 +49,52 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
 
-  // Initialize with today's date
+  // Helper function to get day name from date
+  const getDayName = (date: Date): string => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[date.getDay()];
+  };
+
+  // Helper function to check if a date falls on a weekoff day
+  const isWeekoffDay = (date: Date): boolean => {
+    if (!selectedCenter?.weekoff_days || !Array.isArray(selectedCenter.weekoff_days) || selectedCenter.weekoff_days.length === 0) {
+      return false;
+    }
+    const dayName = getDayName(date);
+    return selectedCenter.weekoff_days.includes(dayName);
+  };
+
+  // Initialize with today's date (or next available date if today is a weekoff day)
   React.useEffect(() => {
-    const today = new Date().getDate();
-    setSelectedDate(today.toString());
-  }, []);
+    const today = new Date();
+    const todayDate = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+    
+    // Check if today is a weekoff day
+    if (isWeekoffDay(today)) {
+      // Find the next available date (not a weekoff day and not in the past)
+      let nextDate = new Date(todayYear, todayMonth, todayDate);
+      let daysToAdd = 1;
+      let attempts = 0;
+      
+      while (attempts < 30) { // Limit to 30 days ahead
+        nextDate = new Date(todayYear, todayMonth, todayDate + daysToAdd);
+        if (!isWeekoffDay(nextDate) && nextDate >= today) {
+          setSelectedDate(nextDate.getDate().toString());
+          setCurrentMonth(nextDate.getMonth());
+          setCurrentYear(nextDate.getFullYear());
+          return;
+        }
+        daysToAdd++;
+        attempts++;
+      }
+      // If no available date found, just use today
+      setSelectedDate(todayDate.toString());
+    } else {
+      setSelectedDate(todayDate.toString());
+    }
+  }, [selectedCenter]);
 
   const services: Service[] = [
     {
@@ -79,7 +121,6 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     { id: '19:00', time: '7:00 PM', isAvailable: true },
   ];
 
-
   const generateCalendarDays = () => {
     const days = [];
     const today = new Date();
@@ -88,7 +129,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     
     // Add empty cells for days before month starts
     for (let i = 0; i < currentDate.getDay(); i++) {
-      days.push({ day: '', isCurrentMonth: false, isSelected: false, isPast: false });
+      days.push({ day: '', isCurrentMonth: false, isSelected: false, isPast: false, isWeekoff: false });
     }
     
     // Add days of the month
@@ -97,12 +138,14 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       const startOfToday = new Date(today);
       startOfToday.setHours(0, 0, 0, 0);
       const isPast = dayDate.getTime() < startOfToday.getTime();
+      const isWeekoff = isWeekoffDay(dayDate);
       
       days.push({
         day: day.toString(),
         isCurrentMonth: true,
         isSelected: day.toString() === selectedDate,
         isPast: isPast,
+        isWeekoff: isWeekoff,
       });
     }
     
@@ -139,9 +182,15 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     setSelectedService(serviceId);
   };
 
-  const handleDateSelect = (day: string, isPast: boolean) => {
-    if (day && day !== '' && !isPast) {
+  const handleDateSelect = (day: string, isPast: boolean, isWeekoff: boolean) => {
+    if (day && day !== '' && !isPast && !isWeekoff) {
       setSelectedDate(day);
+    } else if (isWeekoff) {
+      Alert.alert(
+        'Service Center Closed',
+        'This service center is closed on this day. Please select another date.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -154,6 +203,18 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       Alert.alert('Error', 'Please select a date');
       return false;
     }
+    
+    // Check if selected date is a weekoff day
+    const selectedDateObj = new Date(currentYear, currentMonth, parseInt(selectedDate));
+    if (isWeekoffDay(selectedDateObj)) {
+      Alert.alert(
+        'Service Center Closed',
+        'This service center is closed on the selected date. Please select another date.',
+        [{ text: 'OK' }]
+      );
+      return false;
+    }
+    
     if (!selectedTime) {
       Alert.alert('Error', 'Please select a time');
       return false;
@@ -210,29 +271,35 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     </TouchableOpacity>
   );
 
-  const renderCalendarDay = (dayData: any, index: number) => (
-    <TouchableOpacity
-      key={index}
-      style={[
-        styles.calendarDay,
-        dayData.isSelected && [styles.calendarDaySelected, { backgroundColor: BLUE_COLOR }],
-        !dayData.isCurrentMonth && styles.calendarDayInactive,
-        dayData.isPast && styles.calendarDayPast,
-      ]}
-      onPress={() => handleDateSelect(dayData.day, dayData.isPast)}
-      disabled={!dayData.isCurrentMonth || dayData.isPast}
-    >
-      <Text style={[
-        styles.calendarDayText,
-        { color: colors.text },
-        dayData.isSelected && [styles.calendarDayTextSelected, { color: '#FFFFFF' }],
-        !dayData.isCurrentMonth && [styles.calendarDayTextInactive, { color: colors.textSecondary }],
-        dayData.isPast && [styles.calendarDayTextPast, { color: colors.textSecondary }],
-      ]}>
-        {dayData.day}
-      </Text>
-    </TouchableOpacity>
-  );
+  const renderCalendarDay = (dayData: any, index: number) => {
+    const isDisabled = !dayData.isCurrentMonth || dayData.isPast || dayData.isWeekoff;
+    
+    return (
+      <TouchableOpacity
+        key={index}
+        style={[
+          styles.calendarDay,
+          dayData.isSelected && [styles.calendarDaySelected, { backgroundColor: BLUE_COLOR }],
+          !dayData.isCurrentMonth && styles.calendarDayInactive,
+          dayData.isPast && styles.calendarDayPast,
+          dayData.isWeekoff && styles.calendarDayWeekoff,
+        ]}
+        onPress={() => handleDateSelect(dayData.day, dayData.isPast, dayData.isWeekoff)}
+        disabled={isDisabled}
+      >
+        <Text style={[
+          styles.calendarDayText,
+          { color: colors.text },
+          dayData.isSelected && [styles.calendarDayTextSelected, { color: '#FFFFFF' }],
+          !dayData.isCurrentMonth && [styles.calendarDayTextInactive, { color: colors.textSecondary }],
+          dayData.isPast && [styles.calendarDayTextPast, { color: colors.textSecondary }],
+          dayData.isWeekoff && [styles.calendarDayTextWeekoff, { color: colors.textSecondary }],
+        ]}>
+          {dayData.day}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderTimeSlot = (timeSlot: TimeSlot) => (
     <TouchableOpacity
@@ -608,6 +675,13 @@ const styles = StyleSheet.create({
   },
   calendarDayTextPast: {},
   calendarDayTextInactive: {},
+  calendarDayWeekoff: {
+    opacity: 0.4,
+  },
+  calendarDayTextWeekoff: {
+    opacity: 0.5,
+    textDecorationLine: 'line-through',
+  },
   timeSlotsContainer: {
     width: '100%',
   },

@@ -67,6 +67,27 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
     return `$${minPrice.toFixed(2)}`;
   };
 
+  // Helper function to format weekoff days for display
+  const formatWeekoffDays = (weekoffDays: string[] | null | undefined): string | null => {
+    if (!weekoffDays || !Array.isArray(weekoffDays) || weekoffDays.length === 0) {
+      return null;
+    }
+    
+    // Shorten day names for display (e.g., "Monday" -> "Mon")
+    const dayAbbreviations: { [key: string]: string } = {
+      'Sunday': 'Sun',
+      'Monday': 'Mon',
+      'Tuesday': 'Tue',
+      'Wednesday': 'Wed',
+      'Thursday': 'Thu',
+      'Friday': 'Fri',
+      'Saturday': 'Sat',
+    };
+    
+    const abbreviatedDays = weekoffDays.map(day => dayAbbreviations[day] || day);
+    return abbreviatedDays.join(', ');
+  };
+
   const fetchServiceCenters = async () => {
     try {
       setLoading(true);
@@ -75,8 +96,17 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
       const result = await authService.getServiceCenters();
       
       if (result.success && result.serviceCenters && result.serviceCenters.length > 0) {
+        // Filter out centers with empty services_offered array
+        // Only show centers that have at least one service
+        const centersWithServices = result.serviceCenters.filter((center: any) => {
+          const hasServices = center.services_offered && 
+                             Array.isArray(center.services_offered) && 
+                             center.services_offered.length > 0;
+          return hasServices;
+        });
+        
         // Transform API data to match our interface
-        const transformedCenters = result.serviceCenters.map((center: any) => ({
+        const transformedCenters = centersWithServices.map((center: any) => ({
           id: center.id?.toString() || Math.random().toString(),
           name: center.name || center.service_center_name || 'Service Center',
           rating: 4.5, // Default rating since API doesn't provide it
@@ -92,7 +122,7 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
           services_offered: center.services_offered || [], // Preserve services_offered for min price calculation
         }));
         
-        console.log('Fetched service centers:', transformedCenters);
+        console.log(`Filtered ${result.serviceCenters.length} centers to ${transformedCenters.length} centers with services`);
         setServiceCenters(transformedCenters);
       } else {
         // Fallback to mock data if API fails or returns empty
@@ -200,6 +230,8 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
 
   const renderCarWashCenter = (center: any, index: number) => {
     const minPrice = getMinPrice(center);
+    const weekoffDaysFormatted = formatWeekoffDays(center.weekoff_days);
+    
     return (
       <TouchableOpacity
         key={center.id}
@@ -224,6 +256,14 @@ const ScheduleForLaterScreen: React.FC<ScheduleForLaterScreenProps> = ({
             )}
           </View>
           <Text style={[styles.centerAddress, { color: colors.textSecondary }]} numberOfLines={2}>{center.address || 'Address not available'}</Text>
+          {weekoffDaysFormatted && (
+            <View style={styles.weekoffContainer}>
+              <Ionicons name="close-circle-outline" size={Platform.select({ ios: 14, android: 12 })} color="#FF6B6B" />
+              <Text style={[styles.weekoffText, { color: '#FF6B6B' }]}>
+                Closed: {weekoffDaysFormatted}
+              </Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -505,6 +545,18 @@ const styles = StyleSheet.create({
     lineHeight: Platform.select({ ios: 18, android: 16 }),
     marginTop: Platform.select({ ios: 2, android: 1 }),
     flexShrink: 1,
+  },
+  weekoffContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Platform.select({ ios: 6, android: 5 }),
+    gap: Platform.select({ ios: 6, android: 4 }),
+  },
+  weekoffText: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    flex: 1,
   },
   scheduleInfo: {
     flexDirection: 'row',

@@ -18,7 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
-import { API_BASE_URL } from '../../services/api';
+import { API_URL } from '../../config/env';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -66,18 +66,33 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
 
     setIsLoading(true);
 
+    // Use the same pattern as authService - API_URL + endpoint path
+    // Add timeout handling for better network error handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/user/login`, {
+      // Use FormData instead of JSON (as per API requirements)
+      const formData = new FormData();
+      formData.append('email', trimmedEmail);
+      formData.append('password', trimmedPassword);
+
+      const response = await fetch(`${API_URL}/api/v1/auth/user/login`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
-          'Content-Type': 'application/json',
+          // Don't set Content-Type for FormData - browser will set it with boundary
         },
-        body: JSON.stringify({
-          email: trimmedEmail,
-          password: trimmedPassword,
-        }),
+        body: formData as any,
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
+      
+      // Check if response is valid (status 0 usually means network error)
+      if (!response || response.status === 0) {
+        throw new Error('Network Error - Please check your internet connection');
+      }
 
       let responseData: any = null;
       try {
@@ -166,7 +181,25 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
       const maybePromise = onLogin(trimmedEmail, trimmedPassword, 'email');
       await Promise.resolve(maybePromise);
     } catch (error: any) {
-      Alert.alert('Network Error', error?.message || 'Unable to reach the server. Please try again.');
+      clearTimeout(timeoutId); // Ensure timeout is cleared on error
+      console.error('Owner login error:', error);
+      // Provide more specific error messages
+      let errorMessage = 'Unable to reach the server. Please try again.';
+      
+      // Handle timeout errors
+      if (error?.name === 'AbortError') {
+        errorMessage = 'Request timeout. Please check your internet connection and try again.';
+      } else if (error?.message) {
+        if (error.message.includes('Network') || error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+          errorMessage = 'Network request failed. Please check your internet connection and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (error?.name === 'TypeError' && error?.message?.includes('Network')) {
+        errorMessage = 'Network request failed. Please check your internet connection and try again.';
+      }
+      
+      Alert.alert('Network Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

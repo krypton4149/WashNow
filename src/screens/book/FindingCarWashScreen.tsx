@@ -165,8 +165,19 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
           if (Array.isArray(filteredCenters) && filteredCenters.length > 0) {
           console.log('=== Using filtered centers for broadcasting ===');
           console.log('Filtered centers count:', filteredCenters.length);
-          console.log('Filtered centers data:', JSON.stringify(filteredCenters, null, 2));
-          const mapped: ServiceCenter[] = filteredCenters.map((c: any, index: number) => {
+          
+          // Filter out centers with empty services_offered array (defensive check)
+          // Even though filteredCenters should already be filtered, we double-check here
+          const centersWithServices = filteredCenters.filter((center: any) => {
+            return center.services_offered && 
+                   Array.isArray(center.services_offered) && 
+                   center.services_offered.length > 0;
+          });
+          
+          console.log(`Double-filtered to ${centersWithServices.length} centers with services`);
+          console.log('Filtered centers data:', JSON.stringify(centersWithServices, null, 2));
+          
+          const mapped: ServiceCenter[] = centersWithServices.map((c: any, index: number) => {
             // Calculate distance based on coordinates (simplified calculation)
             const distance = c.clat && c.clong 
               ? calculateDistance(c.clat, c.clong)
@@ -202,8 +213,17 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
         console.log('Service centers API response:', JSON.stringify(resp, null, 2));
         
         if (resp.success && resp.serviceCenters) {
-          console.log('Successfully loaded centers:', resp.serviceCenters.length);
-          const mapped: ServiceCenter[] = (resp.serviceCenters || []).map((c: any, index: number) => {
+          // Filter out centers with empty services_offered array
+          // Only show centers that have at least one service
+          const centersWithServices = (resp.serviceCenters || []).filter((center: any) => {
+            return center.services_offered && 
+                   Array.isArray(center.services_offered) && 
+                   center.services_offered.length > 0;
+          });
+          
+          console.log(`Filtered ${resp.serviceCenters.length} centers to ${centersWithServices.length} centers with services`);
+          
+          const mapped: ServiceCenter[] = centersWithServices.map((c: any, index: number) => {
             // Calculate distance based on coordinates (simplified calculation)
             const distance = calculateDistance(c.clat, c.clong);
             

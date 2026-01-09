@@ -13,7 +13,7 @@ const BLUE_COLOR = '#0358a8';
 
 interface Props {
   onBack?: () => void;
-  onPaymentSuccess?: (bookingId?: string, bookingData?: { date: string; time: string }) => void;
+  onPaymentSuccess?: (bookingId?: string, bookingData?: { date: string; time: string }, totalAmount?: number) => void;
   acceptedCenter?: any;
   bookingData?: {
     date?: string;
@@ -50,6 +50,7 @@ const PaymentScreen: React.FC<Props> = ({
   const [selectedService, setSelectedService] = useState<any>(null);
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [loadingCenters, setLoadingCenters] = useState(false);
+  const [hasCheckedServices, setHasCheckedServices] = useState(false);
 
   const formatDate = (d: Date) => {
     const day = d.getDate().toString().padStart(2, '0');
@@ -100,7 +101,7 @@ const PaymentScreen: React.FC<Props> = ({
           }
         }
       } catch (error) {
-        console.error('Error loading user data:', error);
+        // Error loading user data
       }
     };
     loadUserData();
@@ -115,13 +116,64 @@ const PaymentScreen: React.FC<Props> = ({
   useEffect(() => {
     const initialCenter = bookingData?.center || acceptedCenter;
     if (initialCenter) {
-      setSelectedServiceCenter(initialCenter);
-      fetchServiceCenterDetails(initialCenter.id);
+      // Check if the center already has services_offered data
+      const hasServicesData = initialCenter?.services_offered && 
+                             Array.isArray(initialCenter.services_offered);
+      
+      if (hasServicesData) {
+        // Center already has services data, use it directly
+        setSelectedServiceCenter(initialCenter);
+        setHasCheckedServices(true);
+      } else {
+        // Center doesn't have services data, fetch it
+        setSelectedServiceCenter(initialCenter);
+        fetchServiceCenterDetails(initialCenter.id);
+      }
     }
   }, []);
 
+  // Validate that center has services - only check after loading is complete
+  useEffect(() => {
+    // Don't check if we're still loading or haven't finished the initial check
+    if (loadingCenters || !hasCheckedServices) {
+      return;
+    }
+
+    const centerHasServices = selectedServiceCenter?.services_offered && 
+                              Array.isArray(selectedServiceCenter.services_offered) && 
+                              selectedServiceCenter.services_offered.length > 0;
+    
+    // Only show error if we've checked and confirmed there are no services
+    if (selectedServiceCenter && !centerHasServices && hasCheckedServices) {
+      // Center has no services - show error and go back
+      Alert.alert(
+        'Service Center Unavailable',
+        'This service center does not offer any services. Please select a different center.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Navigate back if possible
+              if (onBack) {
+                onBack();
+              }
+            }
+          }
+        ]
+      );
+    }
+  }, [selectedServiceCenter, loadingCenters, hasCheckedServices]);
+
+  // Helper to check if center has services
+  const hasServices = (): boolean => {
+    return selectedServiceCenter?.services_offered && 
+           Array.isArray(selectedServiceCenter.services_offered) && 
+           selectedServiceCenter.services_offered.length > 0;
+  };
+
   const fetchServiceCenterDetails = async (centerId: number | string) => {
     setLoadingCenters(true);
+    setHasCheckedServices(false);
     try {
       const result = await authService.getServiceCenters();
       if (result.success && result.serviceCenters) {
@@ -130,10 +182,16 @@ const PaymentScreen: React.FC<Props> = ({
         );
         if (foundCenter) {
           setSelectedServiceCenter(foundCenter);
+          // Mark that we've checked services after fetching
+          setHasCheckedServices(true);
+        } else {
+          setHasCheckedServices(true);
         }
+      } else {
+        setHasCheckedServices(true);
       }
     } catch (error: any) {
-      console.error('Error loading service center details:', error);
+      setHasCheckedServices(true);
     } finally {
       setLoadingCenters(false);
     }
@@ -157,7 +215,7 @@ const PaymentScreen: React.FC<Props> = ({
     if (isProcessing) return;
     
     if (!selectedPaymentMethod) {
-      Alert.alert('Payment Method Required', 'Please select a payment method (Card or Cash) to proceed.');
+      Alert.alert('Payment Method Required', 'Please select a payment method to proceed.');
       return;
     }
     
@@ -172,6 +230,17 @@ const PaymentScreen: React.FC<Props> = ({
       return;
     }
 
+    // Validate that center has services - required for booking
+    if (!hasServices()) {
+      Alert.alert(
+        'Service Center Unavailable',
+        'This service center does not offer any services. Please select a different center.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Service selection is required
     if (!selectedService?.id) {
       Alert.alert('Error', 'Please select a service.');
       return;
@@ -199,8 +268,21 @@ const PaymentScreen: React.FC<Props> = ({
       return;
     }
 
+    // Validate center has services - required for booking
+    if (!hasServices()) {
+      Alert.alert(
+        'Service Center Unavailable',
+        'This service center does not offer any services. Please select a different center.',
+        [{ text: 'OK' }]
+      );
+      setIsProcessing(false);
+      return;
+    }
+
+    // Service selection is required
     if (!selectedService?.id) {
-      Alert.alert('Error', 'Please select a service.');
+      Alert.alert('Error', 'Please select a service to continue.');
+      setIsProcessing(false);
       return;
     }
 
@@ -236,11 +318,11 @@ const PaymentScreen: React.FC<Props> = ({
         : undefined;
 
       // Step 1: Call backend to create PaymentIntent
-      console.log('💳 Creating PaymentIntent...');
+      const serviceName = selectedService?.name || 'Car wash service';
       const clientSecret = await createPaymentIntent(
         amountInCents,
         'usd',
-        `Car wash service - ${selectedService.name}`,
+        `Car wash service - ${serviceName}`,
         {
           name: userName,
           email: userEmail,
@@ -255,8 +337,6 @@ const PaymentScreen: React.FC<Props> = ({
         return;
       }
 
-      console.log('✅ PaymentIntent created successfully');
-
       // Prepare billing address for PaymentSheet
       const billingAddress = customerAddress ? {
         line1: customerAddress.line1 || '',
@@ -267,7 +347,6 @@ const PaymentScreen: React.FC<Props> = ({
       } : undefined;
 
       // Step 2: Initialize Stripe PaymentSheet
-      console.log('🔧 Initializing PaymentSheet...');
       const { error: initError } = await initPaymentSheet({
         merchantDisplayName: 'WashNow',
         paymentIntentClientSecret: clientSecret,
@@ -290,32 +369,23 @@ const PaymentScreen: React.FC<Props> = ({
       });
 
       if (initError) {
-        console.error('PaymentSheet initialization error:', initError);
         Alert.alert('Payment Error', initError.message || 'Failed to initialize payment. Please try again.');
         setIsProcessing(false);
         return;
       }
 
-      console.log('✅ PaymentSheet initialized');
-
       // Step 3: Present PaymentSheet (Apple Pay + Card will be shown automatically)
-      console.log('📱 Presenting PaymentSheet...');
       const { error: presentError } = await presentPaymentSheet();
 
       if (presentError) {
         if (presentError.code !== 'Canceled') {
-          console.error('PaymentSheet presentation error:', presentError);
           Alert.alert('Payment Error', presentError.message || 'Payment was not completed.');
-        } else {
-          console.log('Payment cancelled by user');
         }
         setIsProcessing(false);
         return;
       }
 
       // Step 4: Payment successful - confirm booking
-      console.log('✅ Payment successful! Creating booking...');
-      
       const isScheduledBooking = bookingData?.date && bookingData?.time;
       let bookingDate: Date;
       let bookingTime: string;
@@ -329,15 +399,34 @@ const PaymentScreen: React.FC<Props> = ({
         bookingTime = getCurrentTime(now);
       }
       
-      const payload = {
+      // Build payload - ensure all required fields are present
+      const payload: any = {
         service_centre_id: String(centerId || '').trim(),
         booking_date: formatDate(bookingDate),
         booking_time: bookingTime.trim(),
         vehicle_no: vehicleNumber.trim(),
-        carmodel: (carModel.trim() || '').trim(),
-        notes: (notes?.trim() || '').trim(),
-        service_id: String(selectedService.id || '').trim(),
+        carmodel: (carModel || '').trim() || '',
+        notes: (notes?.trim() || '').trim() || '',
       };
+      
+      // Validate center has services and service is selected
+      if (!hasServices()) {
+        Alert.alert(
+          'Service Center Unavailable',
+          'This service center does not offer any services. Please select a different center.',
+          [{ text: 'OK' }]
+        );
+        setIsProcessing(false);
+        return;
+      }
+
+      if (!selectedService?.id) {
+        Alert.alert('Error', 'Please select a service to continue.');
+        setIsProcessing(false);
+        return;
+      }
+
+      payload.service_id = String(selectedService.id).trim();
 
       const token = await authService.getToken();
       if (!token) {
@@ -345,17 +434,55 @@ const PaymentScreen: React.FC<Props> = ({
         setIsProcessing(false);
         return;
       }
-
+      
       const bookingResult = await authService.bookNow(payload);
       
       if (!bookingResult.success) {
-        Alert.alert('Booking Failed', bookingResult.error || 'Payment succeeded but booking creation failed. Please contact support.');
+        Alert.alert(
+          'Booking Failed', 
+          bookingResult.error || 'Payment succeeded but booking creation failed. Please contact support.',
+          [{ text: 'OK' }]
+        );
         setIsProcessing(false);
         return;
       }
         
-      const bookingId = bookingResult.bookingId || '';
-      console.log('✅ Booking confirmed:', bookingId);
+      const bookingNo = bookingResult.bookingNo || bookingResult.bookingId || '';
+
+      // Fetch booking details to get the numeric ID and booking number
+      let numericBookingId: number | null = null;
+      let bookingNumber: string = bookingNo;
+      
+      try {
+        // Fetch booking list to get the full booking details
+        const bookingsResult = await authService.getBookingList(true); // Force refresh
+        if (bookingsResult.success && bookingsResult.bookings) {
+          // Find the booking by booking_id (booking number)
+          const foundBooking = bookingsResult.bookings.find(
+            (b: any) => b.booking_id === bookingNo || b.id?.toString() === bookingNo
+          );
+          if (foundBooking) {
+            numericBookingId = foundBooking.id; // This is the numeric ID (e.g., 107)
+            bookingNumber = foundBooking.booking_id || bookingNo; // This is the booking number (e.g., "B00106")
+          }
+        }
+      } catch (error) {
+        // Could not fetch booking details, will use booking number
+      }
+
+      // Initiate payment
+      if (numericBookingId && bookingNumber) {
+        const amount = selectedService.offer_price || selectedService.price;
+        
+        const paymentResult = await authService.initiatePayment({
+          booking_id: numericBookingId,
+          bookingno: bookingNumber,
+          provider: 'Stripe',
+          amount: amount.toString(),
+        });
+
+        // Payment initiation result - booking is already created, so don't fail if payment initiation fails
+      }
 
       // Step 5: Notify success
       const bookingDataForResponse = {
@@ -366,10 +493,9 @@ const PaymentScreen: React.FC<Props> = ({
       };
       
       setIsProcessing(false);
-      onPaymentSuccess?.(bookingId, bookingDataForResponse);
+      onPaymentSuccess?.(bookingNo, bookingDataForResponse, amount);
 
     } catch (error: any) {
-      console.error('Stripe payment error:', error);
       Alert.alert('Payment Error', error.message || 'An error occurred during payment.');
       setIsProcessing(false);
     }
@@ -389,16 +515,9 @@ const PaymentScreen: React.FC<Props> = ({
       return;
     }
 
-    if (!selectedService?.id) {
-      Alert.alert('Error', 'Please select a service.');
-      return;
-    }
-
     setIsProcessing(true);
 
     try {
-      const amount = selectedService.offer_price || selectedService.price;
-      
       const isScheduledBooking = bookingData?.date && bookingData?.time;
       let bookingDate: Date;
       let bookingTime: string;
@@ -412,15 +531,47 @@ const PaymentScreen: React.FC<Props> = ({
         bookingTime = getCurrentTime(now);
       }
       
-      const payload = {
-        service_centre_id: String(centerId || '').trim(),
+      // Ensure centerId is valid
+      if (!centerId) {
+        Alert.alert('Error', 'Invalid service center. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Build payload - ensure all required fields are present
+      const payload: any = {
+        service_centre_id: String(centerId).trim(),
         booking_date: formatDate(bookingDate),
         booking_time: bookingTime.trim(),
         vehicle_no: vehicleNumber.trim(),
-        carmodel: (carModel.trim() || '').trim(),
-        notes: (notes?.trim() ? `${notes.trim()}\nPayment method: Cash` : 'Payment method: Cash').trim(),
-        service_id: String(selectedService.id || '').trim(),
+        carmodel: (carModel || '').trim() || '',
       };
+      
+      // Add notes with payment method
+      const paymentNote = notes?.trim() 
+        ? `${notes.trim()}\nPayment method: Cash` 
+        : 'Payment method: Cash';
+      payload.notes = paymentNote.trim();
+      
+      // Validate center has services before proceeding
+      if (!hasServices()) {
+        Alert.alert(
+          'Service Center Unavailable',
+          'This service center does not offer any services. Please select a different center.',
+          [{ text: 'OK' }]
+        );
+        setIsProcessing(false);
+        return;
+      }
+
+      // Service ID is required - must be selected service
+      if (!selectedService?.id) {
+        Alert.alert('Error', 'Please select a service to continue.');
+        setIsProcessing(false);
+        return;
+      }
+
+      payload.service_id = String(selectedService.id).trim();
 
       const token = await authService.getToken();
       if (!token) {
@@ -428,18 +579,58 @@ const PaymentScreen: React.FC<Props> = ({
         setIsProcessing(false);
         return;
       }
-
+      
       const bookingResult = await authService.bookNow(payload);
       
       if (!bookingResult.success) {
-        Alert.alert('Booking Failed', bookingResult.error || 'Failed to create booking. Please try again.');
+        // Show detailed error to user
+        const errorMsg = bookingResult.error || 'Failed to create booking. Please try again.';
+        Alert.alert(
+          'Booking Failed', 
+          errorMsg,
+          [{ text: 'OK' }]
+        );
         setIsProcessing(false);
         return;
       }
         
-      const bookingId = bookingResult.bookingId || '';
+      const bookingNo = bookingResult.bookingNo || bookingResult.bookingId || '';
+
+      // Fetch booking details to get the numeric ID and booking number
+      let numericBookingId: number | null = null;
+      let bookingNumber: string = bookingNo;
       
-      console.log('✅ Cash booking created:', bookingId);
+      try {
+        // Fetch booking list to get the full booking details
+        const bookingsResult = await authService.getBookingList(true); // Force refresh
+        if (bookingsResult.success && bookingsResult.bookings) {
+          // Find the booking by booking_id (booking number)
+          const foundBooking = bookingsResult.bookings.find(
+            (b: any) => b.booking_id === bookingNo || b.id?.toString() === bookingNo
+          );
+          if (foundBooking) {
+            numericBookingId = foundBooking.id; // This is the numeric ID (e.g., 107)
+            bookingNumber = foundBooking.booking_id || bookingNo; // This is the booking number (e.g., "B00106")
+          }
+        }
+      } catch (error) {
+        // Could not fetch booking details, will use booking number
+      }
+
+      // Get the amount for payment
+      const amount = selectedService.offer_price || selectedService.price;
+
+      // Initiate payment
+      if (numericBookingId && bookingNumber) {
+        const paymentResult = await authService.initiatePayment({
+          booking_id: numericBookingId,
+          bookingno: bookingNumber,
+          provider: 'Cash',
+          amount: amount.toString(),
+        });
+
+        // Payment initiation result - booking is already created, so don't fail if payment initiation fails
+      }
       
       const bookingDataForResponse = {
         date: bookingDate.toISOString(),
@@ -448,11 +639,22 @@ const PaymentScreen: React.FC<Props> = ({
           : getCurrentTime(bookingDate),
       };
       
-      onPaymentSuccess?.(bookingId, bookingDataForResponse);
+      setIsProcessing(false);
+      onPaymentSuccess?.(bookingNo, bookingDataForResponse, amount);
 
     } catch (error: any) {
-      console.error('Cash payment booking error:', error);
-      Alert.alert('Booking Error', error.message || 'An error occurred during booking.');
+      let errorMessage = error.message || 'An error occurred during booking.';
+      
+      // Handle timeout errors specifically
+      if (error.message && error.message.includes('timeout')) {
+        errorMessage = 'Request timeout. Please check your internet connection and try again.';
+      }
+      
+      Alert.alert(
+        'Booking Error', 
+        errorMessage,
+        [{ text: 'OK' }]
+      );
       setIsProcessing(false);
     }
   };
@@ -527,8 +729,8 @@ const PaymentScreen: React.FC<Props> = ({
             </View>
           </View>
 
-          {/* Service Selection */}
-          {selectedServiceCenter && selectedServiceCenter.services_offered && selectedServiceCenter.services_offered.length > 0 && (
+          {/* Service Selection - Only show if center has services */}
+          {hasServices() && (
             <TouchableOpacity
               style={[
                 styles.serviceButton,
@@ -672,50 +874,56 @@ const PaymentScreen: React.FC<Props> = ({
           </View>
           
           <View style={styles.paymentMethodsContainer}>
-            {/* Card (Stripe with Apple Pay) Payment Method */}
-            <TouchableOpacity
-              style={[
-                styles.paymentCard,
-                { 
-                  backgroundColor: selectedPaymentMethod === 'stripe' ? BLUE_COLOR : colors.surface,
-                  borderColor: selectedPaymentMethod === 'stripe' ? BLUE_COLOR : colors.border,
-                  borderWidth: selectedPaymentMethod === 'stripe' ? 2.5 : 1.5,
-                  marginTop: Platform.select({ ios: 16, android: 12 }),
-                  shadowOpacity: selectedPaymentMethod === 'stripe' ? 0.15 : 0.08,
-                  shadowColor: selectedPaymentMethod === 'stripe' ? BLUE_COLOR : '#000',
-                }
-              ]}
-              onPress={() => setSelectedPaymentMethod('stripe')}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.2)' : BLUE_COLOR + '15' }]}>
-                <Ionicons 
-                  name="card" 
-                  size={Platform.select({ ios: 28, android: 24 })} 
-                  color={selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR} 
-                />
-              </View>
-              <View style={styles.paymentCardContent}>
-                <Text style={[
-                  styles.paymentCardText, 
-                  { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.text }
-                ]}>
-                  Card Payment
-                </Text>
-                <View style={styles.paymentMethodBadges}>
-                  <View style={[styles.methodBadge, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.25)' : colors.surface, borderColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.3)' : colors.border }]}>
-                    <Text style={[styles.methodBadgeText, { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.textSecondary }]}>
-                      Card
-                    </Text>
-                  </View>
-                  {Platform.OS === 'ios' && (
-                    <View style={[styles.methodBadge, styles.applePayBadgeMain, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.25)' : BLUE_COLOR + '15', borderColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.3)' : BLUE_COLOR + '30' }]}>
-                      <Ionicons name="logo-apple" size={14} color={selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR} />
-                      <Text style={[styles.methodBadgeText, styles.applePayBadgeText, { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR }]}>
-                        Apple Pay
+            {/* Card (Stripe with Apple Pay) Payment Method - Only show if center has services */}
+            {hasServices() && (
+              <TouchableOpacity
+                style={[
+                  styles.paymentCard,
+                  { 
+                    backgroundColor: selectedPaymentMethod === 'stripe' ? BLUE_COLOR : colors.surface,
+                    borderColor: selectedPaymentMethod === 'stripe' ? BLUE_COLOR : colors.border,
+                    borderWidth: selectedPaymentMethod === 'stripe' ? 2 : 1.5,
+                  }
+                ]}
+                onPress={() => setSelectedPaymentMethod('stripe')}
+                activeOpacity={0.8}
+              >
+              <View style={styles.paymentCardLeft}>
+                <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.2)' : BLUE_COLOR + '12' }]}>
+                  <Ionicons 
+                    name="card" 
+                    size={Platform.select({ ios: 20, android: 18 })} 
+                    color={selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR} 
+                  />
+                </View>
+                <View style={styles.paymentCardContent}>
+                  <Text style={[
+                    styles.paymentCardText, 
+                    { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.text }
+                  ]}>
+                    Card Payment
+                  </Text>
+                  <View style={styles.paymentMethodBadges}>
+                    <View style={[styles.methodBadge, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.25)' : colors.background, borderColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.35)' : colors.border }]}>
+                      <Ionicons 
+                        name="card-outline" 
+                        size={11} 
+                        color={selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.textSecondary} 
+                        style={{ marginRight: 3 }}
+                      />
+                      <Text style={[styles.methodBadgeText, { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.textSecondary }]}>
+                        Card
                       </Text>
                     </View>
-                  )}
+                    {Platform.OS === 'ios' && (
+                      <View style={[styles.methodBadge, styles.applePayBadgeMain, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.25)' : BLUE_COLOR + '12', borderColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.35)' : BLUE_COLOR + '25' }]}>
+                        <Ionicons name="logo-apple" size={12} color={selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR} />
+                        <Text style={[styles.methodBadgeText, styles.applePayBadgeText, { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR }]}>
+                          Apple Pay
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
               {selectedPaymentMethod === 'stripe' && (
@@ -726,6 +934,7 @@ const PaymentScreen: React.FC<Props> = ({
                 </View>
               )}
             </TouchableOpacity>
+            )}
 
             {/* Cash Payment Method */}
             <TouchableOpacity
@@ -734,35 +943,34 @@ const PaymentScreen: React.FC<Props> = ({
                 { 
                   backgroundColor: selectedPaymentMethod === 'cash' ? BLUE_COLOR : colors.surface,
                   borderColor: selectedPaymentMethod === 'cash' ? BLUE_COLOR : colors.border,
-                  borderWidth: selectedPaymentMethod === 'cash' ? 2.5 : 1.5,
-                  marginTop: Platform.select({ ios: 16, android: 12 }),
-                  shadowOpacity: selectedPaymentMethod === 'cash' ? 0.15 : 0.08,
-                  shadowColor: selectedPaymentMethod === 'cash' ? BLUE_COLOR : '#000',
+                  borderWidth: selectedPaymentMethod === 'cash' ? 2 : 1.5,
                 }
               ]}
               onPress={() => setSelectedPaymentMethod('cash')}
               activeOpacity={0.8}
             >
-              <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'cash' ? 'rgba(255,255,255,0.2)' : BLUE_COLOR + '15' }]}>
-                <Ionicons 
-                  name="cash" 
-                  size={Platform.select({ ios: 28, android: 24 })} 
-                  color={selectedPaymentMethod === 'cash' ? '#FFFFFF' : BLUE_COLOR} 
-                />
-              </View>
-              <View style={styles.paymentCardContent}>
-                <Text style={[
-                  styles.paymentCardText, 
-                  { color: selectedPaymentMethod === 'cash' ? '#FFFFFF' : colors.text }
-                ]}>
-                  Pay at Center
-                </Text>
-                <Text style={[
-                  styles.paymentCardSubtext, 
-                  { color: selectedPaymentMethod === 'cash' ? 'rgba(255,255,255,0.85)' : colors.textSecondary }
-                ]}>
-                  Cash on delivery
-                </Text>
+              <View style={styles.paymentCardLeft}>
+                <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'cash' ? 'rgba(255,255,255,0.2)' : BLUE_COLOR + '12' }]}>
+                  <Ionicons 
+                    name="cash" 
+                    size={Platform.select({ ios: 20, android: 18 })} 
+                    color={selectedPaymentMethod === 'cash' ? '#FFFFFF' : BLUE_COLOR} 
+                  />
+                </View>
+                <View style={styles.paymentCardContent}>
+                  <Text style={[
+                    styles.paymentCardText, 
+                    { color: selectedPaymentMethod === 'cash' ? '#FFFFFF' : colors.text }
+                  ]}>
+                    Pay at Center
+                  </Text>
+                  <Text style={[
+                    styles.paymentCardSubtext, 
+                    { color: selectedPaymentMethod === 'cash' ? 'rgba(255,255,255,0.85)' : colors.textSecondary }
+                  ]}>
+                    Cash on delivery
+                  </Text>
+                </View>
               </View>
               {selectedPaymentMethod === 'cash' && (
                 <View style={styles.checkIcon}>
@@ -775,8 +983,8 @@ const PaymentScreen: React.FC<Props> = ({
           </View>
         </View>
 
-        {/* Payment Summary */}
-        {selectedService && (
+        {/* Payment Summary - Only show if service is selected */}
+        {selectedService && hasServices() && (
           <View style={[styles.summaryCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
             <View style={styles.cardHeaderSection}>
               <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
@@ -896,24 +1104,26 @@ const PaymentScreen: React.FC<Props> = ({
           style={[
             styles.payButton, 
             { backgroundColor: BLUE_COLOR }, 
-            (isProcessing || !vehicleNumber.trim() || !selectedServiceCenter || !selectedService || !selectedPaymentMethod) && styles.payButtonDisabled
+            (isProcessing || !vehicleNumber.trim() || !selectedServiceCenter || (hasServices() && !selectedService) || !selectedPaymentMethod) && styles.payButtonDisabled
           ]} 
           onPress={handlePayment}
-          disabled={isProcessing || !vehicleNumber.trim() || !selectedServiceCenter || !selectedService || !selectedPaymentMethod}
+          disabled={isProcessing || !vehicleNumber.trim() || !selectedServiceCenter || (hasServices() && !selectedService) || !selectedPaymentMethod}
         >
           {isProcessing ? (
             <Text style={[styles.payButtonText, { color: '#FFFFFF' }]}>Processing...</Text>
           ) : (
             <Text style={[styles.payButtonText, { color: '#FFFFFF' }]}>
-              {!selectedService 
+              {hasServices() && !selectedService 
                 ? 'Select Service'
                 : !selectedPaymentMethod
                 ? 'Select Payment Method'
                 : selectedPaymentMethod === 'cash'
-                ? `Confirm Booking - Pay $${selectedService.offer_price || selectedService.price} at Centre`
+                ? (hasServices() && selectedService 
+                    ? `Pay $${selectedService.offer_price || selectedService.price} at Centre`
+                    : 'Pay at Centre')
                 : Platform.OS === 'ios'
-                ? `Pay $${selectedService.offer_price || selectedService.price} - Card or Apple Pay`
-                : `Pay $${selectedService.offer_price || selectedService.price} with Card`}
+                ? `Pay $${selectedService?.offer_price || selectedService?.price || 0} - Card or Apple Pay`
+                : `Pay $${selectedService?.offer_price || selectedService?.price || 0} with Card`}
             </Text>
           )}
         </TouchableOpacity>
@@ -1057,7 +1267,7 @@ const styles = StyleSheet.create({
   cardHeaderSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Platform.select({ ios: 18, android: 14 }),
+    marginBottom: Platform.select({ ios: 14, android: 12 }),
   },
   cardHeaderIcon: {
     width: Platform.select({ ios: 40, android: 36 }),
@@ -1100,33 +1310,36 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.select({ ios: 14, android: 12 }),
   },
   paymentMethodsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Platform.select({ ios: 12, android: 8 }),
-    marginTop: Platform.select({ ios: 8, android: 4 }),
+    marginTop: Platform.select({ ios: 12, android: 10 }),
+    gap: Platform.select({ ios: 10, android: 8 }),
   },
   paymentCard: {
-    flex: 1,
-    minWidth: Platform.select({ ios: '47%', android: '47%' }),
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    borderRadius: Platform.select({ ios: 18, android: 14 }),
-    padding: Platform.select({ ios: 18, android: 16 }),
-    minHeight: Platform.select({ ios: 120, android: 110 }),
+    justifyContent: 'space-between',
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    padding: Platform.select({ ios: 14, android: 12 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    minHeight: Platform.select({ ios: 72, android: 68 }),
     position: 'relative',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: Platform.select({ ios: 8, android: 6 }),
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  paymentCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: Platform.select({ ios: 8, android: 6 }),
   },
   paymentIconWrapper: {
-    width: Platform.select({ ios: 56, android: 52 }),
-    height: Platform.select({ ios: 56, android: 52 }),
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    marginRight: Platform.select({ ios: 14, android: 12 }),
+    width: Platform.select({ ios: 44, android: 40 }),
+    height: Platform.select({ ios: 44, android: 40 }),
+    borderRadius: Platform.select({ ios: 10, android: 8 }),
+    marginRight: Platform.select({ ios: 12, android: 10 }),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1140,22 +1353,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   paymentCardText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     fontWeight: '600',
-    marginBottom: Platform.select({ ios: 8, android: 6 }),
+    marginBottom: Platform.select({ ios: 4, android: 3 }),
     letterSpacing: -0.2,
   },
   paymentMethodBadges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Platform.select({ ios: 6, android: 4 }),
+    gap: Platform.select({ ios: 6, android: 5 }),
     alignItems: 'center',
   },
   methodBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Platform.select({ ios: 8, android: 6 }),
+    paddingHorizontal: Platform.select({ ios: 8, android: 7 }),
     paddingVertical: Platform.select({ ios: 4, android: 3 }),
     borderRadius: Platform.select({ ios: 6, android: 5 }),
     borderWidth: 1,
@@ -1164,6 +1377,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.CAPTION_SMALL,
     fontFamily: FONTS.INTER_MEDIUM,
     fontWeight: '500',
+    letterSpacing: 0.1,
   },
   applePayBadgeMain: {
     gap: Platform.select({ ios: 4, android: 3 }),
@@ -1172,6 +1386,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.CAPTION_SMALL,
     fontFamily: FONTS.INTER_SEMIBOLD,
     fontWeight: '600',
+    letterSpacing: 0.1,
   },
   applePayBadge: {
     marginTop: Platform.select({ ios: 4, android: 2 }),
@@ -1185,10 +1400,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   paymentCardSubtext: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    marginTop: Platform.select({ ios: 4, android: 2 }),
+    marginTop: Platform.select({ ios: 2, android: 1 }),
+    letterSpacing: 0.1,
   },
   checkIcon: {
     position: 'absolute',
@@ -1196,10 +1412,10 @@ const styles = StyleSheet.create({
     right: Platform.select({ ios: 12, android: 10 }),
   },
   checkIconBackground: {
-    width: Platform.select({ ios: 24, android: 22 }),
-    height: Platform.select({ ios: 24, android: 22 }),
-    borderRadius: Platform.select({ ios: 12, android: 11 }),
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: Platform.select({ ios: 22, android: 20 }),
+    height: Platform.select({ ios: 22, android: 20 }),
+    borderRadius: Platform.select({ ios: 11, android: 10 }),
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -1265,23 +1481,23 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.select({ ios: 24, android: 20 }),
   },
   payButton: {
-    borderRadius: Platform.select({ ios: 32, android: 28 }),
-    paddingVertical: Platform.select({ ios: 18, android: 14 }),
+    borderRadius: Platform.select({ ios: 12, android: 10 }),
+    paddingVertical: Platform.select({ ios: 14, android: 12 }),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   payButtonDisabled: {
     opacity: 0.6,
   },
   payButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   modalOverlay: {
     flex: 1,

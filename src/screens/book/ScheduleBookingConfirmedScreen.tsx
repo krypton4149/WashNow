@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import authService from '../../services/authService';
 
 const BLUE_COLOR = '#0358a8';
 
@@ -22,12 +23,16 @@ interface Props {
     time?: string;
     bookingId?: string;
   };
+  totalAmount?: number;
+  paymentStatus?: 'Pending' | 'Paid';
 }
 
 const ScheduleBookingConfirmedScreen: React.FC<Props> = ({ 
   onBack, 
   onViewBookingStatus,
   onBackToHome,
+  totalAmount,
+  paymentStatus = 'Pending',
   bookingData = {
     center: {
       id: '1',
@@ -56,19 +61,76 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
   });
   const { colors } = useTheme();
 
+  // State for booking details from API
+  const [bookingDetails, setBookingDetails] = useState<any>(null);
+  const [loadingBooking, setLoadingBooking] = useState(false);
+
+  // Get booking ID from bookingData
+  const bookingId = bookingData?.bookingId;
+
+  // Fetch booking details from API using booking_id
+  useEffect(() => {
+    const fetchBookingDetails = async () => {
+      if (!bookingId) return;
+      
+      setLoadingBooking(true);
+      try {
+        const result = await authService.getBookingList(true); // Force refresh to get latest data
+        if (result.success && result.bookings) {
+          // Find booking by booking_id
+          const foundBooking = result.bookings.find(
+            (b: any) => b.booking_id === bookingId || b.id?.toString() === bookingId
+          );
+          if (foundBooking) {
+            setBookingDetails(foundBooking);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching booking details:', error);
+      } finally {
+        setLoadingBooking(false);
+      }
+    };
+
+    fetchBookingDetails();
+  }, [bookingId]);
+
+  // Get price from API response or fallback to prop
+  const apiPrice = bookingDetails?.price ? parseFloat(bookingDetails.price) : null;
+  const finalAmount = apiPrice || totalAmount;
+  
+  // Format the total amount - show actual amount paid
+  const formattedAmount = (typeof finalAmount === 'number' && !isNaN(finalAmount)) 
+    ? `$${finalAmount.toFixed(2)}` 
+    : '$0.00';
+  
+  // Get payment status from API or use prop
+  const apiPaymentStatus = bookingDetails?.payment_status;
+  const finalPaymentStatus = apiPaymentStatus 
+    ? (apiPaymentStatus.toLowerCase() === 'paid' ? 'Paid' : 'Pending')
+    : paymentStatus;
+  
+  // Determine payment status color
+  const paymentStatusColor = finalPaymentStatus === 'Paid' ? '#059669' : '#F59E0B';
+
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
-      <View style={styles.content}>
-        {/* Confirmation Icon */}
-        <View style={[styles.confirmationIcon, { backgroundColor: BLUE_COLOR }]}>
-          <Ionicons name="checkmark" size={48} color="#FFFFFF" />
-        </View>
-        
-        <Text style={styles.confirmationTitle}>Booking Confirmed!</Text>
-        <Text style={styles.confirmationSubtitle}>Your car wash has been scheduled</Text>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          {/* Confirmation Icon */}
+          <View style={[styles.confirmationIcon, { backgroundColor: BLUE_COLOR }]}>
+            <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+          </View>
+          
+          <Text style={styles.confirmationTitle}>Booking Confirmed!</Text>
+          <Text style={styles.confirmationSubtitle}>Your car wash has been scheduled</Text>
 
-        {/* Booking Details Card */}
-        <View style={styles.bookingCard}>
+          {/* Booking Details Card */}
+          <View style={styles.bookingCard}>
           <View style={styles.bookingHeader}>
             <Text style={styles.bookingId}>Booking ID: #{bookingData.bookingId || 'BK6305'}</Text>
           </View>
@@ -119,15 +181,20 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
           <View style={styles.paymentSummary}>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Payment Status</Text>
-              <Text style={styles.paymentStatus}>Paid</Text>
+              <Text style={[styles.paymentStatus, { color: paymentStatusColor }]}>
+                {loadingBooking ? 'Loading...' : finalPaymentStatus}
+              </Text>
             </View>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Total Amount</Text>
-              <Text style={styles.paymentAmount}>$27.50</Text>
+              <Text style={styles.paymentAmount}>
+                {loadingBooking ? 'Loading...' : formattedAmount}
+              </Text>
             </View>
           </View>
         </View>
       </View>
+      </ScrollView>
 
       {/* Action Buttons */}
       <View style={styles.bottomContainer}>
@@ -164,6 +231,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: moderateScale(20),
   },
   content: {
     flex: 1,
@@ -284,7 +358,6 @@ const styles = StyleSheet.create({
   },
   paymentStatus: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#059669',
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
   },

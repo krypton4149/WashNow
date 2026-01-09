@@ -72,6 +72,7 @@ const AppContent: React.FC = () => {
   const [lastBookingId, setLastBookingId] = useState<string | undefined>(undefined);
   const [filteredCenters, setFilteredCenters] = useState<any[] | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState('English (US)');
+  const [paymentAmount, setPaymentAmount] = useState<number | undefined>(undefined);
   const onboardingScrollRef = useRef<ScrollView>(null);
   const { width: screenWidth } = Dimensions.get('window');
 
@@ -271,7 +272,7 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleSchedulePaymentSuccess = (bookingId?: string, bookingDataResponse?: { date: string; time: string }) => {
+  const handleSchedulePaymentSuccess = (bookingId?: string, bookingDataResponse?: { date: string; time: string }, totalAmount?: number) => {
     // Preserve existing bookingData and update with bookingId and any response data
     setBookingData((prev: any) => ({ 
       ...(prev || {}), 
@@ -280,6 +281,10 @@ const AppContent: React.FC = () => {
       date: bookingDataResponse?.date || prev?.date,
       time: bookingDataResponse?.time || prev?.time,
     }));
+    // Store the payment amount
+    if (totalAmount !== undefined) {
+      setPaymentAmount(totalAmount);
+    }
     setLastBookingId(bookingId);
     setCurrentScreen('schedule-booking-payment-confirmed');
   };
@@ -329,8 +334,12 @@ const AppContent: React.FC = () => {
     setCurrentScreen('payment');
   };
 
-  const handlePaymentSuccess = (bookingId?: string, instantBookingData?: { date: string; time: string }) => {
+  const handlePaymentSuccess = (bookingId?: string, instantBookingData?: { date: string; time: string }, totalAmount?: number) => {
     setLastBookingId(bookingId);
+    // Store the payment amount
+    if (totalAmount !== undefined) {
+      setPaymentAmount(totalAmount);
+    }
     // For instant booking, set bookingData with today's date and current time if not already set (scheduled booking)
     if (instantBookingData && !bookingData) {
       setBookingData({
@@ -540,6 +549,8 @@ const AppContent: React.FC = () => {
               date: bookingData.date,
               time: bookingData.time,
             } : undefined}
+            totalAmount={paymentAmount}
+            paymentStatus="Pending"
           />
         );
       case 'schedule-for-later':
@@ -605,6 +616,8 @@ const AppContent: React.FC = () => {
               time: bookingData.time,
               bookingId: bookingData.bookingId,
             } : undefined}
+            totalAmount={paymentAmount}
+            paymentStatus="Pending"
           />
         );
       case 'booking-history':
