@@ -449,12 +449,13 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Welcome text
     fontFamily: 'Inter-Regular',
+    fontWeight: '400',
   },
   userNameText: {
     color: '#fff',
-    fontSize: 28,
+    fontSize: 22, // Reduced from 28 for better proportions
     fontWeight: '700',
     fontFamily: 'Montserrat-Bold',
   },
@@ -475,7 +476,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   metricValue: {
-    fontSize: 20,
+    fontSize: 20, // Keep large for emphasis
     fontWeight: '700',
     fontFamily: 'Inter-Bold',
     color: '#fff',
@@ -483,8 +484,9 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     color: '#fff',
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Metric label
+    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     opacity: 0.9,
   },
   content: {
@@ -502,15 +504,16 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   bannerTitle: {
-    fontSize: 16,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Banner title
     fontWeight: '600',
     fontFamily: 'Inter-SemiBold',
     color: '#1A1A1A',
     marginBottom: 3,
   },
   bannerSubtitle: {
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Banner subtitle
+    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#1A1A1A',
   },
   sectionHeader: {
@@ -520,18 +523,18 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 22, // font-size: 22px, font-weight: 700 (Bold) - Section title
+    fontWeight: '700',
+    fontFamily: 'Montserrat-Bold',
   },
   seeAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   seeAllText: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - See all text
+    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
     color: BLUE_COLOR,
     marginRight: 4,
   },
@@ -541,8 +544,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    padding: 12,
+    padding: 12, // Reduced padding
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   activityContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   activityInfo: { flex: 1 },
@@ -553,10 +561,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   activityTitle: { 
-    fontSize: 16, 
-    fontWeight: '400', 
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Activity title
+    fontWeight: '600', 
     flex: 1,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Montserrat-SemiBold',
     color: '#1A1A1A',
   },
   activityService: { 
@@ -568,21 +576,23 @@ const styles = StyleSheet.create({
   timeRow: { flexDirection: 'row', alignItems: 'center' },
   timeIcon: { marginRight: 6 },
   activityTimeText: { 
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Time text
+    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#666666',
   },
   recentRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   recentIcon: { marginRight: 6 },
   recentText: { 
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Recent text
+    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#666666',
   },
   recentBookingId: { 
-    fontSize: 16, 
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Booking ID
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     color: '#1A1A1A',
   },
   activityDivider: { height: 1, marginTop: 12 },
@@ -597,8 +607,8 @@ const styles = StyleSheet.create({
   },
   statusTextInProgress: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13, // font-size: 13px, font-weight: 500 (Medium) - Status text
+    fontWeight: '500',
     fontFamily: 'Inter-Medium',
   },
   statusTagCompleted: {
@@ -609,8 +619,8 @@ const styles = StyleSheet.create({
   },
   statusTextCompleted: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13, // font-size: 13px, font-weight: 500 (Medium) - Status text
+    fontWeight: '500',
     fontFamily: 'Inter-Medium',
   },
   statusTagCanceled: {
@@ -621,8 +631,8 @@ const styles = StyleSheet.create({
   },
   statusTextCanceled: {
     color: '#DC2626',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13, // font-size: 13px, font-weight: 500 (Medium) - Status text
+    fontWeight: '500',
     fontFamily: 'Inter-Medium',
   },
   cancelButton: {
@@ -637,17 +647,18 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#DC2626',
-    fontWeight: '700',
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
+    fontWeight: '500',
+    fontSize: 13, // font-size: 13px, font-weight: 500 (Medium) - Cancel button
+    fontFamily: 'Inter-Medium',
   },
   loadingContainer: {
     padding: 20,
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
     fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#666',
     marginTop: 12,
   },
@@ -656,14 +667,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Empty text
     fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#666',
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 13,
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Empty subtext
     fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#666',
     textAlign: 'center',
   },

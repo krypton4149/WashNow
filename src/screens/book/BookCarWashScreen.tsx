@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Platform, Modal, Image, Dimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Geolocation from '@react-native-community/geolocation';
@@ -15,18 +15,21 @@ interface Props {
   onNavigateToAvailableNow?: () => void;
   onNavigateToScheduleForLater?: () => void;
   onConfirmBooking?: (filteredCenters: any[]) => void;
+  onCenterSelect?: (center: any) => void;
+  onServiceSelect?: (service: any, center: any) => void;
 }
 
-const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, onNavigateToScheduleForLater, onConfirmBooking }) => {
+const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, onNavigateToScheduleForLater, onConfirmBooking, onCenterSelect, onServiceSelect }) => {
   const [searchText, setSearchText] = useState('');
-  const [showTimeModal, setShowTimeModal] = useState(false);
-  const [selectedTimeOption, setSelectedTimeOption] = useState<'now' | 'later'>('now');
-  const [currentLocation, setCurrentLocation] = useState('Getting location...');
-  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
   const [serviceCenters, setServiceCenters] = useState<any[]>([]);
   const [loadingCenters, setLoadingCenters] = useState(true);
   const [centersError, setCentersError] = useState<string | null>(null);
-  const [whereToWash, setWhereToWash] = useState(false);
+  const [selectedServiceTab, setSelectedServiceTab] = useState<string>('all');
+  const [showServicesSheet, setShowServicesSheet] = useState(false);
+  const [selectedCenterForSheet, setSelectedCenterForSheet] = useState<any>(null);
+  const [centerServices, setCenterServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const textInputRef = useRef<TextInput>(null);
   const { isDarkMode, colors } = useTheme();
   
   // Map theme colors to component-specific theme object
@@ -77,6 +80,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   ];
 
   useEffect(() => {
+    // Get location in background but don't display it
     getCurrentLocation();
     fetchServiceCenters();
   }, []);
@@ -101,7 +105,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     }
     
     const minPrice = Math.min(...prices);
-    return `$${minPrice.toFixed(2)}`;
+    return minPrice.toFixed(2); // Return just the number, we'll format it as "Starting from $X"
   };
 
   // Helper function to format weekoff days for display
@@ -125,19 +129,53 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     return abbreviatedDays.join(', ');
   };
 
-  const filteredCenters = React.useMemo(() => {
-    if (!searchText.trim()) {
-      return serviceCenters;
+  // Helper to check if center offers a specific service type
+  const centerOffersService = (center: any, serviceType: string): boolean => {
+    if (serviceType === 'all') return true;
+    
+    if (!center.services_offered || !Array.isArray(center.services_offered)) {
+      return false;
     }
     
-    const searchLower = searchText.toLowerCase().trim();
-    return serviceCenters.filter((center) => {
-      const name = (center.name || center.service_center_name || '').toLowerCase();
-      const address = (center.address || center.location || '').toLowerCase();
-      
-      return name.includes(searchLower) || address.includes(searchLower);
-    });
-  }, [serviceCenters, searchText]);
+    const serviceName = (center.service_type || '').toLowerCase();
+    const serviceNames = center.services_offered.map((s: any) => (s.name || '').toLowerCase());
+    
+    // Map service types to keywords
+    const serviceKeywords: { [key: string]: string[] } = {
+      'Car Exterior': ['exterior', 'wash', 'car wash', 'exterior wash', 'exterior cleaning'],
+      'Interior Cleaning': ['interior', 'interior cleaning', 'interior detail', 'interior wash'],
+      'Full Valet': ['valet', 'full valet', 'full service', 'complete', 'full detail'],
+    };
+    
+    const keywords = serviceKeywords[serviceType] || [];
+    
+    // Check if any service matches
+    return keywords.some(keyword => 
+      serviceName.includes(keyword) || 
+      serviceNames.some((name: string) => name.includes(keyword))
+    );
+  };
+
+  const filteredCenters = React.useMemo(() => {
+    // First apply text search (if any)
+    let result = serviceCenters;
+    
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase().trim();
+      result = result.filter((center) => {
+        const name = (center.name || center.service_center_name || '').toLowerCase();
+        const address = (center.address || center.location || '').toLowerCase();
+        return name.includes(searchLower) || address.includes(searchLower);
+      });
+    }
+    
+    // Then apply service filter
+    if (selectedServiceTab !== 'all') {
+      result = result.filter((center) => centerOffersService(center, selectedServiceTab));
+    }
+    
+    return result;
+  }, [serviceCenters, searchText, selectedServiceTab]);
 
   const fetchServiceCenters = async () => {
     try {
@@ -173,16 +211,17 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     }
   };
 
+  // Get location in background for backend but don't display it
   const getCurrentLocation = () => {
     Geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        // Store location in background for API use, but don't display it
         reverseGeocode(latitude, longitude);
       },
       (error) => {
         console.log('Location error:', error);
-        setCurrentLocation('Downtown, New York - 123 Main Street');
-        setIsLoadingLocation(false);
+        // Location not available, continue without it
       },
       {
         enableHighAccuracy: true,
@@ -198,38 +237,131 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
       );
       const data = await response.json();
-      
-      if (data.city && data.principalSubdivision) {
-        setCurrentLocation(`${data.city}, ${data.principalSubdivision} - ${data.locality || 'Current Location'}`);
-      } else {
-        setCurrentLocation('Downtown, New York - 123 Main Street');
-      }
+      // Location data available for backend use but not displayed in UI
+      console.log('Location fetched:', data);
     } catch (error) {
       console.log('Reverse geocoding error:', error);
-      setCurrentLocation('Downtown, New York - 123 Main Street');
-    } finally {
-      setIsLoadingLocation(false);
+      // Continue without location
     }
   };
 
-  const handleConfirmBooking = () => {
-    console.log('=== Confirm booking pressed ===');
-    console.log('Search text:', searchText);
-    console.log('Filtered centers count:', filteredCenters.length);
-    console.log('All service centers count:', serviceCenters.length);
-    console.log('Filtered centers:', JSON.stringify(filteredCenters, null, 2));
+  const handleSearch = () => {
+    // Search button now just filters - no redirect
+    // Filtering happens automatically via filteredCenters useMemo
+    // Reset service tab to 'all' after search
+    setSelectedServiceTab('all');
     
-    // Use filteredCenters if search is active, otherwise use all centers
-    const centersToSend = searchText.trim() ? filteredCenters : serviceCenters;
-    console.log(`=== Sending request to ${centersToSend.length} center(s) ===`);
-    console.log('Centers to send:', JSON.stringify(centersToSend, null, 2));
-    
-    if (centersToSend.length === 0) {
-      Alert.alert('No Centers', 'Please select or search for service centers before confirming.');
-      return;
+    if (searchText.trim() && filteredCenters.length === 0) {
+      Alert.alert('No Centers Found', `No car wash centers found for "${searchText}". Please try a different location.`);
+    }
+  };
+
+  const handleCenterClick = async (center: any) => {
+    setSelectedCenterForSheet(center);
+    setLoadingServices(true);
+    setShowServicesSheet(true);
+
+    try {
+      // Fetch service centers to get services for this center
+      const result = await authService.getServiceCenters(true);
+      
+      if (result.success && result.serviceCenters) {
+        const centerId = center?.id || center?.service_centre_id;
+        const foundCenter = result.serviceCenters.find((c: any) => 
+          String(c.id) === String(centerId)
+        );
+        
+        if (foundCenter && foundCenter.services_offered) {
+          // Sort services by display_order
+          const sortedServices = foundCenter.services_offered.sort((a: any, b: any) => 
+            (a.display_order || 0) - (b.display_order || 0)
+          );
+          setCenterServices(sortedServices);
+        } else {
+          // Use services from center if available
+          setCenterServices(center.services_offered || []);
+        }
+      } else {
+        // Fallback to center's services
+        setCenterServices(center.services_offered || []);
+      }
+    } catch (error) {
+      console.error('Error loading services:', error);
+      setCenterServices(center.services_offered || []);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
+  const handleServiceClick = (service: any) => {
+    setShowServicesSheet(false);
+    // Navigate to ServiceCenterScreen with the selected service
+    if (onCenterSelect) {
+      // Pass the center with selected service
+      onCenterSelect({ ...selectedCenterForSheet, selectedService: service });
+    }
+  };
+
+  const getImageUrl = (imagePath: string | null | undefined, centerId?: string | number, index?: number, isService: boolean = false): string => {
+    if (imagePath) {
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+      }
+      
+      const baseUrl = 'https://carwashapp.shoppypie.in';
+      const imageUrl = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+      return `${baseUrl}${imageUrl}`;
     }
     
-    onConfirmBooking?.(centersToSend);
+    // Use different placeholder images for services vs centers
+    if (isService) {
+      // Service-specific placeholder images (car wash services)
+      const servicePlaceholderImages = [
+        'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&h=300&fit=crop', // Car wash service 1
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop', // Car wash service 2
+        'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop', // Car wash service 3
+        'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&h=300&fit=crop', // Car wash service 4
+        'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=400&h=300&fit=crop', // Car wash service 5
+        'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400&h=300&fit=crop', // Car wash service 6
+      ];
+      const serviceId = centerId ? String(centerId) : String(index || 0);
+      const serviceImageIndex = parseInt(serviceId) % servicePlaceholderImages.length;
+      return servicePlaceholderImages[serviceImageIndex];
+    }
+    
+    // Center placeholder images
+    const placeholderImages = [
+      'https://images.unsplash.com/photo-1685216037287-c9c70a919a3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjBoaWdod2F5JTIwc3Vuc2V0fGVufDF8fHx8MTc2ODgzODYxNXww&ixlib=rb-4.1.0&q=80&w=1080',
+      'https://images.unsplash.com/photo-1753899762863-af6e21e86438?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibHVlJTIwc3BvcnRzJTIwY2FyfGVufDF8fHx8MTc2ODc3Njk4MHww&ixlib=rb-4.1.0&q=80&w=1080',
+      'https://images.unsplash.com/photo-1685216037287-c9c70a919a3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjBoaWdod2F5JTIwc3Vuc2V0fGVufDF8fHx8MTc2ODgzODYxNXww&ixlib=rb-4.1.0&q=80&w=1080',
+      'https://images.unsplash.com/photo-1753899762863-af6e21e86438?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibHVlJTIwc3BvcnRzJTIwY2FyfGVufDF8fHx8MTc2ODc3Njk4MHww&ixlib=rb-4.1.0&q=80&w=1080',
+      'https://images.unsplash.com/photo-1685216037287-c9c70a919a3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXIlMjBoaWdod2F5JTIwc3Vuc2V0fGVufDF8fHx8MTc2ODgzODYxNXww&ixlib=rb-4.1.0&q=80&w=1080',
+      'https://images.unsplash.com/photo-1753899762863-af6e21e86438?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibHVlJTIwc3BvcnRzJTIwY2FyfGVufDF8fHx8MTc2ODc3Njk4MHww&ixlib=rb-4.1.0&q=80&w=1080',
+    ];
+    
+    // Use center ID if available, otherwise use index
+    const id = centerId ? String(centerId) : String(index || 0);
+    const imageIndex = parseInt(id) % placeholderImages.length;
+    return placeholderImages[imageIndex];
+  };
+
+  const formatPrice = (price: string | number | null | undefined, offerPrice: string | number | null | undefined) => {
+    const priceNum = parseFloat(String(price || 0));
+    const offerNum = offerPrice ? parseFloat(String(offerPrice)) : null;
+    
+    if (offerNum && offerNum < priceNum) {
+      return {
+        original: priceNum,
+        discounted: offerNum,
+        hasOffer: true,
+      };
+    }
+    
+    return {
+      original: priceNum,
+      discounted: null,
+      hasOffer: false,
+    };
   };
 
   const insets = useSafeAreaInsets();
@@ -241,55 +373,26 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Plan your wash</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Book a wash</Text>
         <View style={{ width: 32 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Selection Buttons */}
-        <View style={styles.selectionContainer}>
-          <TouchableOpacity 
-            style={[styles.selectionButton, { backgroundColor: theme.chip, borderColor: BLUE_COLOR + '40', borderWidth: 1.5 }]}
-            onPress={() => setShowTimeModal(true)}
-          >
-            <Ionicons name="time-outline" size={14} color="#000000" />
-            <Text style={[styles.selectionText, { color: '#000000' }]}>Wash now</Text>
-            <Ionicons name="chevron-down-outline" size={14} color="#000000" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={[styles.selectionButton, { backgroundColor: theme.chip, borderColor: BLUE_COLOR + '40', borderWidth: 1.5 }]}> 
-            <Text style={[styles.selectionText, { color: '#000000' }]}>For me</Text>
-            <Ionicons name="chevron-down-outline" size={14} color="#000000" />
-          </TouchableOpacity>
-        </View>
-
         {/* Location Input */}
         <View style={[styles.locationContainer, { backgroundColor: theme.card, borderColor: BLUE_COLOR + '30', borderWidth: 1.5 }]}> 
-          <View style={styles.locationRow}>
-            <View style={[styles.locationDot, { backgroundColor: BLUE_COLOR }]} />
-            <Text style={[styles.locationText, { color: '#000000' }]}>{currentLocation}</Text>
-          </View>
-          
-          <View style={[styles.separatorLine, { backgroundColor: '#E5E7EB' }]} />
-          
-          <View style={styles.whereToWashRow}>
-            <View style={styles.checkboxContainer}>
-              <View style={[styles.checkbox, { borderColor: '#000000' }, whereToWash && { backgroundColor: BLUE_COLOR }]}> 
-                {whereToWash && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-              </View>
-            </View>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="location" size={18} color={BLUE_COLOR} style={styles.searchInputIcon} />
             <TextInput
+              ref={textInputRef}
               style={[styles.searchInput, { color: '#000000' }]}
-              placeholder="Where to?"
+              placeholder="Enter location (city or area)"
               placeholderTextColor="#666666"
               value={searchText}
-              onChangeText={(text) => {
-                setSearchText(text);
-                if (text.length > 0) {
-                  setWhereToWash(true);
-                }
-              }}
-              onFocus={() => setWhereToWash(true)}
+              onChangeText={setSearchText}
+              editable={true}
+              keyboardType="default"
+              returnKeyType="done"
+              autoCorrect={false}
             />
           </View>
         </View>
@@ -302,6 +405,45 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
               : `Nearby car wash centers (${serviceCenters.length})`
             }
           </Text>
+
+          {/* Service Type Tabs - One Line */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.serviceTabsScrollView}
+            contentContainerStyle={styles.serviceTabsRow}
+          >
+            {[
+              { label: 'All', value: 'all' },
+              { label: 'Car Exterior', value: 'Car Exterior' },
+              { label: 'Interior Cleaning', value: 'Interior Cleaning' },
+              { label: 'Full Valet', value: 'Full Valet' },
+            ].map(option => {
+              const isActive = selectedServiceTab === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.serviceTab,
+                    { 
+                      backgroundColor: isActive ? BLUE_COLOR : theme.chip,
+                      borderColor: isActive ? BLUE_COLOR : BLUE_COLOR + '30',
+                    },
+                  ]}
+                  onPress={() => setSelectedServiceTab(option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.serviceTabText,
+                      { color: isActive ? '#FFFFFF' : '#000000' },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
           
           {loadingCenters ? (
             <View style={styles.loadingContainer}>
@@ -331,38 +473,87 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
             </View>
           ) : (
             filteredCenters.map((center, index) => {
-              const minPrice = getMinPrice(center);
-              const weekoffDaysFormatted = formatWeekoffDays(center.weekoff_days);
+              const minPriceValue = getMinPrice(center);
+              const imageUrl = getImageUrl(center.image || center.service_center_image, center.id || center.service_centre_id, index);
+              const distance = center.distance || center.distance_km || center.distanceKm || 'N/A';
+              const distanceDisplay = typeof distance === 'number' 
+                ? `${distance.toFixed(1)} miles` 
+                : (distance.toString().includes('mi') || distance.toString().includes('mile') 
+                    ? distance.toString() 
+                    : `${distance} miles`);
+              
+              // Calculate next availability (mock for now - would need API data)
+              const nextAvailability = '20 Mint'; // This should come from API
+              
               return (
-                <View 
+                <TouchableOpacity 
                   key={center.id || index} 
-                  style={[styles.centerRow, { borderBottomColor: BLUE_COLOR + '20' }, index === filteredCenters.length - 1 && styles.lastCenterRow]}
+                  style={[styles.centerCard, { backgroundColor: theme.card }, index === filteredCenters.length - 1 && styles.lastCenterCard]}
+                  onPress={() => handleCenterClick(center)}
+                  activeOpacity={0.7}
                 >
-                  <View style={styles.centerLeft}>
-                    <View style={[styles.locationIconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
-                      <Ionicons name="location" size={18} color={BLUE_COLOR} />
-                    </View>
-                  </View>
-                  <View style={styles.centerBody}>
-                    <View style={styles.centerHeader}>
-                      <Text style={[styles.centerName, { color: '#000000' }]}>{center.name || center.service_center_name || 'Service Center'}</Text>
-                      {minPrice && (
-                        <View style={[styles.priceBadge, { backgroundColor: BLUE_COLOR + '15' }]}>
-                          <Text style={[styles.minPrice, { color: '#000000' }]}>{minPrice}</Text>
+                  {/* Center Image */}
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.centerImage}
+                    resizeMode="cover"
+                  />
+                  
+                  <View style={styles.centerCardBody}>
+                    {/* Center Name - Bolder and Blue */}
+                    <Text style={[styles.centerCardName, { color: BLUE_COLOR }]} numberOfLines={1}>
+                      {center.name || center.service_center_name || 'Service Center'}
+                    </Text>
+                    
+                    {/* Address */}
+                    <Text style={[styles.centerCardAddress, { color: '#666666' }]} numberOfLines={2}>
+                      {center.address || center.location || 'Address not available'}
+                    </Text>
+                    
+                    {/* Details Row - Two Lines */}
+                    <View style={styles.centerCardDetails}>
+                      {/* First Row: Starting Price and Distance */}
+                      <View style={styles.centerCardDetailRow}>
+                        {/* Starting Price */}
+                        {minPriceValue && (
+                          <View style={styles.centerCardDetailItem}>
+                            <View style={styles.centerCardIconContainer}>
+                              <Ionicons name="pricetag" size={14} color={BLUE_COLOR} />
+                            </View>
+                            <Text style={[styles.centerCardDetailLabel, { color: '#666666' }]}>Starting from</Text>
+                            <Text style={[styles.centerCardDetailText, { color: '#000000' }]}>
+                              ${minPriceValue}
+                            </Text>
+                          </View>
+                        )}
+                        
+                        {/* Distance */}
+                        <View style={styles.centerCardDetailItem}>
+                          <View style={styles.centerCardIconContainer}>
+                            <Ionicons name="location" size={14} color={BLUE_COLOR} />
+                          </View>
+                          <Text style={[styles.centerCardDetailLabel, { color: '#666666' }]}>Distance:</Text>
+                          <Text style={[styles.centerCardDetailText, { color: '#000000' }]}>
+                            {distanceDisplay}
+                          </Text>
                         </View>
-                      )}
-                    </View>
-                    <Text style={[styles.centerAddress, { color: '#000000' }]}>{center.address || center.location || 'Address not available'}</Text>
-                    {weekoffDaysFormatted && (
-                      <View style={styles.weekoffContainer}>
-                        <Ionicons name="close-circle-outline" size={Platform.select({ ios: 14, android: 12 })} color="#FF6B6B" />
-                        <Text style={[styles.weekoffText, { color: '#FF6B6B' }]}>
-                          Closed: {weekoffDaysFormatted}
-                        </Text>
                       </View>
-                    )}
+                      
+                      {/* Second Row: Next Availability */}
+                      <View style={styles.centerCardDetailRow}>
+                        <View style={styles.centerCardDetailItem}>
+                          <View style={styles.centerCardIconContainer}>
+                            <Ionicons name="time" size={14} color={BLUE_COLOR} />
+                          </View>
+                          <Text style={[styles.centerCardDetailLabel, { color: '#666666' }]}>Next Availability:</Text>
+                          <Text style={[styles.centerCardDetailText, { color: '#000000' }]}>
+                            {nextAvailability}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })
           )}
@@ -371,79 +562,119 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         {/* Instant Booking info removed as requested */}
       </ScrollView>
 
-      {/* Confirm Booking Button */}
+      {/* Search Button */}
       <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.card, borderTopColor: BLUE_COLOR + '30' }]}> 
-        <TouchableOpacity style={[styles.confirmButton,{backgroundColor: BLUE_COLOR}]} onPress={handleConfirmBooking}>
-          <Text style={[styles.confirmButtonText,{color: '#FFFFFF'}]}>Confirm Booking</Text>
+        <TouchableOpacity style={[styles.confirmButton,{backgroundColor: BLUE_COLOR}]} onPress={handleSearch}>
+          <Text style={[styles.confirmButtonText,{color: '#FFFFFF'}]}>Search</Text>
         </TouchableOpacity>
-        <Text style={[styles.bottomText, { color: '#000000' }]}>
-          {searchText.trim() 
-            ? `Request will be sent to ${filteredCenters.length} matching center${filteredCenters.length !== 1 ? 's' : ''}.`
-            : `Request will be sent to all ${serviceCenters.length} available car wash centers.`
-          }
-        </Text>
       </View>
 
-      {/* Time Selection Modal */}
+      {/* Services Modal - Bottom Center */}
       <Modal
-        visible={showTimeModal}
+        visible={showServicesSheet}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowTimeModal(false)}
+        onRequestClose={() => setShowServicesSheet(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent,{backgroundColor: theme.card}]}> 
+          <TouchableOpacity 
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowServicesSheet(false)}
+          />
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle,{color: theme.textPrimary}]}>When do you want your car washed?</Text>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setShowTimeModal(false)}
-              >
-                <Ionicons name="close" size={24} color={BLUE_COLOR} />
+              <View style={styles.modalHeaderLeft}>
+                <Ionicons name="car" size={20} color={BLUE_COLOR} />
+                <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
+                  {selectedCenterForSheet?.name || 'Service Center'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowServicesSheet(false)}>
+                <Ionicons name="close" size={24} color={theme.textPrimary} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.timeOptions}>
-              <TouchableOpacity 
-                style={[styles.timeOption,{backgroundColor: isDarkMode ? colors.surface : '#F9FAFB', borderColor: BLUE_COLOR + '30', borderWidth: 1}]}
-                onPress={() => {
-                  setSelectedTimeOption('now');
-                  setShowTimeModal(false);
-                }}
-              >
-                <View style={[styles.timeOptionIcon,{backgroundColor: BLUE_COLOR}]}> 
-                  <Ionicons name="flash" size={24} color="#FFFFFF" />
-                </View>
-                <View style={styles.timeOptionContent}>
-                  <Text style={[styles.timeOptionTitle,{color: theme.textPrimary}]}>Now</Text>
-                  <Text style={[styles.timeOptionDescription,{color: theme.textSecondary}]}> 
-                    Get matched with nearby car wash centers who can wash your car immediately
+            {/* Services List */}
+            <ScrollView 
+              style={styles.modalScrollView}
+              showsVerticalScrollIndicator={false}
+            >
+              {loadingServices ? (
+                <View style={styles.modalLoadingContainer}>
+                  <ActivityIndicator size="small" color={BLUE_COLOR} />
+                  <Text style={[styles.modalLoadingText, { color: theme.textSecondary }]}>
+                    Loading services...
                   </Text>
                 </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.timeOption,{backgroundColor: isDarkMode ? colors.surface : '#F9FAFB', borderColor: BLUE_COLOR + '30', borderWidth: 1}]}
-                onPress={() => {
-                  setSelectedTimeOption('later');
-                  setShowTimeModal(false);
-                  onNavigateToScheduleForLater?.();
-                }}
-              >
-                <View style={[styles.timeOptionIcon,{backgroundColor: BLUE_COLOR}]}> 
-                  <Ionicons name="calendar-outline" size={24} color="#FFFFFF" />
-                </View>
-                <View style={styles.timeOptionContent}>
-                  <Text style={[styles.timeOptionTitle,{color: theme.textPrimary}]}>Schedule for later</Text>
-                  <Text style={[styles.timeOptionDescription,{color: theme.textSecondary}]}> 
-                    Choose a specific date, time, and location for your car wash
+              ) : centerServices.length === 0 ? (
+                <View style={styles.modalEmptyContainer}>
+                  <Ionicons name="construct-outline" size={40} color={theme.textSecondary} />
+                  <Text style={[styles.modalEmptyText, { color: theme.textSecondary }]}>
+                    No services available
                   </Text>
                 </View>
-              </TouchableOpacity>
-            </View>
+              ) : (
+                centerServices.map((service, index) => {
+                  const priceInfo = formatPrice(service.price, service.offer_price);
+                  const imageUrl = getImageUrl(service.image, service.id, index, true); // true = isService
+                  
+                  return (
+                    <TouchableOpacity
+                      key={service.id || index}
+                      style={[styles.serviceModalItem, { borderBottomColor: colors.border }]}
+                      onPress={() => handleServiceClick(service)}
+                      activeOpacity={0.7}
+                    >
+                      <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.serviceModalImage}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.serviceModalInfo}>
+                        <View style={styles.serviceModalHeader}>
+                          <Text style={[styles.serviceModalName, { color: theme.textPrimary }]} numberOfLines={1}>
+                            {service.name}
+                          </Text>
+                          {priceInfo.hasOffer && (
+                            <View style={[styles.bestDealBadgeSmall, { backgroundColor: '#10B981' }]}>
+                              <Text style={styles.bestDealTextSmall}>Best Deal</Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.serviceModalPriceRow}>
+                          {priceInfo.hasOffer && priceInfo.discounted ? (
+                            <>
+                              <Text style={[styles.serviceModalOriginalPrice, { color: theme.textSecondary }]}>
+                                £{priceInfo.original.toFixed(2)}
+                              </Text>
+                              <Text style={[styles.serviceModalPrice, { color: '#10B981' }]}>
+                                £{priceInfo.discounted.toFixed(2)}
+                              </Text>
+                            </>
+                          ) : (
+                            <Text style={[styles.serviceModalPrice, { color: theme.textPrimary }]}>
+                              £{priceInfo.original.toFixed(2)}
+                            </Text>
+                          )}
+                        </View>
+                        {service.description && (
+                          <Text style={[styles.serviceModalDescription, { color: theme.textSecondary }]} numberOfLines={2}>
+                            {service.description}
+                          </Text>
+                        )}
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
+
     </SafeAreaView>
   );
 };
@@ -470,8 +701,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold)
+    fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.2,
     flex: 1,
@@ -481,119 +712,135 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  selectionContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  selectionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 12,
-    gap: 4,
-    flex: 1,
-    borderWidth: 1.5,
-    shadowColor: BLUE_COLOR,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    minHeight: 36,
-  },
-  selectionText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
-    flex: 1,
-    fontFamily: FONTS.INTER_REGULAR,
-  },
   locationContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1.5,
     padding: 10,
-    marginBottom: 16,
+    marginBottom: 20,
+    marginTop: 8,
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  locationRow: {
+  searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  locationDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
-    shadowColor: BLUE_COLOR,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  locationText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
-    flex: 1,
-    fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 18,
-  },
-  separatorLine: {
-    height: 1,
-    width: '100%',
-    marginVertical: 6,
-  },
-  whereToWashRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  searchInputIcon: {
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
+    fontSize: 15, // font-size: 15px, font-weight: 400 (Regular) for placeholder
+    paddingVertical: 8,
+    paddingHorizontal: 0,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    minHeight: 32,
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 4,
-    borderWidth: 2,
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#000',
-  },
-  whereToWashText: {
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '400',
+    minHeight: 40,
+    lineHeight: 20,
   },
   centersList: {
     marginBottom: 20,
+    marginTop: 8,
+  },
+  serviceTabsScrollView: {
+    marginBottom: 16,
+  },
+  serviceTabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingRight: 16, // Add padding for last item
+  },
+  serviceTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    flexShrink: 0, // Prevent tabs from shrinking
+  },
+  serviceTabText: {
+    fontSize: 15, // font-size: 15px, font-weight: 500 (Medium)
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
   },
   sectionTitle: {
-    fontSize: Platform.select({ ios: FONT_SIZES.HEADING_LARGE, android: FONT_SIZES.HEADING_MEDIUM }),
-    fontWeight: '600',
+    fontSize: 22, // font-size: 22px, font-weight: 700 (Bold)
+    fontWeight: '700',
     marginBottom: Platform.select({ ios: 20, android: 14 }),
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontFamily: FONTS.MONTserrat_BOLD,
     letterSpacing: -0.4,
+  },
+  centerCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  lastCenterCard: {
+    marginBottom: 0,
+  },
+  centerImage: {
+    width: '100%',
+    height: 140, // Increased further for stronger visual impact
+    backgroundColor: '#F5F5F5',
+  },
+  centerCardBody: {
+    padding: 10, // Reduced from 12 to make card more compact
+  },
+  centerCardName: {
+    fontSize: 18, // Slightly larger for better emphasis
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    color: BLUE_COLOR, // Blue color for center name
+    marginBottom: 3, // Reduced from 4
+    letterSpacing: -0.2,
+  },
+  centerCardAddress: {
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular)
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    marginBottom: 8, // Reduced from 10
+    lineHeight: 18,
+  },
+  centerCardDetails: {
+    gap: 6, // Reduced from 8
+  },
+  centerCardDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12, // Space between items in the same row
+  },
+  centerCardDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6, // Reduced from 8
+    flex: 1, // Allow items to share space in the row
+  },
+  centerCardIconContainer: {
+    width: 18, // Reduced from 20
+    height: 18, // Reduced from 20
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerCardDetailLabel: {
+    fontSize: 12, // Slightly reduced for more compact layout
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+  },
+  centerCardDetailText: {
+    fontSize: 13, // Slightly reduced for more compact layout
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
   },
   centerRow: {
     flexDirection: 'row',
@@ -712,7 +959,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   confirmButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold)
     fontWeight: '600',
     color: '#FFFFFF',
     fontFamily: FONTS.INTER_SEMIBOLD,
@@ -725,73 +972,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.INTER_REGULAR,
     lineHeight: 18,
     marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-    maxHeight: '60%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    color: '#1F2937',
-    flex: 1,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  timeOptions: {
-    gap: 16,
-  },
-  timeOption: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-  },
-  timeOptionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: BLUE_COLOR,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  timeOptionContent: {
-    flex: 1,
-  },
-  timeOptionTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 8,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-  },
-  timeOptionDescription: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    color: '#6B7280',
-    lineHeight: 20,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -844,6 +1024,135 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     fontFamily: FONTS.INTER_REGULAR,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    width: '100%',
+    maxHeight: Dimensions.get('window').height * 0.75,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modalTitle: {
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Center name
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    marginLeft: 8,
+    flex: 1,
+  },
+  modalScrollView: {
+    maxHeight: Dimensions.get('window').height * 0.5,
+  },
+  serviceModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  serviceModalImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: '#F5F5F5', // Background color for placeholder
+  },
+  serviceModalInfo: {
+    flex: 1,
+  },
+  serviceModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+  },
+  serviceModalName: {
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Service name
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    flex: 1,
+  },
+  bestDealBadgeSmall: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  bestDealTextSmall: {
+    color: '#FFFFFF',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+  },
+  serviceModalPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 8,
+  },
+  serviceModalOriginalPrice: {
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Original price (strikethrough)
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textDecorationLine: 'line-through',
+  },
+  serviceModalPrice: {
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Price value
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+  },
+  serviceModalDescription: {
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Description
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    lineHeight: 18,
+  },
+  modalLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  modalLoadingText: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+  },
+  modalEmptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  modalEmptyText: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    marginTop: 12,
   },
 });
 

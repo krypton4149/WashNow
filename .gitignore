@@ -78,3 +78,10 @@ yarn-error.log
 .env
 .env.local
 .env.*.local
+
+# Config files with sensitive keys
+src/config/env.ts
+
+# Google Services (add real files when ready)
+ios/GoogleService-Info.plist
+android/app/google-services.json

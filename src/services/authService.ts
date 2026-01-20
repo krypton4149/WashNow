@@ -15,15 +15,15 @@ const CACHE_KEYS = {
 };
 
 const CACHE_DURATION = {
-  BOOKINGS: 120000, // 2 minutes - increased for faster response
-  SERVICE_CENTERS: 300000, // 5 minutes - increased for faster response
-  ALERTS: 120000, // 2 minutes - increased for faster response
-  OWNER_BOOKINGS: 120000, // 2 minutes - increased for faster response
-  LOGIN_RESPONSE: 300000, // 5 minutes - cache login response
+  BOOKINGS: 30000, // 30 seconds - reduced for faster fresh data
+  SERVICE_CENTERS: 60000, // 1 minute - reduced for faster fresh data
+  ALERTS: 30000, // 30 seconds - reduced for faster fresh data
+  OWNER_BOOKINGS: 30000, // 30 seconds - reduced for faster fresh data
+  LOGIN_RESPONSE: 0, // No cache - always get fresh login response
 };
 
-// Request timeout - increased for better reliability on slower connections
-const REQUEST_TIMEOUT = 20000; // 20 seconds
+// Request timeout - optimized for faster responses
+const REQUEST_TIMEOUT = 10000; // 10 seconds - reduced for faster failure detection
 const MAX_RETRIES = 2; // Maximum number of retry attempts for failed requests
 
 class AuthService {
@@ -788,17 +788,18 @@ class AuthService {
   }
 
   // Service Centers API with caching - optimized for fast response
-  async getServiceCenters(forceRefresh: boolean = false): Promise<{ success: boolean; serviceCenters?: any[]; error?: string }> {
+  async getServiceCenters(forceRefresh: boolean = true): Promise<{ success: boolean; serviceCenters?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
       if (!token) {
         return { success: false, error: 'Please login to view service centers' };
       }
 
-      // Return cached data if available and valid
+      // Always force refresh for faster fresh data - skip cache check
+      // Return cached data only if forceRefresh is false and cache is very fresh (< 10 seconds)
       if (!forceRefresh) {
         const cached = await this.getCachedData(CACHE_KEYS.SERVICE_CENTERS);
-        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.SERVICE_CENTERS)) {
+        if (cached && this.isCacheValid(cached.timestamp, 10000)) { // 10 seconds only
           return {
             success: true,
             serviceCenters: cached.data,
@@ -1054,7 +1055,7 @@ class AuthService {
   }
 
   // Booking List API with caching - optimized for fast response
-  async getBookingList(forceRefresh: boolean = false): Promise<{ success: boolean; bookings?: any[]; error?: string }> {
+  async getBookingList(forceRefresh: boolean = true): Promise<{ success: boolean; bookings?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
       
@@ -1062,10 +1063,11 @@ class AuthService {
         return { success: false, error: 'Please login to view your bookings' };
       }
 
-      // Return cached data if available and valid
+      // Always force refresh for faster fresh data - skip cache check
+      // Return cached data only if forceRefresh is false and cache is very fresh (< 10 seconds)
       if (!forceRefresh) {
         const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
-        if (cached && this.isCacheValid(cached.timestamp, CACHE_DURATION.BOOKINGS)) {
+        if (cached && this.isCacheValid(cached.timestamp, 10000)) { // 10 seconds only
           return {
             success: true,
             bookings: cached.data,

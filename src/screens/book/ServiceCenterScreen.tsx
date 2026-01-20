@@ -1,0 +1,569 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  Platform,
+  Dimensions,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../../context/ThemeContext';
+import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import authService from '../../services/authService';
+import { API_URL } from '../../config/env';
+
+const BLUE_COLOR = '#0358a8';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_MARGIN = 12;
+const CARD_WIDTH = (SCREEN_WIDTH - (CARD_MARGIN * 3)) / 2; // 2 columns with margins
+
+interface Props {
+  onBack?: () => void;
+  onServiceSelect?: (service: any, center: any) => void;
+  center: any;
+}
+
+const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center }) => {
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedService, setSelectedService] = useState<any>(null);
+  const [centerDetails, setCenterDetails] = useState<any>(null);
+  const { isDarkMode, colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const theme = {
+    background: colors.background,
+    textPrimary: colors.text,
+    textSecondary: colors.textSecondary,
+    border: colors.border,
+    card: colors.card,
+    surface: colors.surface,
+    accent: colors.button,
+  };
+
+  useEffect(() => {
+    loadCenterDetails();
+    // Check if a service was pre-selected from the bottom sheet
+    if (center?.selectedService) {
+      setSelectedService(center.selectedService);
+    }
+  }, [center]);
+
+  const loadCenterDetails = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch all service centers to get the full details including services_offered
+      const result = await authService.getServiceCenters(true); // Force refresh to get latest data
+      
+      if (result.success && result.serviceCenters) {
+        // Find the selected center by ID
+        const centerId = center?.id || center?.service_centre_id;
+        const foundCenter = result.serviceCenters.find((c: any) => 
+          String(c.id) === String(centerId)
+        );
+        
+        if (foundCenter) {
+          setCenterDetails(foundCenter);
+          // Sort services by display_order
+          const sortedServices = (foundCenter.services_offered || []).sort((a: any, b: any) => 
+            (a.display_order || 0) - (b.display_order || 0)
+          );
+          setServices(sortedServices);
+        } else {
+          // If center not found, use the passed center data
+          setCenterDetails(center);
+          setServices(center.services_offered || []);
+        }
+      } else {
+        // Fallback to center data passed as prop
+        setCenterDetails(center);
+        setServices(center.services_offered || []);
+      }
+    } catch (error) {
+      console.error('Error loading center details:', error);
+      // Fallback to center data passed as prop
+      setCenterDetails(center);
+      setServices(center.services_offered || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getImageUrl = (imagePath: string | null | undefined, serviceId?: string | number, index?: number): string => {
+    if (imagePath) {
+      // If image path is already a full URL, return it
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+      }
+      
+      // Otherwise, construct the full URL
+      const baseUrl = API_URL.replace(/\/$/, ''); // Remove trailing slash if present
+      const imageUrl = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+      return `${baseUrl}${imageUrl}`;
+    }
+    
+    // Use different placeholder images for services based on ID or index
+    const servicePlaceholderImages = [
+      'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&h=300&fit=crop', // Car wash service 1
+      'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop', // Car wash service 2
+      'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400&h=300&fit=crop', // Car wash service 3
+      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&h=300&fit=crop', // Car wash service 4
+      'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=400&h=300&fit=crop', // Car wash service 5
+      'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400&h=300&fit=crop', // Car wash service 6
+    ];
+    
+    const id = serviceId ? String(serviceId) : String(index || 0);
+    const imageIndex = parseInt(id) % servicePlaceholderImages.length;
+    return servicePlaceholderImages[imageIndex];
+  };
+
+  const formatPrice = (price: string | number | null | undefined, offerPrice: string | number | null | undefined) => {
+    const priceNum = parseFloat(String(price || 0));
+    const offerNum = offerPrice ? parseFloat(String(offerPrice)) : null;
+    
+    if (offerNum && offerNum < priceNum) {
+      return {
+        original: priceNum,
+        discounted: offerNum,
+        hasOffer: true,
+      };
+    }
+    
+    return {
+      original: priceNum,
+      discounted: null,
+      hasOffer: false,
+    };
+  };
+
+  const handleServiceSelect = (service: any) => {
+    setSelectedService(service);
+    // Navigate to schedule booking with selected service
+    if (onServiceSelect) {
+      onServiceSelect(service, centerDetails || center);
+    }
+  };
+
+  const renderServiceCard = (service: any, index: number) => {
+    const isSelected = selectedService?.id === service.id;
+    const priceInfo = formatPrice(service.price, service.offer_price);
+    const imageUrl = getImageUrl(service.image, service.id, index);
+
+    return (
+      <TouchableOpacity
+        key={service.id || index}
+        style={[
+          styles.serviceCard,
+          {
+            backgroundColor: theme.card,
+            borderColor: isSelected ? BLUE_COLOR : '#E5E7EB',
+            borderWidth: isSelected ? 2.5 : 1,
+          },
+        ]}
+        onPress={() => {
+          setSelectedService(service);
+          handleServiceSelect(service);
+        }}
+        activeOpacity={0.7}
+      >
+        {/* Selected Checkmark */}
+        {isSelected && (
+          <View style={[styles.selectedBadge, { backgroundColor: BLUE_COLOR }]}>
+            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+          </View>
+        )}
+
+        {/* Service Image */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.serviceImage}
+            resizeMode="cover"
+          />
+          {priceInfo.hasOffer && (
+            <View style={[styles.bestDealBadge, { backgroundColor: '#10B981' }]}>
+              <Text style={styles.bestDealText}>Best Deal</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Service Info */}
+        <View style={styles.serviceInfo}>
+          <Text style={[styles.serviceName, { color: theme.textPrimary }]} numberOfLines={2}>
+            {service.name}
+          </Text>
+          
+          {/* Price */}
+          <View style={styles.priceContainer}>
+            {priceInfo.hasOffer ? (
+              <>
+                <Text style={[styles.originalPrice, { color: theme.textSecondary }]}>
+                  £{priceInfo.original.toFixed(2)}
+                </Text>
+                <Text style={[styles.discountedPrice, { color: '#10B981' }]}>
+                  £{priceInfo.discounted.toFixed(2)}
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.discountedPrice, { color: theme.textPrimary }]}>
+                £{priceInfo.original.toFixed(2)}
+              </Text>
+            )}
+          </View>
+
+          {/* Description */}
+          {service.description && (
+            <Text style={[styles.serviceDescription, { color: theme.textSecondary }]} numberOfLines={3}>
+              {service.description}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top', 'left', 'right']}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <View style={styles.titleRow}>
+            <Ionicons name="car" size={20} color={BLUE_COLOR} style={styles.carIcon} />
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+              {centerDetails?.name || center?.name || 'Service Center'}
+            </Text>
+          </View>
+          {centerDetails?.address && (
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+              {centerDetails.address}
+            </Text>
+          )}
+        </View>
+        <View style={{ width: 32 }} />
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Our Services Heading */}
+        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Our Services</Text>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={BLUE_COLOR} />
+            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+              Loading services...
+            </Text>
+          </View>
+        ) : services.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="construct-outline" size={48} color={theme.textSecondary} />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+              No services available at this center
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.servicesGrid}>
+            {services.map((service, index) => renderServiceCard(service, index))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Selected Service Summary and Continue Button */}
+      {selectedService && (
+        <View style={[
+          styles.bottomSection, 
+          { 
+            backgroundColor: theme.surface, 
+            borderTopColor: colors.border,
+            paddingBottom: Math.max(insets.bottom || 0, 20),
+          }
+        ]}>
+          <View style={styles.selectedServiceInfo}>
+            <View style={styles.selectedServiceLeft}>
+              <Text style={[styles.selectedServiceLabel, { color: theme.textSecondary }]}>Selected Service</Text>
+              <Text style={[styles.selectedServiceName, { color: theme.textPrimary }]}>{selectedService.name}</Text>
+            </View>
+            <View style={styles.selectedServiceRight}>
+              <Text style={[styles.selectedServicePrice, { color: theme.textPrimary }]}>
+                £{formatPrice(selectedService.price, selectedService.offer_price).discounted?.toFixed(2) || formatPrice(selectedService.price, selectedService.offer_price).original.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={[styles.continueButton, { backgroundColor: BLUE_COLOR }]}
+            onPress={() => {
+              if (onServiceSelect) {
+                onServiceSelect(selectedService, centerDetails || center);
+              }
+            }}
+          >
+            <Text style={styles.continueButtonText}>Continue to Booking</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: Platform.select({ ios: 10, android: 8 }),
+    paddingBottom: Platform.select({ ios: 10, android: 8 }),
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerContent: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  carIcon: {
+    marginRight: 6,
+  },
+  title: {
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Center name
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    letterSpacing: -0.2,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Address
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: CARD_MARGIN,
+    paddingTop: 20,
+    paddingBottom: 100, // Add padding at bottom to prevent content from being hidden behind fixed footer
+  },
+  sectionTitle: {
+    fontSize: 22, // font-size: 22px, font-weight: 700 (Bold) - Section title
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.4,
+    marginBottom: 20,
+  },
+  servicesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingBottom: 20,
+  },
+  serviceCard: {
+    width: CARD_WIDTH,
+    borderRadius: 16, // Increased for more modern look
+    marginBottom: CARD_MARGIN,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E7EB', // Light gray border
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, // Reduced for subtler shadow
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 28, // Slightly smaller for better proportions
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  imageContainer: {
+    width: '100%',
+    height: 100, // Reduced for better proportions
+    position: 'relative',
+    backgroundColor: '#F5F5F5', // Background for placeholder
+  },
+  serviceImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F5F5F5',
+  },
+  bestDealBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  bestDealText: {
+    color: '#FFFFFF',
+    fontSize: 11, // Slightly smaller for better fit
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+  },
+  serviceInfo: {
+    padding: 14, // Increased padding for better spacing
+  },
+  serviceName: {
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Service name
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    marginBottom: 10,
+    lineHeight: 22, // Better line height for readability
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  originalPrice: {
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Original price (strikethrough)
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textDecorationLine: 'line-through',
+  },
+  discountedPrice: {
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Price value
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+  },
+  serviceDescription: {
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Description
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    lineHeight: 18,
+    marginTop: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    marginTop: 12,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  bottomSection: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: Platform.select({ ios: 20, android: 20 }),
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  selectedServiceInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  selectedServiceLeft: {
+    flex: 1,
+  },
+  selectedServiceLabel: {
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Label
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    marginBottom: 4,
+  },
+  selectedServiceName: {
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Selected service name
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+  },
+  selectedServiceRight: {
+    alignItems: 'flex-end',
+  },
+  selectedServicePrice: {
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Price value
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+  },
+  continueButton: {
+    borderRadius: Platform.select({ ios: 30, android: 28 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    alignItems: 'center',
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  continueButtonText: {
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Button text
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: 0.5,
+  },
+});
+
+export default ServiceCenterScreen;

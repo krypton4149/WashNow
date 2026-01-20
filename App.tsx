@@ -38,13 +38,12 @@ import OwnerAuthNavigator from './src/navigation/OwnerAuthNavigator';
 import DashboardScreen from './src/screens/dashboard/DashboardScreen';
 import OwnerTabs from './src/navigation/OwnerTabs';
 import BookCarWashScreen from './src/screens/book/BookCarWashScreen';
-import FindingCarWashScreen from './src/screens/book/FindingCarWashScreen';
 import BookingConfirmedScreen from './src/screens/book/BookingConfirmedScreen';
 import PaymentScreen from './src/screens/book/PaymentScreen';
 import PaymentConfirmedScreen from './src/screens/book/PaymentConfirmedScreen';
 import ScheduleBookingConfirmedScreen from './src/screens/book/ScheduleBookingConfirmedScreen';
-import ScheduleForLaterScreen from './src/screens/book/ScheduleForLaterScreen';
 import ScheduleBookingScreen from './src/screens/book/ScheduleBookingScreen';
+import ServiceCenterScreen from './src/screens/book/ServiceCenterScreen';
 import ConfirmBookingScreen from './src/screens/book/ConfirmBookingScreen';
 import BookingHistoryScreen from './src/screens/booking/BookingHistoryScreen';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
@@ -260,7 +259,8 @@ const AppContent: React.FC = () => {
   };
 
   const handleNavigateToScheduleForLater = () => {
-    setCurrentScreen('schedule-for-later');
+    // Schedule for later - just close modal, user can click on a center to schedule
+    // No separate screen needed
   };
 
   const handleConfirmBooking = () => {
@@ -290,31 +290,32 @@ const AppContent: React.FC = () => {
   };
 
   const handleInstantBooking = (centersToBroadcast: any[] = []) => {
-    console.log('=== App: handleInstantBooking called ===');
-    console.log('Centers to broadcast count:', centersToBroadcast.length);
-    console.log('Centers to broadcast:', JSON.stringify(centersToBroadcast, null, 2));
-    
-    // Store the filtered centers that should receive the request
-    // IMPORTANT: Set filteredCenters BEFORE navigating to ensure it's available on first render
-    // Use empty array as a marker for "use filtered" vs null for "load all"
+    // Skip FindingCarWashScreen - go directly to payment with first center
     if (centersToBroadcast.length > 0) {
-      setFilteredCenters([...centersToBroadcast]); // Create new array to ensure reference changes
-      console.log('Set filteredCenters with', centersToBroadcast.length, 'centers');
-      
-      // Use setTimeout to ensure state is set before navigation
-      // React batches state updates, so we need to ensure filteredCenters is set
-      setTimeout(() => {
-        setCurrentScreen('finding-car-wash'); // Navigate after state update
-      }, 0);
+      const firstCenter = centersToBroadcast[0];
+      setSelectedCenter(firstCenter);
+      const now = new Date();
+      setBookingData({
+        date: now.toISOString(),
+        time: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+        center: firstCenter,
+      });
+      setCurrentScreen('payment');
     } else {
-      setFilteredCenters(null);
-      console.log('Set filteredCenters to null (no centers provided)');
-      setCurrentScreen('finding-car-wash'); // Navigate to finding car wash screen for instant booking
+      // No centers available, go back to book-wash
+      setCurrentScreen('book-wash');
     }
   };
 
   const handleSendRequestToCenters = () => {
-    setCurrentScreen('finding-car-wash');
+    // Skip FindingCarWashScreen - go directly to payment
+    const now = new Date();
+    setBookingData({
+      date: now.toISOString(),
+      time: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+      center: selectedCenter,
+    });
+    setCurrentScreen('payment');
   };
 
   const handleBookingConfirmed = (center: any) => {
@@ -398,13 +399,29 @@ const AppContent: React.FC = () => {
   const handleCenterSelect = (center: any) => {
     console.log('Center selected:', center);
     setSelectedCenter(center);
+    // If service is already selected from bottom sheet, go to service-center screen
+    // Otherwise, this would be from clicking center directly (which we removed)
+    setCurrentScreen('service-center');
+  };
+
+  const handleServiceSelect = (service: any, center: any) => {
+    console.log('Service selected:', service);
+    setSelectedCenter({ ...center, selectedService: service });
     setCurrentScreen('schedule-booking');
   };
 
 
   const handleScheduleBookingContinue = (bookingInfo: any) => {
     console.log('Continue to payment with booking data:', bookingInfo);
-    setBookingData(bookingInfo);
+    // Include selected service from selectedCenter if available
+    const bookingDataWithService = {
+      ...bookingInfo,
+      center: {
+        ...bookingInfo.center,
+        selectedService: selectedCenter?.selectedService || bookingInfo.center?.selectedService,
+      },
+    };
+    setBookingData(bookingDataWithService);
     setCurrentScreen('schedule-payment');
   };
 
@@ -506,18 +523,8 @@ const AppContent: React.FC = () => {
             onNavigateToAvailableNow={() => setCurrentScreen('available-now')}
             onNavigateToScheduleForLater={handleNavigateToScheduleForLater}
             onConfirmBooking={handleInstantBooking}
-          />
-        );
-      case 'finding-car-wash':
-        return (
-          <FindingCarWashScreen 
-            onBack={() => {
-              setFilteredCenters(null); // Clear filtered centers when going back
-              setCurrentScreen('book-wash');
-            }}
-            onBookingConfirmed={handleBookingConfirmed}
-            selectedLocation={selectedLocation}
-            filteredCenters={filteredCenters}
+            onCenterSelect={handleCenterSelect}
+            onServiceSelect={handleServiceSelect}
           />
         );
       case 'booking-confirmed':
@@ -531,7 +538,7 @@ const AppContent: React.FC = () => {
       case 'payment':
         return (
           <PaymentScreen 
-            onBack={() => setCurrentScreen('booking-confirmed')}
+            onBack={() => setCurrentScreen('book-wash')}
             onPaymentSuccess={handlePaymentSuccess}
             acceptedCenter={selectedCenter}
             bookingData={bookingData}
@@ -553,18 +560,18 @@ const AppContent: React.FC = () => {
             paymentStatus="Pending"
           />
         );
-      case 'schedule-for-later':
+      case 'service-center':
         return (
-          <ScheduleForLaterScreen 
+          <ServiceCenterScreen 
             onBack={() => setCurrentScreen('book-wash')}
-            onCenterSelect={handleCenterSelect}
-            selectedLocation={selectedLocation || { id: '1', name: 'Downtown, New York', centersCount: 2 }}
+            onServiceSelect={handleServiceSelect}
+            center={selectedCenter || { id: '1', name: 'Premium Auto Wash', rating: 4.8, distance: '0.5 mi', address: '123 Main Street, Downtown', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=80&fit=crop' }}
           />
         );
       case 'schedule-booking':
         return (
           <ScheduleBookingScreen 
-            onBack={() => setCurrentScreen('schedule-for-later')}
+            onBack={() => setCurrentScreen('service-center')}
             onContinue={handleScheduleBookingContinue}
             selectedCenter={selectedCenter || { id: '1', name: 'Premium Auto Wash', rating: 4.8, distance: '0.5 mi', address: '123 Main Street, Downtown', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=80&fit=crop' }}
           />

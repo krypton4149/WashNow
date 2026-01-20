@@ -24,6 +24,7 @@ interface ServiceCenter {
   distance: string;
   address: string;
   status: 'waiting' | 'not-available' | 'accepted';
+  originalData?: any; // Store original center data
 }
 
 const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, selectedLocation, filteredCenters }) => {
@@ -35,7 +36,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [centers, setCenters] = useState<ServiceCenter[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [acceptedCenter, setAcceptedCenter] = useState<ServiceCenter | null>(null);
+  const [selectedCenter, setSelectedCenter] = useState<ServiceCenter | null>(null);
   const [currentLocation, setCurrentLocation] = useState<string>('Getting location...');
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
   const { isDarkMode, colors } = useTheme();
@@ -190,6 +191,8 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               distance: distance,
               address: c.address || c.location || 'Address not available',
               status: 'waiting',
+              // Store original center data for navigation
+              originalData: c,
             };
           });
           
@@ -234,6 +237,8 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               distance: distance,
               address: c.address || 'Address not available',
               status: 'waiting',
+              // Store original center data for navigation
+              originalData: c,
             };
           });
           
@@ -250,6 +255,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               distance: '0.5 mi',
               address: 'Northolt Road, South Harrow, HA2 6AF',
               status: 'waiting',
+              originalData: { id: '1', name: 'Harrow Hand Car Wash' },
             },
             {
               id: '2',
@@ -258,6 +264,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               distance: '0.8 mi',
               address: 'Rayners Lane, Harrow, HA2 9SX',
               status: 'waiting',
+              originalData: { id: '2', name: 'Pro Hand Car Wash' },
             },
             {
               id: '3',
@@ -266,6 +273,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               distance: '1.2 mi',
               address: 'Alveston Ave, Harrow HA3 8TG, United Kingdom',
               status: 'waiting',
+              originalData: { id: '3', name: 'Medusa Auto Detailing' },
             },
             {
               id: '4',
@@ -274,6 +282,7 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               distance: '0.6 mi',
               address: '290 Northolt Road, South Harrow, HA2 8EB',
               status: 'waiting',
+              originalData: { id: '4', name: 'South Harrow Hand Car Wash' },
             }
           ];
           setCenters(mockCenters);
@@ -288,43 +297,15 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
 
     loadCenters();
 
-    // Timer for searching card
+    // Timer for searching card (for display purposes only)
     const timer = setInterval(() => {
       setTimeElapsed(prev => prev + 1);
     }, 1000);
 
-    // Simulate broadcast results: random center becomes accepted, others become not available
-    const acceptTimer = setTimeout(() => {
-      setCenters(prev => {
-        // Randomly select which center accepts the request
-        const randomIndex = prev.length > 0 ? Math.floor(Math.random() * prev.length) : 0;
-        
-        const updated = prev.map((c, idx) => (
-          idx === randomIndex ? { ...c, status: 'accepted' as const } : { ...c, status: 'not-available' as const }
-        ));
-        
-        // Save accepted center locally; navigate in a separate effect to avoid setState during render
-        const accepted = updated[randomIndex] || null;
-        setAcceptedCenter(accepted);
-        return updated;
-      });
-    }, 7000);
-
     return () => {
       clearInterval(timer);
-      clearTimeout(acceptTimer);
     };
-  }, [onBookingConfirmed, filteredCenters]);
-
-  // Navigate to match found screen after a center is accepted
-  useEffect(() => {
-    if (acceptedCenter) {
-      const navTimer = setTimeout(() => {
-        onBookingConfirmed?.(acceptedCenter);
-      }, 0);
-      return () => clearTimeout(navTimer);
-    }
-  }, [acceptedCenter, onBookingConfirmed]);
+  }, [filteredCenters]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -332,54 +313,59 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const renderCenter = (center: ServiceCenter) => (
-    <View key={center.id} style={[styles.centerCard, { backgroundColor: colors.card, borderColor: BLUE_COLOR + '30' }]}>
-      <View style={styles.centerLeft}>
-        <View style={[
-          styles.statusIcon,
-          center.status === 'waiting' && { backgroundColor: BLUE_COLOR + '50' },
-          center.status === 'not-available' && styles.statusNotAvailable,
-          center.status === 'accepted' && { backgroundColor: BLUE_COLOR },
-        ]}>
-          {center.status === 'waiting' && (
-            <Ionicons name="refresh" size={16} color={BLUE_COLOR} />
-          )}
-          {center.status === 'not-available' && (
-            <Ionicons name="close" size={16} color="#FFFFFF" />
-          )}
-          {center.status === 'accepted' && (
-            <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-          )}
-        </View>
-      </View>
-      
-      <View style={styles.centerBody}>
-        <View style={styles.centerHeader}>
-          <Text style={[styles.centerName,{color: theme.textPrimary}]}>{center.name}</Text>
-        </View>
-        <Text style={[styles.centerDistance,{color: theme.textSecondary}]}>{center.distance}</Text>
-      </View>
-      
-      <View style={styles.centerRight}>
-        <Text style={[
-          styles.statusText,
-          { 
-            color: center.status === 'waiting' 
-              ? '#F59E0B' // Keep orange for waiting status
-              : center.status === 'not-available' 
-                ? colors.error 
-                : colors.success 
-          },
-        ]}>
-          {center.status === 'waiting' && 'Waiting...'}
-          {center.status === 'not-available' && 'Not Available'}
-          {center.status === 'accepted' && 'Accepted!'}
-        </Text>
-      </View>
-    </View>
-  );
+  const handleCenterSelect = (center: ServiceCenter) => {
+    setSelectedCenter(center);
+  };
 
-  const hasAcceptedCenter = centers.some(c => c.status === 'accepted');
+  const handleProceedToPayment = () => {
+    // If a center is selected, use it; otherwise use the first available center
+    const centerToUse = selectedCenter || centers.find(c => c.status === 'waiting') || centers[0];
+    if (centerToUse) {
+      // Pass the original center data if available, otherwise use the mapped center
+      const centerData = centerToUse.originalData || centerToUse;
+      onBookingConfirmed?.(centerData);
+    }
+  };
+
+  const renderCenter = (center: ServiceCenter) => {
+    const isSelected = selectedCenter?.id === center.id;
+    return (
+      <TouchableOpacity 
+        key={center.id} 
+        style={[
+          styles.centerCard, 
+          { 
+            backgroundColor: colors.card, 
+            borderColor: isSelected ? BLUE_COLOR : BLUE_COLOR + '30',
+            borderWidth: isSelected ? 2 : 1,
+          }
+        ]}
+        onPress={() => handleCenterSelect(center)}
+      >
+        <View style={styles.centerLeft}>
+          <View style={[
+            styles.statusIcon,
+            { backgroundColor: BLUE_COLOR + '50' },
+          ]}>
+            <Ionicons name="location" size={16} color={BLUE_COLOR} />
+          </View>
+        </View>
+        
+        <View style={styles.centerBody}>
+          <View style={styles.centerHeader}>
+            <Text style={[styles.centerName,{color: theme.textPrimary}]}>{center.name}</Text>
+          </View>
+          <Text style={[styles.centerDistance,{color: theme.textSecondary}]}>{center.distance}</Text>
+        </View>
+        
+        <View style={styles.centerRight}>
+          {isSelected && (
+            <Ionicons name="checkmark-circle" size={24} color={BLUE_COLOR} />
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(12, Math.min(insets.bottom || 0, 20));
@@ -409,18 +395,16 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
               styles.searchingIcon,
               { backgroundColor: BLUE_COLOR }
             ]}>
-              {hasAcceptedCenter ? (
-                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-              ) : (
-                <Ionicons name="refresh" size={20} color="#FFFFFF" />
-              )}
+              <Ionicons name="location" size={20} color="#FFFFFF" />
             </View>
           </View>
           <View style={styles.searchingBody}>
             <Text style={[styles.searchingText,{color: theme.textPrimary}]}>
-              {hasAcceptedCenter ? 'Match found!' : 'Searching for available centers...'}
+              {centers.length > 0 ? `${centers.length} center${centers.length !== 1 ? 's' : ''} available` : 'Searching for available centers...'}
             </Text>
-            <Text style={[styles.timeText,{color: theme.textSecondary}]}>Time elapsed: {formatTime(timeElapsed)}</Text>
+            <Text style={[styles.timeText,{color: theme.textSecondary}]}>
+              {centers.length > 0 ? 'Select a center to proceed' : 'Please wait...'}
+            </Text>
           </View>
         </View>
 
@@ -466,12 +450,21 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
         </View>
       </ScrollView>
 
-      {/* Cancel Button */}
+        {/* Action Buttons */}
       <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: theme.surface, borderTopColor: BLUE_COLOR + '30' }]}>
+        {centers.length > 0 && (
+          <TouchableOpacity 
+            style={[styles.proceedButton, { backgroundColor: BLUE_COLOR }]} 
+            onPress={handleProceedToPayment}
+          >
+            <Text style={[styles.proceedButtonText,{color: '#FFFFFF'}]}>
+              {selectedCenter ? `Proceed with ${selectedCenter.name}` : 'Proceed to Payment'}
+            </Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.cancelButton} onPress={onBack}>
-          <Text style={[styles.cancelButtonText,{color: theme.textSecondary}]}>Cancel Request</Text>
+          <Text style={[styles.cancelButtonText,{color: theme.textSecondary}]}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={[styles.cancelNote,{color: theme.textSecondary}]}>You can cancel anytime before a center accepts.</Text>
       </View>
     </SafeAreaView>
   );
@@ -730,6 +723,25 @@ const styles = StyleSheet.create({
     color: '#999999',
     textAlign: 'center',
     fontFamily: FONTS.INTER_REGULAR,
+  },
+  proceedButton: {
+    backgroundColor: BLUE_COLOR,
+    borderRadius: Platform.select({ ios: 30, android: 28 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  proceedButtonText: {
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: 0.5,
   },
 });
 

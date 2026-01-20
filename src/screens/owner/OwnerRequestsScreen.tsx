@@ -729,16 +729,23 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
           paddingTop: Platform.select({ ios: 0.5, android: 0.5 }),
         }
       ]}>
-        {onBack && (
-          <TouchableOpacity style={styles.backButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
-          </TouchableOpacity>
-        )}
+        <View style={styles.placeholder} />
         <View style={styles.headerTextGroup}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>New Requests</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{headerSubtitle}</Text>
         </View>
-        <View style={styles.placeholder} />
+        <TouchableOpacity 
+          onPress={handleRefresh} 
+          style={styles.reloadButton} 
+          activeOpacity={0.7}
+          disabled={isRefreshing}
+        >
+          <Ionicons 
+            name="refresh" 
+            size={Platform.select({ ios: 24, android: 22 })} 
+            color={isRefreshing ? colors.textSecondary : colors.text} 
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView 
@@ -948,6 +955,13 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 40,
+  },
+  reloadButton: {
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
+    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,

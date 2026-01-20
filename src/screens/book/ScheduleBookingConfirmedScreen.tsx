@@ -108,10 +108,27 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
   const apiPaymentStatus = bookingDetails?.payment_status;
   const finalPaymentStatus = apiPaymentStatus 
     ? (apiPaymentStatus.toLowerCase() === 'paid' ? 'Paid' : 'Pending')
-    : paymentStatus;
+    : (paymentStatus === 'Paid' ? 'Paid' : 'Pending');
   
   // Determine payment status color
   const paymentStatusColor = finalPaymentStatus === 'Paid' ? '#059669' : '#F59E0B';
+
+  // Display time: format from API or use bookingData time
+  const formatTimeForDisplay = (timeStr: string): string => {
+    // If time is in 24-hour format (HH:MM), convert to 12-hour format (HH:MM AM/PM)
+    if (timeStr.match(/^\d{2}:\d{2}$/)) {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+    }
+    // If already in AM/PM format or "Now", return as is
+    return timeStr || 'Now';
+  };
+
+  const displayTime = bookingDetails?.booking_time 
+    ? formatTimeForDisplay(bookingDetails.booking_time)
+    : bookingData.time || 'Now';
 
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
@@ -122,28 +139,64 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
       >
         <View style={styles.content}>
           {/* Confirmation Icon */}
-          <View style={[styles.confirmationIcon, { backgroundColor: BLUE_COLOR }]}>
-            <Ionicons name="checkmark" size={48} color="#FFFFFF" />
+          <View style={[styles.confirmationIcon, { backgroundColor: '#10B981' }]}>
+            <Ionicons name="checkmark" size={Platform.select({ ios: 28, android: 24 })} color="#FFFFFF" />
           </View>
           
           <Text style={styles.confirmationTitle}>Booking Confirmed!</Text>
-          <Text style={styles.confirmationSubtitle}>Your car wash has been scheduled</Text>
+          <Text style={styles.confirmationSubtitle}>Your car wash has been succesfully booked</Text>
 
           {/* Booking Details Card */}
           <View style={styles.bookingCard}>
           <View style={styles.bookingHeader}>
-            <Text style={styles.bookingId}>Booking ID: #{bookingData.bookingId || 'BK6305'}</Text>
+            <Text style={[styles.bookingId, { color: BLUE_COLOR }]}>Booking ID: #{bookingDetails?.booking_id || bookingData.bookingId || 'N/A'}</Text>
           </View>
           
           <View style={styles.bookingDetails}>
-            {/* Location */}
+            {/* Service Centre */}
             <View style={styles.bookingRow}>
               <View style={styles.bookingIcon}>
-                <Ionicons name="location" size={16} color={BLUE_COLOR} />
+                <Ionicons name="business" size={16} color={BLUE_COLOR} />
               </View>
               <View style={styles.bookingContent}>
-                <Text style={styles.bookingLabel}>Location</Text>
-                <Text style={styles.bookingValue}>{bookingData.center?.name || 'Car Wash Center'}</Text>
+                <Text style={styles.bookingLabel}>Service Centre</Text>
+                <Text style={styles.bookingValue}>
+                  {bookingDetails?.service_centre?.name || 
+                   bookingDetails?.service_center_name || 
+                   bookingData.center?.name || 
+                   'N/A'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Service */}
+            <View style={styles.bookingRow}>
+              <View style={styles.bookingIcon}>
+                <Ionicons name="water" size={16} color={BLUE_COLOR} />
+              </View>
+              <View style={styles.bookingContent}>
+                <Text style={styles.bookingLabel}>Service</Text>
+                <Text style={styles.bookingValue}>
+                  {bookingDetails?.service_type || 
+                   bookingDetails?.service?.name || 
+                   bookingDetails?.service_name || 
+                   'N/A'}
+                </Text>
+              </View>
+            </View>
+
+            {/* Vehicle Details */}
+            <View style={styles.bookingRow}>
+              <View style={styles.bookingIcon}>
+                <Ionicons name="car" size={16} color={BLUE_COLOR} />
+              </View>
+              <View style={styles.bookingContent}>
+                <Text style={styles.bookingLabel}>Vehicle Details</Text>
+                <Text style={styles.bookingValue}>
+                  {bookingDetails?.vehicle_no || 
+                   bookingDetails?.vehicle_number || 
+                   'N/A'}
+                </Text>
               </View>
             </View>
 
@@ -155,7 +208,15 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Date</Text>
                 <View style={styles.dateRow}>
-                  <Text style={styles.bookingValue}>{displayDate}</Text>
+                  <Text style={styles.bookingValue}>
+                    {bookingDetails?.booking_date 
+                      ? new Date(bookingDetails.booking_date).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
+                        })
+                      : displayDate}
+                  </Text>
                   {!!chipLabel && (
                     <View style={styles.previewTag}>
                       <Text style={styles.previewText}>{chipLabel}</Text>
@@ -172,7 +233,7 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
               </View>
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Time</Text>
-                <Text style={styles.bookingValue}>{bookingData.time || 'Now'}</Text>
+                <Text style={styles.bookingValue}>{displayTime}</Text>
               </View>
             </View>
           </View>
@@ -185,12 +246,25 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
                 {loadingBooking ? 'Loading...' : finalPaymentStatus}
               </Text>
             </View>
-            <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Total Amount</Text>
-              <Text style={styles.paymentAmount}>
-                {loadingBooking ? 'Loading...' : formattedAmount}
-              </Text>
-            </View>
+            {(bookingDetails?.price || finalAmount) && (
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>Amount Paid</Text>
+                <Text style={[styles.paymentAmount, { color: '#10B981' }]}>
+                  {loadingBooking ? 'Loading...' : 
+                   bookingDetails?.price 
+                     ? `£${parseFloat(bookingDetails.price).toFixed(2)}`
+                     : formattedAmount}
+                </Text>
+              </View>
+            )}
+            {bookingDetails?.payment_method && (
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>Payment Method</Text>
+                <Text style={styles.paymentStatus}>
+                  {bookingDetails.payment_method}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -198,6 +272,10 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
 
       {/* Action Buttons */}
       <View style={styles.bottomContainer}>
+        <TouchableOpacity style={[styles.backToHomeButton, { borderColor: BLUE_COLOR, marginBottom: moderateScale(12) }]} onPress={onBackToHome}>
+          <Text style={[styles.backToHomeButtonText, { color: BLUE_COLOR }]}>Go to Dashboard</Text>
+        </TouchableOpacity>
+        
         <TouchableOpacity
           style={[styles.viewStatusButton, { backgroundColor: BLUE_COLOR }]}
           onPress={() => {
@@ -217,10 +295,6 @@ const ScheduleBookingConfirmedScreen: React.FC<Props> = ({
           }}
         >
           <Text style={[styles.viewStatusButtonText, { color: '#FFFFFF' }]}>Get Directions</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={[styles.backToHomeButton, { borderColor: BLUE_COLOR }]} onPress={onBackToHome}>
-          <Text style={[styles.backToHomeButtonText, { color: BLUE_COLOR }]}>Back to Home</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -242,36 +316,36 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: moderateScale(16),
-    paddingTop: moderateScale(60),
+    paddingTop: moderateScale(32),
     alignItems: 'center',
   },
   confirmationIcon: {
-    width: moderateScale(120),
-    height: moderateScale(120),
-    borderRadius: moderateScale(60),
+    width: moderateScale(60),
+    height: moderateScale(60),
+    borderRadius: moderateScale(30),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: moderateScale(24),
+    marginBottom: moderateScale(12),
   },
   confirmationTitle: {
-    fontSize: FONT_SIZES.APP_TITLE_SMALL,
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '700',
-    color: '#000',
-    marginBottom: moderateScale(8),
+    color: BLUE_COLOR,
+    marginBottom: moderateScale(4),
     fontFamily: FONTS.MONTserrat_BOLD,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   confirmationSubtitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: FONT_SIZES.BODY_SMALL,
     color: '#666666',
     textAlign: 'center',
-    marginBottom: moderateScale(40),
+    marginBottom: moderateScale(20),
     fontFamily: FONTS.INTER_REGULAR,
   },
   bookingCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: moderateScale(20),
+    padding: moderateScale(16),
     width: '100%',
     borderWidth: 1,
     borderColor: BLUE_COLOR + '30',
@@ -283,11 +357,10 @@ const styles = StyleSheet.create({
   },
   bookingHeader: {
     alignItems: 'flex-end',
-    marginBottom: moderateScale(20),
+    marginBottom: moderateScale(16),
   },
   bookingId: {
     fontSize: FONT_SIZES.CAPTION_SMALL,
-    color: '#000000',
     fontWeight: '700',
     backgroundColor: '#E5E7EB',
     paddingHorizontal: moderateScale(8),
@@ -296,12 +369,12 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.INTER_BOLD,
   },
   bookingDetails: {
-    marginBottom: moderateScale(20),
+    marginBottom: moderateScale(16),
   },
   bookingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: moderateScale(16),
+    marginBottom: moderateScale(12),
   },
   bookingIcon: {
     width: moderateScale(24),

@@ -426,12 +426,8 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           paddingTop: insets.top + Platform.select({ ios: 0.5, android: 0.5 }),
         }
       ]}>
-        {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
-          </TouchableOpacity>
-        )}
-        <View style={{ flex: 1, alignItems: 'center' }}>
+        <View style={styles.headerLeftPlaceholder} />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={[styles.title, { color: colors.text }]}>Booking History ({bookings.length})</Text>
         </View>
         <TouchableOpacity onPress={loadBookings} style={styles.refreshButton} activeOpacity={0.7}>
@@ -589,8 +585,8 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                 
                 {/* Booking ID */}
                 <View style={styles.infoRow}>
-                  <Ionicons name="receipt-outline" size={16} color={colors.textSecondary} />
-                  <Text style={[styles.infoTextBold, { color: colors.text }]}>
+                  <Ionicons name="receipt-outline" size={16} color={BLUE_COLOR} />
+                  <Text style={[styles.infoTextBold, { color: BLUE_COLOR }]}>
                     Booking ID: {booking.id}
                   </Text>
                 </View>
@@ -598,8 +594,8 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                 {/* Service ID */}
                 {booking.serviceId && (
                   <View style={styles.infoRow}>
-                    <Ionicons name="pricetag-outline" size={16} color={colors.textSecondary} />
-                    <Text style={[styles.infoTextBold, { color: colors.text }]}>
+                    <Ionicons name="pricetag-outline" size={16} color={BLUE_COLOR} />
+                    <Text style={[styles.infoTextBold, { color: BLUE_COLOR }]}>
                       Service ID: {booking.serviceId}
                     </Text>
                   </View>
@@ -659,9 +655,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingBottom: Platform.select({ ios: 6, android: 5 }),
+    paddingBottom: Platform.select({ ios: 16, android: 14 }),
     paddingTop: 0,
     borderBottomWidth: 1,
+    minHeight: Platform.select({ ios: 50, android: 48 }),
+  },
+  headerLeftPlaceholder: {
+    width: Platform.select({ ios: 36, android: 32 }),
+    height: Platform.select({ ios: 36, android: 32 }),
   },
   backButton: {
     width: Platform.select({ ios: 36, android: 32 }),
@@ -676,10 +677,11 @@ const styles = StyleSheet.create({
     borderRadius: Platform.select({ ios: 18, android: 16 }),
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: Platform.select({ ios: 2, android: 2 }),
   },
   title: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Header title
+    fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.2,
     textAlign: 'center',
@@ -705,12 +707,12 @@ const styles = StyleSheet.create({
   activeTab: {
   },
   tabText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Tab text
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   activeTabText: {
-    fontWeight: '600',
+    fontWeight: '600', // font-weight: 600 (Semibold) - Active tab
     fontFamily: FONTS.INTER_SEMIBOLD,
   },
   tabBadge: {
@@ -720,9 +722,9 @@ const styles = StyleSheet.create({
   },
   tabBadgeText: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: 12, // font-size: 12px, font-weight: 500 (Medium) - Badge text
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   bookingsList: {
     flex: 1,
@@ -792,28 +794,28 @@ const styles = StyleSheet.create({
   },
   statusHeaderText: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Status header
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   statusHeaderTextCompleted: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Status header
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   statusHeaderTextCanceled: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Status header
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   cardContent: {
-    padding: 16,
+    padding: 14, // Reduced from 16
   },
   serviceName: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '700',
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Service center name
+    fontWeight: '600',
     marginBottom: 8,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
@@ -824,9 +826,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   serviceNameText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Service name
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     flex: 1,
   },
   serviceType: {
@@ -840,9 +842,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   locationText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Location text
     flex: 1,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   dateTimePill: {
     flexDirection: 'row',
@@ -854,9 +857,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   dateTimeText: {
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Date/time text
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
   infoRow: {
     flexDirection: 'row',
@@ -865,13 +868,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   infoText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Info text
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   infoTextBold: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Info text bold
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   cardDivider: {
     height: 1,
@@ -881,16 +885,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 12,
+    padding: 14, // Reduced from 16
+    paddingTop: 10, // Reduced from 12
   },
   totalSection: {
     flex: 1,
   },
   cardTotalLabel: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Total label
     marginBottom: 4,
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   priceRow: {
     flexDirection: 'row',
@@ -898,14 +903,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTotalPrice: {
-    fontSize: FONT_SIZES.NUMBER_MEDIUM,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Total price
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   originalPrice: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Original price (strikethrough)
     textDecorationLine: 'line-through',
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   cancelButtonFooter: {
     backgroundColor: '#FEE2E2',
@@ -915,9 +921,9 @@ const styles = StyleSheet.create({
   },
   cancelButtonFooterText: {
     color: '#DC2626',
-    fontWeight: '700',
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '500',
+    fontSize: 13, // font-size: 13px, font-weight: 500 (Medium) - Cancel button
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   noBookingsContainer: {
     alignItems: 'center',
@@ -946,10 +952,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   loadingText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
     color: '#666666',
     marginTop: 16,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   errorContainer: {
     alignItems: 'center',
@@ -985,7 +992,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Retry button
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
   },

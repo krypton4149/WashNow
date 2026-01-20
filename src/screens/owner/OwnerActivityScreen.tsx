@@ -258,11 +258,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
           paddingTop: Platform.select({ ios: 0.5, android: 0.5 }),
         }
       ]}>
-        {onBack && (
-          <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerLeftPlaceholder} />
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
@@ -400,9 +396,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerLeftPlaceholder: {
+    width: Platform.select({ ios: 90, android: 80 }),
+    padding: 4,
+  },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: FONT_SIZES.BODY_LARGE,

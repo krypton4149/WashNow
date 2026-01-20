@@ -281,21 +281,15 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       {/* Blue Gradient Header */}
       <View style={styles.headerGradient}>
         <View style={styles.headerNav}>
-          {onBack && (
-            <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-              <View style={styles.backButtonCircle}>
-                <Ionicons name="chevron-back" size={20} color="#000000" />
-              </View>
-            </TouchableOpacity>
-          )}
+          <View style={styles.headerLeftPlaceholder} />
           <Text style={styles.headerTitle}>Profile</Text>
           <TouchableOpacity
             style={styles.editButton}
             onPress={handleEditProfilePress}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
             <View style={styles.editButtonCircle}>
-              <Ionicons name="pencil" size={18} color="#000000" />
+              <Ionicons name="create-outline" size={20} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
         </View>
@@ -454,6 +448,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     zIndex: 1,
   },
+  headerLeftPlaceholder: {
+    width: 40,
+    height: 40,
+  },
   backButton: {
     width: 40,
     height: 40,
@@ -469,10 +467,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
+    flex: 1,
     fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#FFFFFF',
+    textAlign: 'center',
   },
   editButton: {
     width: 40,
@@ -481,12 +481,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   editButtonCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#5BA3F5',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   loadingContainer: {
     alignItems: 'center',

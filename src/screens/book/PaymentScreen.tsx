@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Platform, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useStripe } from '@stripe/stripe-react-native';
 import authService from '../../services/authService';
@@ -8,6 +9,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 import { createPaymentIntent } from '../../services/stripeBackend';
+import { createPayPalOrder, capturePayPalPayment } from '../../services/paypalService';
 
 const BLUE_COLOR = '#0358a8';
 
@@ -41,7 +43,10 @@ const PaymentScreen: React.FC<Props> = ({
   const [notes, setNotes] = useState('');
   const [vehicleNumberError, setVehicleNumberError] = useState('');
   const [editableBookingTime, setEditableBookingTime] = useState<string>('');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'cash' | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'cash' | 'paypal' | null>(null);
+  const [showPayPalWebView, setShowPayPalWebView] = useState(false);
+  const [payPalApprovalUrl, setPayPalApprovalUrl] = useState<string | null>(null);
+  const [payPalOrderId, setPayPalOrderId] = useState<string | null>(null);
   const { colors } = useTheme();
   const [userData, setUserData] = useState<any>(null);
 
@@ -128,6 +133,11 @@ const PaymentScreen: React.FC<Props> = ({
         // Center doesn't have services data, fetch it
         setSelectedServiceCenter(initialCenter);
         fetchServiceCenterDetails(initialCenter.id);
+      }
+      
+      // Check if a service was pre-selected from ServiceCenterScreen
+      if (initialCenter.selectedService) {
+        setSelectedService(initialCenter.selectedService);
       }
     }
   }, []);
@@ -250,6 +260,8 @@ const PaymentScreen: React.FC<Props> = ({
       handleStripePayment();
     } else if (selectedPaymentMethod === 'cash') {
       handleCashPayment();
+    } else if (selectedPaymentMethod === 'paypal') {
+      handlePayPalPayment();
     }
   };
 
@@ -501,6 +513,277 @@ const PaymentScreen: React.FC<Props> = ({
     }
   };
 
+  const handlePayPalPayment = async () => {
+    if (isProcessing) return;
+
+    if (!validateVehicleNumber()) {
+      Alert.alert('Validation Required', 'Please enter your vehicle number to proceed with payment.');
+      return;
+    }
+
+    const centerId = selectedServiceCenter?.id || bookingData?.center?.id || acceptedCenter?.id;
+    if (!centerId) {
+      Alert.alert('Error', 'Please select a service center.');
+      return;
+    }
+
+    // Validate center has services - required for booking
+    if (!hasServices()) {
+      Alert.alert(
+        'Service Center Unavailable',
+        'This service center does not offer any services. Please select a different center.',
+        [{ text: 'OK' }]
+      );
+      setIsProcessing(false);
+      return;
+    }
+
+    // Service selection is required
+    if (!selectedService?.id) {
+      Alert.alert('Error', 'Please select a service to continue.');
+      setIsProcessing(false);
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Validate service and amount before proceeding
+      if (!selectedService) {
+        Alert.alert('Error', 'Please select a service to continue.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Get amount and convert to number
+      const rawAmount = selectedService.offer_price || selectedService.price;
+      const amount = typeof rawAmount === 'string' ? parseFloat(rawAmount) : Number(rawAmount);
+      
+      // Validate amount
+      if (!rawAmount || isNaN(amount) || amount <= 0) {
+        Alert.alert('Error', 'Invalid service price. Please select a valid service.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Create PayPal order
+      const orderResult = await createPayPalOrder({
+        amount: amount,
+        currency: 'USD',
+        description: `Car wash service - ${selectedService?.name || 'Service'}`,
+        returnUrl: 'washnow://paypal-success',
+        cancelUrl: 'washnow://paypal-cancel',
+      });
+
+      if (!orderResult.success || !orderResult.approvalUrl || !orderResult.orderId) {
+        Alert.alert('Payment Error', orderResult.error || 'Failed to create PayPal order. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Store order ID and open WebView
+      setPayPalOrderId(orderResult.orderId);
+      setPayPalApprovalUrl(orderResult.approvalUrl);
+      setShowPayPalWebView(true);
+      setIsProcessing(false);
+
+    } catch (error: any) {
+      Alert.alert('Payment Error', error.message || 'An error occurred during payment.');
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePayPalWebViewNavigation = async (navState: any) => {
+    const { url } = navState;
+    
+    console.log('🔍 PayPal WebView navigation detected:', url);
+    
+    // Only process non-PayPal URLs (these are redirects after approval/cancel)
+    // PayPal domains should be allowed to load normally
+    if (url.includes('paypal.com') || url.includes('paypal-sandbox.com')) {
+      // This is still on PayPal's site - user is still in the approval process
+      console.log('📍 Still on PayPal site, waiting for user to complete approval...');
+      return;
+    }
+    
+    // Check for cancel URL - our return URL with cancel
+    if (url.includes('/paypal/cancel') || url.includes('paypal-cancel') || 
+        (url.includes('cancel') && !url.includes('paypal.com'))) {
+      console.log('❌ PayPal payment cancelled');
+      setShowPayPalWebView(false);
+      setPayPalOrderId(null);
+      setPayPalApprovalUrl(null);
+      Alert.alert('Payment Cancelled', 'You cancelled the PayPal payment.');
+      return;
+    }
+    
+    // Check for success URL - PayPal redirects to return_url ONLY after approval
+    // The return_url will have token and PayerID parameters
+    const hasToken = url.includes('token=');
+    const hasPayerID = url.includes('PayerID=');
+    const isReturnUrl = url.includes('/paypal/success') || url.includes('paypal-success');
+    
+    // Only proceed if we have BOTH token and PayerID, which means PayPal redirected after approval
+    // OR if it's our specific return URL
+    const isSuccessUrl = (isReturnUrl && (hasToken || hasPayerID)) || 
+                        (hasToken && hasPayerID && !url.includes('paypal.com'));
+    
+    if (isSuccessUrl && payPalOrderId) {
+      // Extract token and PayerID from URL
+      const tokenMatch = url.match(/token=([^&]+)/);
+      const payerIdMatch = url.match(/PayerID=([^&]+)/);
+      
+      console.log('✅ PayPal approval confirmed! PayPal redirected to return URL.');
+      console.log('📝 Order ID:', payPalOrderId);
+      console.log('📝 URL:', url);
+      if (tokenMatch) console.log('📝 Token:', tokenMatch[1]);
+      if (payerIdMatch) console.log('📝 Payer ID:', payerIdMatch[1]);
+      
+      // Close WebView
+      setShowPayPalWebView(false);
+      
+      // Wait for PayPal to fully process the approval
+      console.log('⏳ Waiting for PayPal to process approval (3 seconds)...');
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 3000));
+      
+      setIsProcessing(true);
+
+        try {
+          console.log('\n═══════════════════════════════════════════════════════════');
+          console.log('💳 PAYPAL PAYMENT CAPTURE - STARTING');
+          console.log('═══════════════════════════════════════════════════════════');
+          console.log('🆔 Order ID:', payPalOrderId);
+          console.log('⏳ Capturing payment...');
+          console.log('═══════════════════════════════════════════════════════════\n');
+          
+          // Capture the payment
+          const captureResult = await capturePayPalPayment(payPalOrderId);
+
+          console.log('\n═══════════════════════════════════════════════════════════');
+          console.log('💳 PAYPAL PAYMENT CAPTURE RESULT');
+          console.log('═══════════════════════════════════════════════════════════');
+          console.log('📥 Full Capture Result:', JSON.stringify(captureResult, null, 2));
+          console.log('✅ Success:', captureResult.success);
+          if (captureResult.success) {
+            console.log('🆔 Transaction ID:', captureResult.transactionId);
+            console.log('✅ Payment Successfully Verified!');
+          } else {
+            console.log('❌ Error:', captureResult.error);
+          }
+          console.log('═══════════════════════════════════════════════════════════\n');
+
+          if (!captureResult.success) {
+            Alert.alert('Payment Error', captureResult.error || 'Failed to capture PayPal payment. Please try again.');
+            setIsProcessing(false);
+            setPayPalOrderId(null);
+            setPayPalApprovalUrl(null);
+            return;
+          }
+          
+          console.log('✅ PayPal payment verified successfully! Proceeding to create booking...');
+
+          // Payment successful - create booking
+          const isScheduledBooking = bookingData?.date && bookingData?.time;
+          let bookingDate: Date;
+          let bookingTime: string;
+          
+          if (isScheduledBooking && bookingData.date && bookingData.time) {
+            bookingDate = new Date(bookingData.date);
+            bookingTime = editableBookingTime ? convertTimeTo24Hour(editableBookingTime) : convertTimeTo24Hour(bookingData.time);
+          } else {
+            const now = new Date();
+            bookingDate = now;
+            bookingTime = getCurrentTime(now);
+          }
+          
+          const payload: any = {
+            service_centre_id: String(selectedServiceCenter?.id || '').trim(),
+            booking_date: formatDate(bookingDate),
+            booking_time: bookingTime.trim(),
+            vehicle_no: vehicleNumber.trim(),
+            carmodel: (carModel || '').trim() || '',
+            notes: (notes?.trim() || '').trim() || '',
+            service_id: String(selectedService.id).trim(),
+          };
+
+          const token = await authService.getToken();
+          if (!token) {
+            Alert.alert('Authentication Required', 'Please login to complete your booking.');
+            setIsProcessing(false);
+            setPayPalOrderId(null);
+            setPayPalApprovalUrl(null);
+            return;
+          }
+          
+          const bookingResult = await authService.bookNow(payload);
+          
+          if (!bookingResult.success) {
+            Alert.alert(
+              'Booking Failed', 
+              bookingResult.error || 'Payment succeeded but booking creation failed. Please contact support.',
+              [{ text: 'OK' }]
+            );
+            setIsProcessing(false);
+            setPayPalOrderId(null);
+            setPayPalApprovalUrl(null);
+            return;
+          }
+            
+          const bookingNo = bookingResult.bookingNo || bookingResult.bookingId || '';
+
+          // Fetch booking details to get the numeric ID and booking number
+          let numericBookingId: number | null = null;
+          let bookingNumber: string = bookingNo;
+          
+          try {
+            const bookingsResult = await authService.getBookingList(true);
+            if (bookingsResult.success && bookingsResult.bookings) {
+              const foundBooking = bookingsResult.bookings.find(
+                (b: any) => b.booking_id === bookingNo || b.id?.toString() === bookingNo
+              );
+              if (foundBooking) {
+                numericBookingId = foundBooking.id;
+                bookingNumber = foundBooking.booking_id || bookingNo;
+              }
+            }
+          } catch (error) {
+            // Could not fetch booking details, will use booking number
+          }
+
+          // Initiate payment
+          if (numericBookingId && bookingNumber) {
+            const amount = selectedService.offer_price || selectedService.price;
+            
+            await authService.initiatePayment({
+              booking_id: numericBookingId,
+              bookingno: bookingNumber,
+              provider: 'PayPal',
+              amount: amount.toString(),
+            });
+          }
+
+          const bookingDataForResponse = {
+            date: bookingDate.toISOString(),
+            time: isScheduledBooking && (editableBookingTime || bookingData?.time) 
+              ? (editableBookingTime || bookingData.time || getCurrentTime(bookingDate))
+              : getCurrentTime(bookingDate),
+          };
+          
+          const amount = selectedService.offer_price || selectedService.price;
+          setIsProcessing(false);
+          setPayPalOrderId(null);
+          setPayPalApprovalUrl(null);
+          onPaymentSuccess?.(bookingNo, bookingDataForResponse, amount);
+
+        } catch (error: any) {
+          Alert.alert('Payment Error', error.message || 'An error occurred during payment.');
+          setIsProcessing(false);
+          setPayPalOrderId(null);
+          setPayPalApprovalUrl(null);
+        }
+      }
+  };
+
   const handleCashPayment = async () => {
     if (isProcessing) return;
 
@@ -668,7 +951,7 @@ const PaymentScreen: React.FC<Props> = ({
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Payment</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Book an Appointment</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -677,87 +960,117 @@ const PaymentScreen: React.FC<Props> = ({
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Booking Details Card */}
-        <View style={[styles.infoCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
-          <View style={styles.cardHeaderSection}>
-            <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
-              <Ionicons name="calendar" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
+        {/* Booking Summary Card */}
+        <View style={[styles.bookingSummaryCard, { backgroundColor: '#F0F7FF', marginTop: 12 }]}>
+          <View style={styles.bookingSummaryHeader}>
+            <View style={[styles.bookingSummaryIconContainer, { backgroundColor: BLUE_COLOR + '20' }]}>
+              <Ionicons name="calendar-outline" size={20} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Booking Details</Text>
+            <Text style={[styles.bookingSummaryTitle, { color: colors.text }]}>Booking Summary</Text>
           </View>
 
-          <View style={[styles.infoRow, { marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
-            <View style={[styles.infoIconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
-              <Ionicons name="time" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Service Date & Time</Text>
-              {bookingData?.date && bookingData?.time ? (
-                <View style={styles.timeEditContainer}>
-                  <Text style={[styles.infoValue, { color: colors.text, flex: 1 }]}>
-                    {new Date(bookingData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} at{' '}
-                  </Text>
-                  <View style={[styles.timeInputContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-                    <TextInput
-                      style={[styles.timeInput, { color: colors.text }]}
-                      value={editableBookingTime || bookingData.time}
-                      onChangeText={setEditableBookingTime}
-                      placeholder="Time"
-                      placeholderTextColor={colors.textSecondary}
-                    />
+          <View style={styles.bookingSummaryContent}>
+            {/* Service */}
+            {selectedService && (
+              <View style={styles.bookingSummaryItem}>
+                <View style={styles.bookingSummaryItemLeft}>
+                  <View style={[styles.bookingSummaryItemIcon, { backgroundColor: BLUE_COLOR + '20' }]}>
+                    <Ionicons name="water-outline" size={16} color={BLUE_COLOR} />
                   </View>
+                  <Text style={[styles.bookingSummaryItemLabel, { color: colors.textSecondary }]}>Service</Text>
                 </View>
-              ) : (
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  Service starts immediately
-                </Text>
-              )}
-            </View>
-          </View>
-
-          <View style={[styles.infoRow, { marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
-            <View style={[styles.infoIconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
-              <Ionicons name="location" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Service Center</Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
-                {selectedServiceCenter 
-                  ? selectedServiceCenter.name 
-                  : acceptedCenter?.name || 'Service Center'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Service Selection - Only show if center has services */}
-          {hasServices() && (
-            <TouchableOpacity
-              style={[
-                styles.serviceButton,
-                { 
-                  borderColor: selectedService ? BLUE_COLOR : colors.border, 
-                  backgroundColor: selectedService ? BLUE_COLOR + '08' : colors.surface,
-                  marginTop: Platform.select({ ios: 16, android: 10 })
-                }
-              ]}
-              onPress={() => setShowServiceDropdown(true)}
-            >
-              <View style={styles.serviceButtonContent}>
-                <Text style={[
-                  styles.serviceButtonText,
-                  { color: selectedService ? colors.text : colors.textSecondary }
-                ]}>
-                  {selectedService ? selectedService.name : 'Select Service'}
-                </Text>
-                {selectedService && (
-                  <Text style={[styles.serviceButtonPrice, { color: BLUE_COLOR }]}>
-                    ${selectedService.offer_price || selectedService.price}
-                  </Text>
-                )}
+                <Text style={[styles.bookingSummaryItemValue, { color: colors.text }]}>{selectedService.name}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} />
-            </TouchableOpacity>
-          )}
+            )}
+
+            {/* Divider */}
+            {selectedService && (bookingData?.date || bookingData?.time) && (
+              <View style={[styles.bookingSummaryDivider, { backgroundColor: colors.border }]} />
+            )}
+
+            {/* Price */}
+            {selectedService && (
+              <View style={styles.bookingSummaryItem}>
+                <View style={styles.bookingSummaryItemLeft}>
+                  <View style={[styles.bookingSummaryItemIcon, { backgroundColor: '#10B981' + '20' }]}>
+                    <Ionicons name="pricetag-outline" size={16} color="#10B981" />
+                  </View>
+                  <Text style={[styles.bookingSummaryItemLabel, { color: colors.textSecondary }]}>Price</Text>
+                </View>
+                <Text style={[styles.bookingSummaryItemValue, styles.bookingSummaryPrice, { color: '#10B981' }]}>
+                  £{selectedService.offer_price ? parseFloat(selectedService.offer_price).toFixed(2) : parseFloat(selectedService.price || '0').toFixed(2)}
+                </Text>
+              </View>
+            )}
+
+            {/* Divider */}
+            {bookingData?.date && bookingData?.time && (
+              <View style={[styles.bookingSummaryDivider, { backgroundColor: colors.border }]} />
+            )}
+
+            {/* Date */}
+            {bookingData?.date && (
+              <View style={styles.bookingSummaryItem}>
+                <View style={styles.bookingSummaryItemLeft}>
+                  <View style={[styles.bookingSummaryItemIcon, { backgroundColor: '#9333EA' + '20' }]}>
+                    <Ionicons name="calendar-outline" size={16} color="#9333EA" />
+                  </View>
+                  <Text style={[styles.bookingSummaryItemLabel, { color: colors.textSecondary }]}>Date</Text>
+                </View>
+                <Text style={[styles.bookingSummaryItemValue, { color: colors.text }]}>
+                  {new Date(bookingData.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </Text>
+              </View>
+            )}
+
+            {/* Divider */}
+            {bookingData?.date && bookingData?.time && (
+              <View style={[styles.bookingSummaryDivider, { backgroundColor: colors.border }]} />
+            )}
+
+            {/* Time */}
+            {bookingData?.time && (
+              <View style={styles.bookingSummaryItem}>
+                <View style={styles.bookingSummaryItemLeft}>
+                  <View style={[styles.bookingSummaryItemIcon, { backgroundColor: '#FF6B35' + '20' }]}>
+                    <Ionicons name="time-outline" size={16} color="#FF6B35" />
+                  </View>
+                  <Text style={[styles.bookingSummaryItemLabel, { color: colors.textSecondary }]}>Time</Text>
+                </View>
+                <Text style={[styles.bookingSummaryItemValue, { color: colors.text }]}>
+                  {editableBookingTime || bookingData.time}
+                </Text>
+              </View>
+            )}
+
+            {/* Service Selection Button - Only show if no service selected */}
+            {!selectedService && hasServices() && (
+              <TouchableOpacity
+                style={[
+                  styles.serviceButton,
+                  { 
+                    borderColor: colors.border, 
+                    backgroundColor: colors.surface,
+                    marginTop: Platform.select({ ios: 16, android: 10 })
+                  }
+                ]}
+                onPress={() => {
+                  setShowServiceDropdown(true);
+                }}
+              >
+                <View style={styles.serviceButtonContent}>
+                  <Ionicons name="water" size={Platform.select({ ios: 20, android: 18 })} color={colors.textSecondary} style={styles.serviceButtonIcon} />
+                  <Text style={[
+                    styles.serviceButtonText,
+                    { color: colors.textSecondary }
+                  ]}>
+                    Select Service
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={Platform.select({ ios: 18, android: 16 })} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Vehicle Details Card */}
@@ -778,7 +1091,7 @@ const PaymentScreen: React.FC<Props> = ({
                 backgroundColor: colors.surface,
               }
             ]}>
-              <Ionicons name="car-sport" size={Platform.select({ ios: 18, android: 16 })} color={colors.textSecondary} style={styles.inputIcon} />
+              <Ionicons name="car" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} style={styles.inputIcon} />
               <TextInput
                 style={[
                   styles.modernInput, 
@@ -813,7 +1126,7 @@ const PaymentScreen: React.FC<Props> = ({
                 backgroundColor: colors.surface,
               }
             ]}>
-              <Ionicons name="construct" size={Platform.select({ ios: 18, android: 16 })} color={colors.textSecondary} style={styles.inputIcon} />
+              <Ionicons name="car-sport" size={Platform.select({ ios: 18, android: 16 })} color={BLUE_COLOR} style={styles.inputIcon} />
               <TextInput
                 style={[
                   styles.modernInput, 
@@ -843,7 +1156,7 @@ const PaymentScreen: React.FC<Props> = ({
                 paddingTop: Platform.select({ ios: 14, android: 12 }),
               }
             ]}>
-              <Ionicons name="document-text" size={Platform.select({ ios: 18, android: 16 })} color={colors.textSecondary} style={[styles.inputIcon, { marginTop: 2 }]} />
+              <Ionicons name="document-text" size={Platform.select({ ios: 18, android: 16 })} color="#FF6B35" style={[styles.inputIcon, { marginTop: 2 }]} />
               <TextInput
                 style={[
                   styles.modernInput, 
@@ -889,7 +1202,7 @@ const PaymentScreen: React.FC<Props> = ({
                 activeOpacity={0.8}
               >
               <View style={styles.paymentCardLeft}>
-                <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.2)' : BLUE_COLOR + '12' }]}>
+                <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'stripe' ? '#FFFFFF' + '30' : BLUE_COLOR + '12' }]}>
                   <Ionicons 
                     name="card" 
                     size={Platform.select({ ios: 20, android: 18 })} 
@@ -904,21 +1217,21 @@ const PaymentScreen: React.FC<Props> = ({
                     Card Payment
                   </Text>
                   <View style={styles.paymentMethodBadges}>
-                    <View style={[styles.methodBadge, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.25)' : colors.background, borderColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.35)' : colors.border }]}>
+                    <View style={[styles.methodBadge, { backgroundColor: selectedPaymentMethod === 'stripe' ? '#FFFFFF' + '20' : colors.background, borderColor: selectedPaymentMethod === 'stripe' ? '#FFFFFF' + '40' : colors.border }]}>
                       <Ionicons 
                         name="card-outline" 
-                        size={11} 
+                        size={12} 
                         color={selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.textSecondary} 
-                        style={{ marginRight: 3 }}
+                        style={{ marginRight: 4 }}
                       />
                       <Text style={[styles.methodBadgeText, { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.textSecondary }]}>
                         Card
                       </Text>
                     </View>
                     {Platform.OS === 'ios' && (
-                      <View style={[styles.methodBadge, styles.applePayBadgeMain, { backgroundColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.25)' : BLUE_COLOR + '12', borderColor: selectedPaymentMethod === 'stripe' ? 'rgba(255,255,255,0.35)' : BLUE_COLOR + '25' }]}>
-                        <Ionicons name="logo-apple" size={12} color={selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR} />
-                        <Text style={[styles.methodBadgeText, styles.applePayBadgeText, { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : BLUE_COLOR }]}>
+                      <View style={[styles.methodBadge, styles.applePayBadgeMain, { backgroundColor: selectedPaymentMethod === 'stripe' ? '#000000' + '40' : '#000000', borderColor: 'transparent' }]}>
+                        <Ionicons name="logo-apple" size={13} color="#FFFFFF" />
+                        <Text style={[styles.methodBadgeText, styles.applePayBadgeText, { color: '#FFFFFF' }]}>
                           Apple Pay
                         </Text>
                       </View>
@@ -928,12 +1241,59 @@ const PaymentScreen: React.FC<Props> = ({
               </View>
               {selectedPaymentMethod === 'stripe' && (
                 <View style={styles.checkIcon}>
-                  <View style={styles.checkIconBackground}>
-                    <Ionicons name="checkmark" size={Platform.select({ ios: 14, android: 12 })} color="#FFFFFF" />
+                  <View style={[styles.checkIconBackground, { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' }]}>
+                    <Ionicons name="checkmark" size={Platform.select({ ios: 16, android: 14 })} color={BLUE_COLOR} />
                   </View>
                 </View>
               )}
             </TouchableOpacity>
+            )}
+
+            {/* PayPal Payment Method - Only show if center has services */}
+            {hasServices() && (
+              <TouchableOpacity
+                style={[
+                  styles.paymentCard,
+                  { 
+                    backgroundColor: selectedPaymentMethod === 'paypal' ? BLUE_COLOR : colors.surface,
+                    borderColor: selectedPaymentMethod === 'paypal' ? BLUE_COLOR : colors.border,
+                    borderWidth: selectedPaymentMethod === 'paypal' ? 2 : 1.5,
+                  }
+                ]}
+                onPress={() => setSelectedPaymentMethod('paypal')}
+                activeOpacity={0.8}
+              >
+                <View style={styles.paymentCardLeft}>
+                  <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'paypal' ? '#FFFFFF' + '30' : BLUE_COLOR + '12' }]}>
+                    <Ionicons 
+                      name="wallet" 
+                      size={Platform.select({ ios: 20, android: 18 })} 
+                      color={selectedPaymentMethod === 'paypal' ? '#FFFFFF' : BLUE_COLOR} 
+                    />
+                  </View>
+                  <View style={styles.paymentCardContent}>
+                    <Text style={[
+                      styles.paymentCardText, 
+                      { color: selectedPaymentMethod === 'paypal' ? '#FFFFFF' : colors.text }
+                    ]}>
+                      PayPal
+                    </Text>
+                    <Text style={[
+                      styles.paymentCardSubtext, 
+                      { color: selectedPaymentMethod === 'paypal' ? '#FFFFFF' + 'CC' : colors.textSecondary }
+                    ]}>
+                      Pay with PayPal account
+                    </Text>
+                  </View>
+                </View>
+                {selectedPaymentMethod === 'paypal' && (
+                  <View style={styles.checkIcon}>
+                    <View style={[styles.checkIconBackground, { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' }]}>
+                      <Ionicons name="checkmark" size={Platform.select({ ios: 16, android: 14 })} color={BLUE_COLOR} />
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
             )}
 
             {/* Cash Payment Method */}
@@ -950,7 +1310,7 @@ const PaymentScreen: React.FC<Props> = ({
               activeOpacity={0.8}
             >
               <View style={styles.paymentCardLeft}>
-                <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'cash' ? 'rgba(255,255,255,0.2)' : BLUE_COLOR + '12' }]}>
+                <View style={[styles.paymentIconWrapper, { backgroundColor: selectedPaymentMethod === 'cash' ? '#FFFFFF' + '30' : BLUE_COLOR + '12' }]}>
                   <Ionicons 
                     name="cash" 
                     size={Platform.select({ ios: 20, android: 18 })} 
@@ -966,7 +1326,7 @@ const PaymentScreen: React.FC<Props> = ({
                   </Text>
                   <Text style={[
                     styles.paymentCardSubtext, 
-                    { color: selectedPaymentMethod === 'cash' ? 'rgba(255,255,255,0.85)' : colors.textSecondary }
+                    { color: selectedPaymentMethod === 'cash' ? '#FFFFFF' + 'CC' : colors.textSecondary }
                   ]}>
                     Cash on delivery
                   </Text>
@@ -974,8 +1334,8 @@ const PaymentScreen: React.FC<Props> = ({
               </View>
               {selectedPaymentMethod === 'cash' && (
                 <View style={styles.checkIcon}>
-                  <View style={styles.checkIconBackground}>
-                    <Ionicons name="checkmark" size={Platform.select({ ios: 14, android: 12 })} color="#FFFFFF" />
+                  <View style={[styles.checkIconBackground, { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' }]}>
+                    <Ionicons name="checkmark" size={Platform.select({ ios: 16, android: 14 })} color={BLUE_COLOR} />
                   </View>
                 </View>
               )}
@@ -985,10 +1345,10 @@ const PaymentScreen: React.FC<Props> = ({
 
         {/* Payment Summary - Only show if service is selected */}
         {selectedService && hasServices() && (
-          <View style={[styles.summaryCard, { backgroundColor: colors.card, marginTop: Platform.select({ ios: 16, android: 12 }) }]}>
+          <View style={[styles.summaryCard, { backgroundColor: '#F0F7FF', marginTop: 12 }]}>
             <View style={styles.cardHeaderSection}>
-              <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
-                <Ionicons name="receipt" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
+              <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '20' }]}>
+                <Ionicons name="receipt" size={20} color={BLUE_COLOR} />
               </View>
               <Text style={[styles.cardTitle, { color: colors.text }]}>Payment Summary</Text>
             </View>
@@ -996,33 +1356,24 @@ const PaymentScreen: React.FC<Props> = ({
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{selectedService.name}</Text>
               <Text style={[styles.summaryValue, { color: colors.text }]}>
-                ${selectedService.offer_price || selectedService.price}
+                £{selectedService.offer_price ? parseFloat(selectedService.offer_price).toFixed(2) : parseFloat(selectedService.price || '0').toFixed(2)}
               </Text>
             </View>
             
             {selectedService.offer_price && (
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Original Price</Text>
+                <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Service Fee</Text>
                 <Text style={[styles.summaryDiscount, { color: colors.textSecondary }]}>
-                  ${selectedService.price}
+                  £0.00
                 </Text>
               </View>
             )}
             
-            {selectedService.offer_price && (
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: '#10B981' }]}>You Save</Text>
-                <Text style={[styles.summaryValue, { color: '#10B981', fontWeight: '600' }]}>
-                  ${(selectedService.price - selectedService.offer_price).toFixed(2)}
-                </Text>
-              </View>
-            )}
-            
-            <View style={[styles.summaryDivider, { backgroundColor: colors.border, marginVertical: Platform.select({ ios: 12, android: 10 }) }]} />
-            <View style={[styles.summaryRow, { marginTop: Platform.select({ ios: 4, android: 2 }) }]}>
+            <View style={[styles.summaryDivider, { backgroundColor: colors.border, marginVertical: 12 }]} />
+            <View style={[styles.summaryRow, { marginTop: 4 }]}>
               <Text style={[styles.summaryTotalLabel, { color: colors.text }]}>Total Amount</Text>
-              <Text style={[styles.summaryTotalValue, { color: BLUE_COLOR }]}>
-                ${selectedService.offer_price || selectedService.price}
+              <Text style={[styles.summaryTotalValue, { color: '#10B981' }]}>
+                £{selectedService.offer_price ? parseFloat(selectedService.offer_price).toFixed(2) : parseFloat(selectedService.price || '0').toFixed(2)}
               </Text>
             </View>
           </View>
@@ -1098,6 +1449,175 @@ const PaymentScreen: React.FC<Props> = ({
         </TouchableOpacity>
       </Modal>
 
+      {/* PayPal WebView Modal */}
+      <Modal
+        visible={showPayPalWebView}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowPayPalWebView(false);
+          setPayPalOrderId(null);
+          setPayPalApprovalUrl(null);
+        }}
+      >
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={[styles.paypalHeader, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity 
+              onPress={() => {
+                setShowPayPalWebView(false);
+                setPayPalOrderId(null);
+                setPayPalApprovalUrl(null);
+              }} 
+              style={styles.paypalBackButton} 
+              activeOpacity={0.7}
+            >
+              <Ionicons name="arrow-back" size={Platform.select({ ios: 18, android: 16 })} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.paypalTitle, { color: colors.text }]}>PayPal Checkout</Text>
+            <View style={{ width: 28 }} />
+          </View>
+          {payPalApprovalUrl ? (
+            <WebView
+              source={{ uri: payPalApprovalUrl }}
+              style={{ flex: 1 }}
+              onNavigationStateChange={handlePayPalWebViewNavigation}
+              onShouldStartLoadWithRequest={(request) => {
+                const { url } = request;
+                console.log('🔍 WebView shouldStartLoadWithRequest:', url);
+                
+                // Always allow PayPal domains - user needs to complete approval there
+                if (url.includes('paypal.com') || url.includes('paypal-sandbox.com')) {
+                  console.log('✅ Allowing PayPal domain navigation');
+                  return true;
+                }
+                
+                // For non-PayPal URLs, check if it's our return URL (after approval)
+                // This means user completed approval and PayPal redirected
+                const hasToken = url.includes('token=');
+                const hasPayerID = url.includes('PayerID=');
+                const isReturnUrl = url.includes('/paypal/success') || url.includes('paypal-success');
+                const isCancelUrl = url.includes('/paypal/cancel') || url.includes('paypal-cancel');
+                
+                if (isReturnUrl || isCancelUrl || (hasToken && hasPayerID)) {
+                  // This is PayPal's redirect after approval/cancel
+                  console.log('🔄 PayPal redirect detected, will handle in onNavigationStateChange');
+                  // Allow the navigation, we'll handle it in onNavigationStateChange
+                  return true;
+                }
+                
+                // Allow other navigations
+                return true;
+              }}
+              injectedJavaScript={`
+                (function() {
+                  function injectStyles() {
+                    const existingStyle = document.getElementById('paypal-custom-styles');
+                    if (existingStyle) {
+                      existingStyle.remove();
+                    }
+                    
+                    const style = document.createElement('style');
+                    style.id = 'paypal-custom-styles';
+                    style.textContent = \`
+                      /* Reduce all font sizes in PayPal content */
+                      * {
+                        font-size: calc(1em * 0.85) !important;
+                      }
+                      body { 
+                        font-size: 13px !important; 
+                      }
+                      h1, h2, h3, h4, h5, h6 { 
+                        font-size: 16px !important; 
+                        font-weight: 600 !important;
+                        line-height: 1.3 !important;
+                      }
+                      .header, header, [class*="header"], [id*="header"], nav {
+                        font-size: 14px !important;
+                      }
+                      .title, [class*="title"], [id*="title"], [class*="heading"] {
+                        font-size: 16px !important;
+                      }
+                      .amount, [class*="amount"], [id*="amount"], [class*="price"], [class*="total"] {
+                        font-size: 18px !important;
+                      }
+                      .button, button, [class*="button"], [id*="button"], [role="button"] {
+                        font-size: 13px !important;
+                        padding: 10px 16px !important;
+                      }
+                      input, textarea, select {
+                        font-size: 13px !important;
+                        padding: 10px !important;
+                      }
+                      label, .label, [class*="label"] {
+                        font-size: 12px !important;
+                      }
+                      p, span, div, li {
+                        font-size: 13px !important;
+                        line-height: 1.4 !important;
+                      }
+                      /* Reduce back button and icons */
+                      svg, [class*="icon"], [class*="arrow"], [class*="back"], [class*="chevron"], 
+                      button svg, a svg, [role="button"] svg {
+                        width: 18px !important;
+                        height: 18px !important;
+                        max-width: 18px !important;
+                        max-height: 18px !important;
+                      }
+                      /* Reduce logo size */
+                      [class*="logo"], [id*="logo"], img[alt*="PayPal"], img[src*="logo"], 
+                      [class*="brand"], [id*="brand"] {
+                        max-width: 100px !important;
+                        max-height: 35px !important;
+                        width: auto !important;
+                        height: auto !important;
+                      }
+                      /* Reduce spacing */
+                      .container, [class*="container"], [class*="wrapper"] {
+                        padding: 12px !important;
+                      }
+                    \`;
+                    document.head.appendChild(style);
+                  }
+                  
+                  // Inject immediately
+                  injectStyles();
+                  
+                  // Re-inject after DOM is ready
+                  if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', injectStyles);
+                  } else {
+                    injectStyles();
+                  }
+                  
+                  // Re-inject after a short delay to catch dynamically loaded content
+                  setTimeout(injectStyles, 500);
+                  setTimeout(injectStyles, 1000);
+                })();
+                true;
+              `}
+              onLoadEnd={() => {
+                // Re-inject styles after page loads
+                setTimeout(() => {
+                  // Styles will be re-injected via injectedJavaScript
+                }, 100);
+              }}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={styles.webViewLoading}>
+                  <ActivityIndicator size="large" color={BLUE_COLOR} />
+                  <Text style={[styles.webViewLoadingText, { color: colors.text }]}>Loading PayPal...</Text>
+                </View>
+              )}
+            />
+          ) : (
+            <View style={styles.webViewLoading}>
+              <ActivityIndicator size="large" color={BLUE_COLOR} />
+              <Text style={[styles.webViewLoadingText, { color: colors.text }]}>Preparing PayPal checkout...</Text>
+            </View>
+          )}
+        </SafeAreaView>
+      </Modal>
+
       {/* Pay Button */}
       <View style={[styles.bottomContainer, { paddingBottom: bottomPadding, backgroundColor: colors.background, borderTopColor: colors.border }]}>
         <TouchableOpacity 
@@ -1113,17 +1633,7 @@ const PaymentScreen: React.FC<Props> = ({
             <Text style={[styles.payButtonText, { color: '#FFFFFF' }]}>Processing...</Text>
           ) : (
             <Text style={[styles.payButtonText, { color: '#FFFFFF' }]}>
-              {hasServices() && !selectedService 
-                ? 'Select Service'
-                : !selectedPaymentMethod
-                ? 'Select Payment Method'
-                : selectedPaymentMethod === 'cash'
-                ? (hasServices() && selectedService 
-                    ? `Pay $${selectedService.offer_price || selectedService.price} at Centre`
-                    : 'Pay at Centre')
-                : Platform.OS === 'ios'
-                ? `Pay $${selectedService?.offer_price || selectedService?.price || 0} - Card or Apple Pay`
-                : `Pay $${selectedService?.offer_price || selectedService?.price || 0} with Card`}
+              Confirm & Book →
             </Text>
           )}
         </TouchableOpacity>
@@ -1153,10 +1663,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Header title
+    fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.2,
+    flex: 1,
+    textAlign: 'center',
+  },
+  paypalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Platform.select({ ios: 14, android: 10 }),
+    paddingTop: Platform.select({ ios: 6, android: 4 }),
+    paddingBottom: Platform.select({ ios: 6, android: 4 }),
+    borderBottomWidth: 1,
+    minHeight: Platform.select({ ios: 44, android: 40 }),
+  },
+  paypalBackButton: {
+    width: Platform.select({ ios: 28, android: 24 }),
+    height: Platform.select({ ios: 28, android: 24 }),
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  paypalTitle: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+    letterSpacing: -0.1,
     flex: 1,
     textAlign: 'center',
   },
@@ -1240,13 +1775,17 @@ const styles = StyleSheet.create({
   },
   serviceButtonContent: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     marginRight: 8,
+  },
+  serviceButtonIcon: {
+    marginRight: Platform.select({ ios: 10, android: 8 }),
   },
   serviceButtonText: {
     fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    marginBottom: 2,
   },
   serviceButtonPrice: {
     fontSize: FONT_SIZES.BODY_SMALL,
@@ -1254,43 +1793,43 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   formCard: {
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
-    padding: Platform.select({ ios: 22, android: 18 }),
+    borderRadius: 14,
+    padding: 14, // Reduced padding
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(3, 88, 168, 0.08)',
+    borderColor: '#E5E7EB',
   },
   cardHeaderSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Platform.select({ ios: 14, android: 12 }),
+    marginBottom: 12, // Reduced spacing
   },
   cardHeaderIcon: {
-    width: Platform.select({ ios: 40, android: 36 }),
-    height: Platform.select({ ios: 40, android: 36 }),
-    borderRadius: Platform.select({ ios: 10, android: 8 }),
+    width: 36, // Reduced size
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: Platform.select({ ios: 12, android: 10 }),
+    marginRight: 10,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Card title
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    fontWeight: '500',
+    fontWeight: '600',
     flex: 1,
   },
   inputWrapper: {
     marginBottom: Platform.select({ ios: 20, android: 16 }),
   },
   inputLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_MEDIUM,
-    fontWeight: '500',
-    marginBottom: Platform.select({ ios: 10, android: 8 }),
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Input label
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    marginBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -1304,10 +1843,10 @@ const styles = StyleSheet.create({
     marginRight: Platform.select({ ios: 10, android: 8 }),
   },
   modernInput: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Input text
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    paddingVertical: 12,
   },
   paymentMethodsContainer: {
     marginTop: Platform.select({ ios: 12, android: 10 }),
@@ -1318,16 +1857,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: Platform.select({ ios: 12, android: 10 }),
-    padding: Platform.select({ ios: 14, android: 12 }),
-    paddingVertical: Platform.select({ ios: 16, android: 14 }),
-    minHeight: Platform.select({ ios: 72, android: 68 }),
+    borderRadius: 12,
+    padding: 14, // Reduced padding
+    minHeight: 70, // Reduced height
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 1,
   },
   paymentCardLeft: {
     flexDirection: 'row',
@@ -1336,10 +1874,10 @@ const styles = StyleSheet.create({
     marginRight: Platform.select({ ios: 8, android: 6 }),
   },
   paymentIconWrapper: {
-    width: Platform.select({ ios: 44, android: 40 }),
-    height: Platform.select({ ios: 44, android: 40 }),
-    borderRadius: Platform.select({ ios: 10, android: 8 }),
-    marginRight: Platform.select({ ios: 12, android: 10 }),
+    width: 44, // Reduced size
+    height: 44,
+    borderRadius: 12,
+    marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1353,10 +1891,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   paymentCardText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: FONT_SIZES.BODY_LARGE,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     fontWeight: '600',
-    marginBottom: Platform.select({ ios: 4, android: 3 }),
+    marginBottom: Platform.select({ ios: 6, android: 5 }),
     letterSpacing: -0.2,
   },
   paymentMethodBadges: {
@@ -1368,13 +1906,13 @@ const styles = StyleSheet.create({
   methodBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Platform.select({ ios: 8, android: 7 }),
-    paddingVertical: Platform.select({ ios: 4, android: 3 }),
-    borderRadius: Platform.select({ ios: 6, android: 5 }),
-    borderWidth: 1,
+    paddingHorizontal: Platform.select({ ios: 10, android: 9 }),
+    paddingVertical: Platform.select({ ios: 5, android: 4 }),
+    borderRadius: Platform.select({ ios: 8, android: 7 }),
+    borderWidth: 1.5,
   },
   methodBadgeText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     fontFamily: FONTS.INTER_MEDIUM,
     fontWeight: '500',
     letterSpacing: 0.1,
@@ -1400,38 +1938,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   paymentCardSubtext: {
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Subtext
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    marginTop: Platform.select({ ios: 2, android: 1 }),
+    marginTop: 2,
     letterSpacing: 0.1,
   },
   checkIcon: {
     position: 'absolute',
-    top: Platform.select({ ios: 12, android: 10 }),
-    right: Platform.select({ ios: 12, android: 10 }),
+    top: Platform.select({ ios: 14, android: 12 }),
+    right: Platform.select({ ios: 14, android: 12 }),
   },
   checkIconBackground: {
-    width: Platform.select({ ios: 22, android: 20 }),
-    height: Platform.select({ ios: 22, android: 20 }),
-    borderRadius: Platform.select({ ios: 11, android: 10 }),
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: Platform.select({ ios: 24, android: 22 }),
+    height: Platform.select({ ios: 24, android: 22 }),
+    borderRadius: Platform.select({ ios: 12, android: 11 }),
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.6)',
   },
   summaryCard: {
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
-    padding: Platform.select({ ios: 22, android: 18 }),
+    borderRadius: 14,
+    padding: 14, // Reduced padding
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 1.5,
-    borderColor: BLUE_COLOR + '20',
-    backgroundColor: BLUE_COLOR + '08',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   errorText: {
     color: '#EF4444',
@@ -1447,31 +1984,108 @@ const styles = StyleSheet.create({
     marginBottom: Platform.select({ ios: 10, android: 8 }),
   },
   summaryLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Label
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
   },
   summaryValue: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Value
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   summaryDiscount: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Discount (strikethrough)
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
     textDecorationLine: 'line-through',
   },
   summaryDivider: {
     height: 1,
     marginVertical: Platform.select({ ios: 12, android: 10 }),
   },
+  bookingSummaryCard: {
+    borderRadius: 14,
+    padding: 14, // Reduced padding
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  bookingSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  bookingSummaryIconContainer: {
+    width: 36, // Reduced size
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  bookingSummaryTitle: {
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Card title
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  bookingSummaryContent: {
+    marginTop: 0,
+  },
+  bookingSummaryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8, // Reduced padding
+    minHeight: 40, // Reduced height
+  },
+  bookingSummaryItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  bookingSummaryItemIcon: {
+    width: 28, // Reduced size
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  bookingSummaryItemLabel: {
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Label
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    flex: 1,
+  },
+  bookingSummaryItemValue: {
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Value
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textAlign: 'right',
+    flexShrink: 0,
+    marginLeft: 8,
+  },
+  bookingSummaryPrice: {
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Price (green)
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
+  },
+  bookingSummaryDivider: {
+    height: 1,
+    marginVertical: Platform.select({ ios: 2, android: 1 }),
+  },
   summaryTotalLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Total label
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
   },
   summaryTotalValue: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Total amount (green)
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
   },
@@ -1481,8 +2095,8 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.select({ ios: 24, android: 20 }),
   },
   payButton: {
-    borderRadius: Platform.select({ ios: 12, android: 10 }),
-    paddingVertical: Platform.select({ ios: 14, android: 12 }),
+    borderRadius: Platform.select({ ios: 14, android: 12 }),
+    paddingVertical: Platform.select({ ios: 16, android: 14 }),
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1494,7 +2108,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   payButtonText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Button text
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.3,
@@ -1566,6 +2180,17 @@ const styles = StyleSheet.create({
   originalPrice: {
     fontSize: FONT_SIZES.BODY_SMALL,
     textDecorationLine: 'line-through',
+    fontFamily: FONTS.INTER_REGULAR,
+  },
+  webViewLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  webViewLoadingText: {
+    marginTop: 12,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontFamily: FONTS.INTER_REGULAR,
   },
 });

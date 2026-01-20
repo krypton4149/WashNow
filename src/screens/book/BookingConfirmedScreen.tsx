@@ -74,8 +74,8 @@ const BookingConfirmedScreen: React.FC<Props> = ({
           <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={[styles.title, { color: colors.text }]}>Finding your car wash</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Broadcasting to all nearby centers</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Booking Confirmed</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Ready to proceed to payment</Text>
         </View>
         <View style={{ width: 32 }} />
       </View>
@@ -91,9 +91,9 @@ const BookingConfirmedScreen: React.FC<Props> = ({
           <View style={[styles.confirmationIcon, { backgroundColor: BLUE_COLOR }]}>
             <Ionicons name="checkmark" size={Platform.select({ ios: 52, android: 48 })} color="#FFFFFF" />
           </View>
-          <Text style={[styles.confirmationTitle, { color: '#000000' }]}>Booking Confirmed!</Text>
+          <Text style={[styles.confirmationTitle, { color: '#000000' }]}>Center Selected!</Text>
           <Text style={[styles.confirmationSubtitle, { color: '#666666' }]}>
-            {acceptedCenter.name} accepted your request
+            {acceptedCenter.name || acceptedCenter.service_center_name || 'Service Center'} is ready for your booking
           </Text>
         </View>
 
@@ -103,16 +103,20 @@ const BookingConfirmedScreen: React.FC<Props> = ({
           <View style={[styles.detailsCard, { backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', borderWidth: 1 }]}>
             <View style={[styles.detailRow, styles.detailRowWithBorder]}>
               <Text style={[styles.detailLabel, { color: '#666666' }]}>Center:</Text>
-              <Text style={[styles.detailValue, { color: '#000000' }]}>{acceptedCenter.name}</Text>
+              <Text style={[styles.detailValue, { color: '#000000' }]}>
+                {acceptedCenter.name || acceptedCenter.service_center_name || 'Service Center'}
+              </Text>
             </View>
             <View style={[styles.detailRow, styles.detailRowWithBorder]}>
               <Text style={[styles.detailLabel, { color: '#666666' }]}>Date:</Text>
               <Text style={[styles.detailValue, { color: '#000000' }]}>{dateString}</Text>
             </View>
-            <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, { color: '#666666' }]}>Distance:</Text>
-              <Text style={[styles.detailValue, { color: '#000000' }]}>{acceptedCenter.distance}</Text>
-            </View>
+            {acceptedCenter.distance && (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, { color: '#666666' }]}>Distance:</Text>
+                <Text style={[styles.detailValue, { color: '#000000' }]}>{acceptedCenter.distance}</Text>
+              </View>
+            )}
           </View>
         </View>
 

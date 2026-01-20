@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -66,68 +66,86 @@ const ProfileScreen: React.FC<Props> = ({
   const insets = useSafeAreaInsets();
   const [userData, setUserData] = useState<UserData | null>(propUserData || null);
   const [isLoading, setIsLoading] = useState(!propUserData);
+  const hasMountedRef = useRef(false);
 
   // Refresh function to reload user data
-  const refreshUserData = async () => {
+  const refreshUserData = useCallback(async () => {
     try {
       const refreshedUser = await authService.getUser();
       if (refreshedUser) {
-        console.log('Refreshing profile data:', refreshedUser);
-        setUserData(refreshedUser);
+        // Only update if data actually changed to prevent flicker
+        setUserData(prevData => {
+          if (JSON.stringify(prevData) === JSON.stringify(refreshedUser)) {
+            return prevData;
+          }
+          return refreshedUser;
+        });
       }
     } catch (error) {
       console.error('Error refreshing user data:', error);
     }
-  };
-
-  // Load user data from storage on mount
-  useEffect(() => {
-    loadUserData();
   }, []);
 
-  // Update userData when prop changes
+  // Consolidated effect to load and update user data
   useEffect(() => {
-    if (propUserData) {
-      setUserData(propUserData);
-    } else {
-      refreshUserData();
-    }
-  }, [propUserData]);
+    let isMounted = true;
 
-  // Refresh data when component mounts or becomes visible (when returning from edit screen)
-  useEffect(() => {
-    // Immediate refresh
-    refreshUserData();
-    onRefresh?.();
-    
-    // Also refresh after a short delay to ensure AsyncStorage is fully updated
-    const refreshTimer = setTimeout(() => {
-      refreshUserData();
-      onRefresh?.();
-    }, 500);
-    
-    return () => clearTimeout(refreshTimer);
-  }, []); // Run on mount
+    const loadData = async () => {
+      // If propUserData is provided, use it directly
+      if (propUserData) {
+        if (isMounted) {
+          // Only update if data actually changed
+          setUserData(prevData => {
+            if (JSON.stringify(prevData) === JSON.stringify(propUserData)) {
+              return prevData;
+            }
+            return propUserData;
+          });
+          setIsLoading(false);
+        }
+        return;
+      }
 
-  // Load user data from AsyncStorage if not provided via props
-  const loadUserData = async () => {
-    try {
-      if (!propUserData) {
+      // Otherwise, load from storage
+      try {
         const storedUser = await authService.getUser();
-        if (storedUser) {
-          setUserData(storedUser);
+        if (isMounted && storedUser) {
+          // Only update if data actually changed
+          setUserData(prevData => {
+            if (JSON.stringify(prevData) === JSON.stringify(storedUser)) {
+              return prevData;
+            }
+            return storedUser;
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
         }
       }
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    } finally {
-      setIsLoading(false);
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [propUserData]);
+
+  // Only refresh on mount if not already loaded
+  useEffect(() => {
+    if (!hasMountedRef.current && !isLoading && userData) {
+      hasMountedRef.current = true;
+      // Silent refresh in background without causing flicker
+      refreshUserData();
     }
-  };
+  }, [isLoading, userData, refreshUserData]);
 
 
   // Helper function to get first letter of first name and last name
-  const getInitials = (name: string) => {
+  const getInitials = useCallback((name: string) => {
     const words = name.trim().split(' ').filter(word => word.length > 0);
     if (words.length === 0) return 'U';
     if (words.length === 1) return words[0].charAt(0).toUpperCase();
@@ -136,13 +154,13 @@ const ProfileScreen: React.FC<Props> = ({
     const firstName = words[0].charAt(0).toUpperCase();
     const lastName = words[words.length - 1].charAt(0).toUpperCase();
     return firstName + lastName;
-  };
+  }, []);
 
-  // Display values from userData (from login API)
-  const displayName = userData?.fullName || userData?.name || 'User';
-  const displayEmail = userData?.email || '';
-  const displayPhone = userData?.phoneNumber || userData?.phone || '';
-  const initials = getInitials(displayName);
+  // Memoize display values to prevent unnecessary recalculations
+  const displayName = useMemo(() => userData?.fullName || userData?.name || 'User', [userData?.fullName, userData?.name]);
+  const displayEmail = useMemo(() => userData?.email || '', [userData?.email]);
+  const displayPhone = useMemo(() => userData?.phoneNumber || userData?.phone || '', [userData?.phoneNumber, userData?.phone]);
+  const initials = useMemo(() => getInitials(displayName), [displayName, getInitials]);
 
   // Show loading state if data is being fetched
   if (isLoading) {
@@ -153,12 +171,11 @@ const ProfileScreen: React.FC<Props> = ({
       >
         <View style={[styles.header, { backgroundColor: colors.background }]}>
           <View style={styles.headerTop}>
-            <TouchableOpacity onPress={onBack} style={styles.headerButtonWhite} activeOpacity={0.7}>
-              <Ionicons name="arrow-back" size={24} color={colors.text} />
-            </TouchableOpacity>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity style={styles.headerButtonBlack} onPress={onEditProfile} activeOpacity={0.7}>
-              <Ionicons name="create-outline" size={24} color={colors.text} />
+            <TouchableOpacity style={styles.headerButtonEdit} onPress={onEditProfile} activeOpacity={0.8}>
+              <View style={[styles.editIconContainer, { backgroundColor: colors.background }]}>
+                <Ionicons name="create-outline" size={20} color={BLUE_COLOR} />
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -209,6 +226,7 @@ const ProfileScreen: React.FC<Props> = ({
           style={StyleSheet.absoluteFillObject}
           resizeMode="cover"
           blurRadius={20}
+          imageStyle={{ opacity: 0.8 }}
         >
           {/* Semi-transparent overlay for better readability and blur effect */}
           <View style={styles.overlay} />
@@ -217,12 +235,11 @@ const ProfileScreen: React.FC<Props> = ({
         {/* Header */}
         <View style={[styles.header, { backgroundColor: 'transparent' }]}>
           <View style={styles.headerTop}>
-            <TouchableOpacity onPress={onBack} style={styles.headerButtonWhite} activeOpacity={0.7}>
-              <Ionicons name="arrow-back" size={24} color="#000000" />
-            </TouchableOpacity>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity style={styles.headerButtonBlack} onPress={onEditProfile} activeOpacity={0.7}>
-              <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+            <TouchableOpacity style={styles.headerButtonEdit} onPress={onEditProfile} activeOpacity={0.8}>
+              <View style={styles.editIconContainer}>
+                <Ionicons name="create-outline" size={20} color={BLUE_COLOR} />
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -240,7 +257,7 @@ const ProfileScreen: React.FC<Props> = ({
             <View style={styles.nameRow}>
               <Text style={styles.userNameWhite}>{displayName}</Text>
               <View style={styles.verifiedBadgeBlue}>
-                <Ionicons name="shield-outline" size={14} color="#FFFFFF" />
+                <Ionicons name="shield-checkmark" size={12} color="#FFFFFF" />
               </View>
             </View>
             <Text style={styles.userEmailLight}>{displayEmail || 'No email provided'}</Text>
@@ -411,26 +428,26 @@ const styles = StyleSheet.create({
   },
   topBackgroundSection: {
     width: '100%',
-    minHeight: 220,
+    minHeight: 160,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
-    paddingBottom: 20,
+    paddingBottom: 12,
     position: 'relative',
     overflow: 'hidden',
     marginTop: 0,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(3, 88, 168, 0.15)',
   },
   header: {
     paddingTop: 0,
-    paddingBottom: 16,
+    paddingBottom: 8,
     paddingHorizontal: 20,
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     minHeight: 44,
   },
   headerButtonWhite: {
@@ -441,13 +458,24 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: '#FFFFFF',
   },
-  headerButtonBlack: {
-    width: 44,
-    height: 44,
+  headerButtonEdit: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 22,
-    backgroundColor: '#000000',
+  },
+  editIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   content: {
     flex: 1,
@@ -457,24 +485,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 24,
+    paddingHorizontal: 16, // Reduced from 20
+    paddingTop: 20, // Reduced from 24
+    paddingBottom: 20, // Reduced from 24
   },
   contentContainerWithTabBar: {
     paddingBottom: 120,
   },
   profileSummary: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    paddingTop: 8,
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingTop: 2,
     paddingHorizontal: 20,
     position: 'relative',
     zIndex: 1,
   },
   profileImageTouchable: {
-    marginRight: 16,
+    marginBottom: 10,
   },
   profileImageWrapper: {
     width: 90,
@@ -484,9 +512,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   profileInitials: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     letterSpacing: 1,
     color: '#FFFFFF',
@@ -504,38 +537,47 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   profileInfo: {
-    flex: 1,
-    paddingTop: 4,
+    alignItems: 'center',
+    paddingTop: 0,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    justifyContent: 'center',
   },
   userNameWhite: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontSize: 22, // font-size: 22px, font-weight: 700 (Bold) - User name
     fontWeight: '700',
     marginRight: 8,
     letterSpacing: 0.3,
     color: '#FFFFFF',
     fontFamily: FONTS.MONTserrat_BOLD,
+    textAlign: 'center',
   },
   verifiedBadgeBlue: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: BLUE_COLOR,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   userEmailLight: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Email
     letterSpacing: 0.2,
     color: '#E5E7EB',
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textAlign: 'center',
   },
   section: {
-    marginBottom: 28,
+    marginBottom: 20, // Reduced from 28
   },
   sectionTitle: {
     fontSize: FONT_SIZES.HEADING_SMALL,
@@ -549,14 +591,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14, // Increased for modern look
+    padding: 12, // Reduced from 16
     marginBottom: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 1,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -589,9 +631,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   contactIconCalendar: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 40, // Slightly increased for better visual
+    height: 40,
+    borderRadius: 10, // Increased for modern look
     backgroundColor: YELLOW_COLOR,
     justifyContent: 'center',
     alignItems: 'center',
@@ -617,9 +659,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   contactIconCar: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 40, // Slightly increased for better visual
+    height: 40,
+    borderRadius: 10, // Increased for modern look
     backgroundColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
@@ -645,9 +687,9 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   contactIconCarMake: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 40, // Slightly increased for better visual
+    height: 40,
+    borderRadius: 10, // Increased for modern look
     backgroundColor: '#8B5CF6',
     justifyContent: 'center',
     alignItems: 'center',
@@ -708,15 +750,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactLabel: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Contact label
     fontWeight: '400',
     color: '#6B7280',
     marginBottom: 2,
     letterSpacing: 0.2,
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
   },
   contactValue: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Contact value
     fontWeight: '400',
     color: '#000000',
     letterSpacing: 0.2,
@@ -730,22 +772,22 @@ const styles = StyleSheet.create({
   quickActionCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 14, // Reduced from 16
+    padding: 12, // Reduced from 16
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   quickActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 40, // Reduced from 44
+    height: 40,
+    borderRadius: 10, // Reduced from 12
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
@@ -766,7 +808,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   quickActionText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Quick action text
     fontWeight: '400',
     textAlign: 'center',
     lineHeight: 16,
@@ -801,9 +843,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
   },
 });
 

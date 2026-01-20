@@ -233,8 +233,11 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
 
     // Pass booking data to parent component for payment screen
     const bookingInfo = {
-      center: selectedCenter,
-      service: 'Car Wash',
+      center: {
+        ...selectedCenter,
+        selectedService: selectedCenter?.selectedService, // Preserve selected service
+      },
+      service: selectedCenter?.selectedService?.name || 'Car Wash',
       date: new Date(currentYear, currentMonth, parseInt(selectedDate)).toISOString(),
       time: formattedTime,
     };
@@ -343,7 +346,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Schedule Booking</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Book an Appointment</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -412,7 +415,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
             <View style={[styles.iconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
               <Ionicons name="time-outline" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Select Time</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Select Time Slot</Text>
           </View>
           <View style={styles.timeSlotsContainer}>
             <View style={styles.timeSlotsGrid}>
@@ -448,17 +451,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Header title
+    fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
     letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',
   },
   scrollContent: {
-    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingTop: Platform.select({ ios: 16, android: 12 }),
-    paddingBottom: Platform.select({ ios: 24, android: 20 }),
+    paddingHorizontal: 16, // Reduced padding
+    paddingTop: 12, // Reduced padding
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -470,65 +473,72 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   infoCard: {
-    borderRadius: Platform.select({ ios: 16, android: 14 }),
-    padding: Platform.select({ ios: 16, android: 14 }),
-    marginBottom: Platform.select({ ios: 16, android: 12 }),
+    borderRadius: 14,
+    padding: 12, // Reduced from 16
+    marginBottom: 12, // Reduced from 16
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   calendarCard: {
-    borderRadius: Platform.select({ ios: 16, android: 14 }),
-    padding: Platform.select({ ios: 16, android: 14 }),
-    marginBottom: Platform.select({ ios: 16, android: 12 }),
+    borderRadius: 14,
+    padding: 12, // Reduced from 16
+    marginBottom: 12, // Reduced from 16
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   timeCard: {
-    borderRadius: Platform.select({ ios: 16, android: 14 }),
-    padding: Platform.select({ ios: 16, android: 14 }),
-    marginBottom: Platform.select({ ios: 16, android: 12 }),
+    borderRadius: 14,
+    padding: 12, // Reduced from 16
+    marginBottom: 12, // Reduced from 16
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Platform.select({ ios: 10, android: 8 }),
-    marginBottom: Platform.select({ ios: 16, android: 14 }),
+    gap: 12, // Increased gap
+    marginBottom: 18, // Increased spacing
   },
   iconContainer: {
-    width: Platform.select({ ios: 36, android: 32 }),
-    height: Platform.select({ ios: 36, android: 32 }),
-    borderRadius: Platform.select({ ios: 10, android: 8 }),
+    width: 40, // Increased size
+    height: 40,
+    borderRadius: 12, // Increased for modern look
     justifyContent: 'center',
     alignItems: 'center',
   },
   cardTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Card title
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   serviceCenterRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   serviceIconWrapper: {
-    width: Platform.select({ ios: 56, android: 50 }),
-    height: Platform.select({ ios: 56, android: 50 }),
-    borderRadius: Platform.select({ ios: 12, android: 10 }),
-    marginRight: Platform.select({ ios: 12, android: 10 }),
+    width: 56, // Reduced from 64
+    height: 56,
+    borderRadius: 12,
+    marginRight: 12,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5F5F5',
   },
   serviceIconImage: {
     width: '100%',
@@ -539,10 +549,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   serviceCenterName: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    marginBottom: Platform.select({ ios: 6, android: 4 }),
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Center name
+    fontWeight: '600',
+    marginBottom: Platform.select({ ios: 8, android: 6 }),
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   addressRow: {
     flexDirection: 'row',
@@ -614,24 +624,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Platform.select({ ios: 16, android: 14 }),
+    marginBottom: 12, // Reduced from 16
   },
   calendarNavButton: {
-    width: Platform.select({ ios: 32, android: 28 }),
-    height: Platform.select({ ios: 32, android: 28 }),
-    borderRadius: Platform.select({ ios: 8, android: 6 }),
+    width: 36, // Increased for better touch target
+    height: 36,
+    borderRadius: 10, // Increased for modern look
     justifyContent: 'center',
     alignItems: 'center',
   },
   calendarMonth: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Month name
+    fontWeight: '600',
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   calendarDaysHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: Platform.select({ ios: 10, android: 8 }),
+    marginBottom: 8, // Reduced spacing
     width: '100%',
   },
   calendarDayHeaderText: {
@@ -649,11 +659,11 @@ const styles = StyleSheet.create({
   calendarDay: {
     width: '14.28%',
     aspectRatio: 1,
-    minHeight: Platform.select({ ios: 36, android: 32 }),
-    maxHeight: Platform.select({ ios: 44, android: 38 }),
+    minHeight: 36, // Reduced from 40
+    maxHeight: 40, // Reduced from 48
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 2,
+    padding: 2, // Reduced padding
   },
   calendarDaySelected: {
     borderRadius: Platform.select({ ios: 22, android: 18 }),
@@ -662,13 +672,13 @@ const styles = StyleSheet.create({
     opacity: 0.2,
   },
   calendarDayText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Calendar day
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
   },
   calendarDayTextSelected: {
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    fontWeight: '600', // Changed to semibold for consistency
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   calendarDayPast: {
     opacity: 0.25,
@@ -688,23 +698,23 @@ const styles = StyleSheet.create({
   timeSlotsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Platform.select({ ios: 10, android: 8 }),
+    gap: 8, // Reduced gap
     justifyContent: 'space-between',
   },
   timeSlotButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Platform.select({ ios: 12, android: 10 }),
-    paddingVertical: Platform.select({ ios: 8, android: 7 }),
-    borderRadius: Platform.select({ ios: 12, android: 10 }),
-    width: Platform.select({ ios: '31%', android: '31%' }),
-    minHeight: Platform.select({ ios: 40, android: 38 }),
-    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 12, // Increased for better touch target
+    borderRadius: 12,
+    width: '31%',
+    minHeight: 44, // Increased for better touch target
+    borderWidth: 1.5, // Slightly reduced
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
     elevation: 1,
   },
   timeSlotButtonSelected: {
@@ -728,20 +738,20 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.INTER_BOLD,
   },
   continueButton: {
-    marginHorizontal: Platform.select({ ios: 16, android: 14 }),
-    marginTop: Platform.select({ ios: 24, android: 20 }),
-    marginBottom: Platform.select({ ios: 24, android: 16 }),
-    paddingVertical: Platform.select({ ios: 16, android: 14 }),
-    borderRadius: Platform.select({ ios: 30, android: 28 }),
+    marginHorizontal: 0,
+    marginTop: 16, // Reduced from 24
+    marginBottom: 20, // Reduced from 24
+    paddingVertical: 14, // Reduced from 16
+    borderRadius: 14,
     alignItems: 'center',
     shadowColor: BLUE_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
   },
   continueButtonText: {
-    fontSize: Platform.select({ ios: FONT_SIZES.BUTTON_MEDIUM, android: FONT_SIZES.BUTTON_SMALL }),
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Button text
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.5,

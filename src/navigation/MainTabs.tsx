@@ -116,7 +116,7 @@ const MainTabs: React.FC<MainTabsProps> = ({
   const TabButton = ({ keyId, icon, label }: { keyId: TabKey; icon: string; label: string }) => {
     const isActive = activeTab === keyId;
     const iconName = isActive ? (icon.replace('-outline', '') as any) : (icon as any);
-    const color = isActive ? colors.text : colors.textSecondary;
+    const color = isActive ? '#0358a8' : colors.textSecondary;
     return (
       <TouchableOpacity style={styles.tab} onPress={() => setActiveTab(keyId)}>
         <Ionicons name={iconName} size={24} color={color} />

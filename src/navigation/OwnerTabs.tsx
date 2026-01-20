@@ -99,7 +99,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
   const TabButton = ({ keyId, icon, label }: { keyId: TabKey; icon: string; label: string }) => {
     const isActive = activeTab === keyId;
     const iconName = isActive ? (icon.replace('-outline', '') as any) : (icon as any);
-    const activeColor = colors.button;
+    const activeColor = '#0358a8';
     const inactiveColor = colors.textSecondary;
     const color = isActive ? activeColor : inactiveColor;
     return (

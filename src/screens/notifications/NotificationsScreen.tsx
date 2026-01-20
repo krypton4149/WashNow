@@ -275,11 +275,7 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
           paddingTop: insets.top + Platform.select({ ios: 2, android: 2 }),
         }
       ]}>
-        {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerLeftPlaceholder} />
         <View style={styles.headerCenter}>
           <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
           <Text style={[styles.unreadCount, { color: colors.textSecondary }]}>
@@ -360,9 +356,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerLeftPlaceholder: {
+    width: Platform.select({ ios: 90, android: 80 }),
+    padding: 4,
+  },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: FONT_SIZES.BODY_LARGE,
@@ -394,11 +395,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    padding: 16,
+    padding: 12, // Reduced from 16
     backgroundColor: 'transparent',
   },
   notificationsList: {
-    gap: 12,
+    gap: 10, // Reduced from 12
   },
   loadingContainer: {
     flex: 1,
@@ -413,14 +414,15 @@ const styles = StyleSheet.create({
   },
   notificationItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14, // Increased for modern look
+    padding: 12, // Reduced from 16
     borderWidth: 1,
+    borderColor: '#E5E7EB', // Light gray border
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 1,
     position: 'relative',
   },
   notificationContent: {
@@ -445,21 +447,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notificationTitle: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Notification title
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     flex: 1,
     marginBottom: 4,
   },
   notificationDescription: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Description
     lineHeight: 20,
     marginBottom: 6,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   notificationTimestamp: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Timestamp
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   unreadDot: {
     width: 8,
@@ -480,17 +484,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Empty title
     fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   emptyDescription: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Empty description
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
     fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
 });
 
