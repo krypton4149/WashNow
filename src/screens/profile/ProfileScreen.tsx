@@ -220,15 +220,13 @@ const ProfileScreen: React.FC<Props> = ({
       {/* Blurred Background Section at Top */}
       <View style={styles.topBackgroundSection}>
         <ImageBackground
-          source={{
-            uri: 'https://images.unsplash.com/photo-1642520922834-2494eb4c1d73?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGdyYWRpZW50JTIwcGF0dGVybnxlbnwxfHx8fDE3NjI0MTAxMzN8MA&ixlib=rb-4.1.0&q=80&w=1080'
-          }}
+          source={require('../../assets/images/Profile.png')}
           style={StyleSheet.absoluteFillObject}
           resizeMode="cover"
-          blurRadius={20}
-          imageStyle={{ opacity: 0.8 }}
+          blurRadius={0}
+          imageStyle={{ opacity: 1.0 }}
         >
-          {/* Semi-transparent overlay for better readability and blur effect */}
+          {/* Light overlay for text readability */}
           <View style={styles.overlay} />
         </ImageBackground>
         
@@ -437,7 +435,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3, 88, 168, 0.15)',
+    backgroundColor: 'rgba(3, 88, 168, 0.1)', // Light overlay for text readability only
   },
   header: {
     paddingTop: 0,
@@ -495,11 +493,13 @@ const styles = StyleSheet.create({
   profileSummary: {
     flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
     paddingTop: 2,
     paddingHorizontal: 20,
     position: 'relative',
     zIndex: 1,
+    width: '100%', // Full width to ensure proper centering
   },
   profileImageTouchable: {
     marginBottom: 10,
@@ -538,20 +538,23 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingTop: 0,
+    width: '100%', // Full width to ensure proper centering
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center', // Center the name and badge
     marginBottom: 8,
-    justifyContent: 'center',
+    width: '100%', // Full width to ensure proper centering
   },
   userNameWhite: {
-    fontSize: 22, // font-size: 22px, font-weight: 700 (Bold) - User name
+    fontSize: 26, // Increased from 22px to 26px
     fontWeight: '700',
     marginRight: 8,
     letterSpacing: 0.3,
-    color: '#FFFFFF',
+    color: '#FFFFFF', // White color
     fontFamily: FONTS.MONTserrat_BOLD,
     textAlign: 'center',
   },
@@ -569,11 +572,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   userEmailLight: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Email
+    fontSize: 16, // Increased from 14px to 16px
     letterSpacing: 0.2,
-    color: '#E5E7EB',
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    color: '#FFFFFF', // White color
+    fontFamily: FONTS.INTER_MEDIUM, // Changed to MEDIUM for better visibility
+    fontWeight: '500', // Increased from 400 to 500
     textAlign: 'center',
   },
   section: {

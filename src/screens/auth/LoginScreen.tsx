@@ -91,11 +91,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <ImageBackground
+            <ImageBackground
             source={require('../../assets/images/Car.png')}
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
             blurRadius={0}
+            imageStyle={{ 
+              resizeMode: 'cover',
+              opacity: 1.0, // Ensure full opacity for better contrast
+            }}
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
@@ -258,7 +262,7 @@ const styles = StyleSheet.create({
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3, 88, 168, 0.2)',
+    backgroundColor: 'rgba(3, 88, 168, 0.35)', // Increased contrast from 0.2 to 0.35
   },
   backButton: {
     position: 'absolute',
@@ -321,19 +325,23 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '600',
+    fontWeight: '700', // Increased from 600 to 700 for sharper text
     color: '#1A1A1A',
     marginBottom: 8,
     textAlign: 'center',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.5,
+    fontFamily: FONTS.MONTserrat_BOLD, // Changed to BOLD for sharper appearance
+    letterSpacing: -0.3, // Reduced letter spacing for sharper look
+    includeFontPadding: false, // Remove extra padding for sharper text
+    textAlignVertical: 'center',
   },
   subtitle: {
     fontSize: FONT_SIZES.BODY_MEDIUM,
-    color: '#666666',
-    fontWeight: '400',
+    color: '#4B5563', // Darker color for better contrast
+    fontWeight: '500', // Increased from 400 to 500 for sharper text
     textAlign: 'center',
-    fontFamily: FONTS.INTER_REGULAR,
+    fontFamily: FONTS.INTER_MEDIUM, // Changed to MEDIUM for sharper appearance
+    includeFontPadding: false, // Remove extra padding for sharper text
+    textAlignVertical: 'center',
   },
   inputsContainer: {
     marginBottom: 20,
@@ -343,10 +351,12 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: '700', // Increased from 600 to 700 for sharper text
+    color: '#111827', // Darker for better contrast
     marginBottom: 8,
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontFamily: FONTS.INTER_SEMIBOLD, // Changed to SEMIBOLD for sharper appearance
+    includeFontPadding: false, // Remove extra padding for sharper text
+    textAlignVertical: 'center',
   },
   inputField: {
     flexDirection: 'row',
@@ -368,8 +378,10 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: FONT_SIZES.BODY_LARGE,
-    color: '#1A1A1A',
-    fontFamily: FONTS.INTER_REGULAR,
+    color: '#111827', // Darker for better contrast
+    fontFamily: FONTS.INTER_MEDIUM, // Changed to MEDIUM for sharper appearance
+    includeFontPadding: false, // Remove extra padding for sharper text
+    textAlignVertical: 'center',
   },
   errorText: {
     fontSize: FONT_SIZES.CAPTION_MEDIUM,
@@ -413,8 +425,10 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: '#FFFFFF',
     fontSize: FONT_SIZES.BUTTON_LARGE,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '700', // Increased from 600 to 700 for sharper text
+    fontFamily: FONTS.INTER_BOLD, // Changed to BOLD for sharper appearance
+    includeFontPadding: false, // Remove extra padding for sharper text
+    textAlignVertical: 'center',
   },
   otpLinkContainer: {
     alignItems: 'center',
@@ -459,8 +473,10 @@ const styles = StyleSheet.create({
   registerLink: {
     fontSize: FONT_SIZES.BUTTON_SMALL,
     color: BLUE_COLOR,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '700', // Increased from 600 to 700 for sharper text
+    fontFamily: FONTS.INTER_BOLD, // Changed to BOLD for sharper appearance
+    includeFontPadding: false, // Remove extra padding for sharper text
+    textAlignVertical: 'center',
   },
   termsContainer: {
     paddingHorizontal: 20,

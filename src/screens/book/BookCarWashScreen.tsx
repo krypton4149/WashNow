@@ -7,6 +7,7 @@ import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { STORAGE_BASE_URL } from '../../config/env';
 
 const BLUE_COLOR = '#0358a8';
 
@@ -29,6 +30,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   const [selectedCenterForSheet, setSelectedCenterForSheet] = useState<any>(null);
   const [centerServices, setCenterServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const textInputRef = useRef<TextInput>(null);
   const { isDarkMode, colors } = useTheme();
   
@@ -80,10 +82,18 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   ];
 
   useEffect(() => {
-    // Get location in background but don't display it
+    // Get location and fetch service centers
     getCurrentLocation();
-    fetchServiceCenters();
   }, []);
+
+  // Refetch when service tab changes
+  useEffect(() => {
+    if (currentLocation) {
+      fetchServiceCenters(currentLocation.lat, currentLocation.lng);
+    } else {
+      fetchServiceCenters();
+    }
+  }, [selectedServiceTab]);
 
   // Filter service centers based on search text
   // Helper function to calculate minimum price from services_offered
@@ -177,10 +187,61 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     return result;
   }, [serviceCenters, searchText, selectedServiceTab]);
 
-  const fetchServiceCenters = async () => {
+  const fetchServiceCenters = async (lat?: number, lng?: number) => {
     try {
+      // Use provided lat/lng or current location
+      const useLat = lat !== undefined ? lat : currentLocation?.lat;
+      const useLng = lng !== undefined ? lng : currentLocation?.lng;
+      
+      // Map service tab to activeService parameter
+      const activeService = selectedServiceTab !== 'all' ? selectedServiceTab : undefined;
+      
+      // First, try to get cached data immediately (stale-while-revalidate pattern)
+      const cachedResult = await authService.getServiceCenters(false, useLat, useLng, activeService);
+      if (cachedResult.success && cachedResult.serviceCenters && cachedResult.serviceCenters.length > 0) {
+        // Show cached data immediately
+        const centersWithServices = cachedResult.serviceCenters.filter((center: any) => {
+          const hasServices = center.services_offered && 
+                             Array.isArray(center.services_offered) && 
+                             center.services_offered.length > 0;
+          return hasServices;
+        });
+        setServiceCenters(centersWithServices);
+        setCentersError(null);
+        setLoadingCenters(false);
+        
+        // Then fetch fresh data in background
+        fetchFreshServiceCenters(useLat, useLng, activeService);
+        return;
+      }
+      
+      // If no cache, show loading and fetch fresh data
       setLoadingCenters(true);
-      const result = await authService.getServiceCenters();
+      await fetchFreshServiceCenters(useLat, useLng, activeService);
+    } catch (error) {
+      console.error('Error fetching service centers:', error);
+      setLoadingCenters(false);
+      // Try to use cached data on error
+      const cachedResult = await authService.getServiceCenters(false);
+      if (cachedResult.success && cachedResult.serviceCenters) {
+        const centersWithServices = cachedResult.serviceCenters.filter((center: any) => {
+          const hasServices = center.services_offered && 
+                             Array.isArray(center.services_offered) && 
+                             center.services_offered.length > 0;
+          return hasServices;
+        });
+        setServiceCenters(centersWithServices);
+        setCentersError(null);
+      } else {
+        setServiceCenters(mockServiceCenters);
+        setCentersError('Failed to load service centers');
+      }
+    }
+  };
+
+  const fetchFreshServiceCenters = async (lat?: number, lng?: number, activeService?: string) => {
+    try {
+      const result = await authService.getServiceCenters(true, lat, lng, activeService);
       
       if (result.success && result.serviceCenters) {
         // Filter out centers with empty services_offered array
@@ -192,36 +253,41 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
           return hasServices;
         });
         
-        console.log(`Filtered ${result.serviceCenters.length} centers to ${centersWithServices.length} centers with services`);
         setServiceCenters(centersWithServices);
         setCentersError(null);
       } else {
-        // Fallback to mock data if API fails
-        console.log('API failed, using mock data:', result.error);
-        setServiceCenters(mockServiceCenters);
-        setCentersError(result.error || 'Failed to load service centers');
+        // Don't override with mock data if we already have cached data showing
+        if (serviceCenters.length === 0) {
+          setServiceCenters(mockServiceCenters);
+          setCentersError(result.error || 'Failed to load service centers');
+        }
       }
     } catch (error) {
-      console.error('Error fetching service centers:', error);
-      // Fallback to mock data on error
-      setServiceCenters(mockServiceCenters);
-      setCentersError('Failed to load service centers');
+      console.error('Error fetching fresh service centers:', error);
+      // Don't override if we already have data showing
+      if (serviceCenters.length === 0) {
+        setServiceCenters(mockServiceCenters);
+        setCentersError('Failed to load service centers');
+      }
     } finally {
       setLoadingCenters(false);
     }
   };
 
-  // Get location in background for backend but don't display it
+  // Get location and store it for API use
   const getCurrentLocation = () => {
     Geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        // Store location in background for API use, but don't display it
+        // Store location for API use
+        setCurrentLocation({ lat: latitude, lng: longitude });
+        // Fetch service centers with location
+        fetchServiceCenters(latitude, longitude);
         reverseGeocode(latitude, longitude);
       },
       (error) => {
-        console.log('Location error:', error);
-        // Location not available, continue without it
+        // Location not available, fetch without location
+        fetchServiceCenters();
       },
       {
         enableHighAccuracy: true,
@@ -238,16 +304,19 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
       );
       const data = await response.json();
       // Location data available for backend use but not displayed in UI
-      console.log('Location fetched:', data);
     } catch (error) {
-      console.log('Reverse geocoding error:', error);
       // Continue without location
     }
   };
 
   const handleSearch = () => {
-    // Search button now just filters - no redirect
-    // Filtering happens automatically via filteredCenters useMemo
+    // Refetch service centers with current location when search is triggered
+    if (currentLocation) {
+      fetchServiceCenters(currentLocation.lat, currentLocation.lng);
+    } else {
+      fetchServiceCenters();
+    }
+    
     // Reset service tab to 'all' after search
     setSelectedServiceTab('all');
     
@@ -308,9 +377,16 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         return imagePath;
       }
       
-      const baseUrl = 'https://carwashapp.shoppypie.in';
-      const imageUrl = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-      return `${baseUrl}${imageUrl}`;
+      // Remove leading slash if present
+      let cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+      
+      // API returns paths like "service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
+      // Server serves images from: "https://carwashapp.shoppypie.in/public/storage/service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
+      const imageUrl = `${STORAGE_BASE_URL}/${cleanPath}`;
+      
+      // Log for debugging
+      
+      return imageUrl;
     }
     
     // Use different placeholder images for services vs centers
@@ -473,17 +549,25 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
             </View>
           ) : (
             filteredCenters.map((center, index) => {
-              const minPriceValue = getMinPrice(center);
-              const imageUrl = getImageUrl(center.image || center.service_center_image, center.id || center.service_centre_id, index);
-              const distance = center.distance || center.distance_km || center.distanceKm || 'N/A';
-              const distanceDisplay = typeof distance === 'number' 
-                ? `${distance.toFixed(1)} miles` 
-                : (distance.toString().includes('mi') || distance.toString().includes('mile') 
-                    ? distance.toString() 
-                    : `${distance} miles`);
+              // Use starting_price from API if available, otherwise calculate from services
+              const priceValue = center.starting_price 
+                ? center.starting_price.toString() 
+                : getMinPrice(center);
               
-              // Calculate next availability (mock for now - would need API data)
-              const nextAvailability = '20 Mint'; // This should come from API
+              // Use image from API response - prioritize center image
+              const centerImagePath = center.image || null;
+              const imageUrl = getImageUrl(centerImagePath, center.id || center.service_centre_id, index);
+              
+              // Use distance_miles from API response
+              const distanceMiles = center.distance_miles;
+              const distanceDisplay = distanceMiles !== undefined && distanceMiles !== null
+                ? `${parseFloat(distanceMiles.toString()).toFixed(2)} miles`
+                : (center.distance_km !== undefined && center.distance_km !== null
+                    ? `${(parseFloat(center.distance_km.toString()) * 0.621371).toFixed(2)} miles`
+                    : 'N/A miles');
+              
+              // Use availability_text from API response
+              const nextAvailability = center.availability_text || 'N/A';
               
               return (
                 <TouchableOpacity 
@@ -493,11 +577,17 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                   activeOpacity={0.7}
                 >
                   {/* Center Image */}
-                  <Image
-                    source={{ uri: imageUrl }}
-                    style={styles.centerImage}
-                    resizeMode="cover"
-                  />
+                  <View style={styles.centerImageContainer}>
+                    <Image
+                      source={{ uri: imageUrl }}
+                      style={styles.centerImage}
+                      resizeMode="cover"
+                      onError={(error) => {
+                      }}
+                      onLoad={() => {
+                      }}
+                    />
+                  </View>
                   
                   <View style={styles.centerCardBody}>
                     {/* Center Name - Bolder and Blue */}
@@ -515,14 +605,14 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                       {/* First Row: Starting Price and Distance */}
                       <View style={styles.centerCardDetailRow}>
                         {/* Starting Price */}
-                        {minPriceValue && (
+                        {priceValue && (
                           <View style={styles.centerCardDetailItem}>
                             <View style={styles.centerCardIconContainer}>
                               <Ionicons name="pricetag" size={14} color={BLUE_COLOR} />
                             </View>
-                            <Text style={[styles.centerCardDetailLabel, { color: '#666666' }]}>Starting from</Text>
-                            <Text style={[styles.centerCardDetailText, { color: '#000000' }]}>
-                              ${minPriceValue}
+                            <Text style={[styles.centerCardDetailLabel, { color: '#666666' }]}>from:</Text>
+                            <Text style={[styles.centerCardDetailText, styles.centerCardPriceText, { color: '#000000' }]}>
+                              £{parseFloat(priceValue).toFixed(2)}
                             </Text>
                           </View>
                         )}
@@ -543,9 +633,9 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                       <View style={styles.centerCardDetailRow}>
                         <View style={styles.centerCardDetailItem}>
                           <View style={styles.centerCardIconContainer}>
-                            <Ionicons name="time" size={14} color={BLUE_COLOR} />
+                            <Ionicons name="time-outline" size={14} color={BLUE_COLOR} />
                           </View>
-                          <Text style={[styles.centerCardDetailLabel, { color: '#666666' }]}>Next Availability:</Text>
+                          <Text style={[styles.centerCardDetailLabel, { color: '#666666' }]}>Availability:</Text>
                           <Text style={[styles.centerCardDetailText, { color: '#000000' }]}>
                             {nextAvailability}
                           </Text>
@@ -627,11 +717,17 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                       onPress={() => handleServiceClick(service)}
                       activeOpacity={0.7}
                     >
-                      <Image
-                        source={{ uri: imageUrl }}
-                        style={styles.serviceModalImage}
-                        resizeMode="cover"
-                      />
+                      <View style={styles.serviceModalImageContainer}>
+                        <Image
+                          source={{ uri: imageUrl }}
+                          style={styles.serviceModalImage}
+                          resizeMode="contain"
+                          onError={(error) => {
+                          }}
+                          onLoad={() => {
+                          }}
+                        />
+                      </View>
                       <View style={styles.serviceModalInfo}>
                         <View style={styles.serviceModalHeader}>
                           <Text style={[styles.serviceModalName, { color: theme.textPrimary }]} numberOfLines={1}>
@@ -649,7 +745,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                               <Text style={[styles.serviceModalOriginalPrice, { color: theme.textSecondary }]}>
                                 £{priceInfo.original.toFixed(2)}
                               </Text>
-                              <Text style={[styles.serviceModalPrice, { color: '#10B981' }]}>
+                              <Text style={[styles.serviceModalPrice, { color: '#047857' }]}>
                                 £{priceInfo.discounted.toFixed(2)}
                               </Text>
                             </>
@@ -776,8 +872,8 @@ const styles = StyleSheet.create({
   },
   centerCard: {
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
     marginBottom: 12,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -789,13 +885,23 @@ const styles = StyleSheet.create({
   lastCenterCard: {
     marginBottom: 0,
   },
+  centerImageContainer: {
+    width: '100%',
+    height: 140, // Reduced from 180
+    backgroundColor: '#F5F5F5',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   centerImage: {
     width: '100%',
-    height: 140, // Increased further for stronger visual impact
+    height: '100%',
     backgroundColor: '#F5F5F5',
   },
   centerCardBody: {
-    padding: 10, // Reduced from 12 to make card more compact
+    padding: 12, // Slightly increased for better spacing
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   centerCardName: {
     fontSize: 18, // Slightly larger for better emphasis
@@ -809,11 +915,11 @@ const styles = StyleSheet.create({
     fontSize: 14, // font-size: 14px, font-weight: 400 (Regular)
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    marginBottom: 8, // Reduced from 10
+    marginBottom: 6, // Reduced from 8
     lineHeight: 18,
   },
   centerCardDetails: {
-    gap: 6, // Reduced from 8
+    gap: 5, // Reduced from 6
   },
   centerCardDetailRow: {
     flexDirection: 'row',
@@ -841,6 +947,16 @@ const styles = StyleSheet.create({
     fontSize: 13, // Slightly reduced for more compact layout
     fontFamily: FONTS.INTER_MEDIUM,
     fontWeight: '500',
+  },
+  centerCardPriceText: {
+    fontSize: 16, // Increased from 13
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '600', // Bolder
+  },
+  centerCardAvailabilityText: {
+    fontSize: 16, // Increased from 13
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '600', // Bolder
   },
   centerRow: {
     flexDirection: 'row',
@@ -1078,12 +1194,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  serviceModalImage: {
+  serviceModalImageContainer: {
     width: 80,
     height: 80,
     borderRadius: 12,
     marginRight: 12,
-    backgroundColor: '#F5F5F5', // Background color for placeholder
+    backgroundColor: '#F5F5F5',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  serviceModalImage: {
+    width: '100%',
+    height: '100%',
   },
   serviceModalInfo: {
     flex: 1,
@@ -1124,9 +1247,9 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   serviceModalPrice: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Price value
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 16, // Increased font size for offered price
+    fontWeight: '700', // Increased font weight (Bold)
+    fontFamily: FONTS.INTER_BOLD,
   },
   serviceModalDescription: {
     fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Description

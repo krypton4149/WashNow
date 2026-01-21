@@ -1519,86 +1519,179 @@ const PaymentScreen: React.FC<Props> = ({
                     const style = document.createElement('style');
                     style.id = 'paypal-custom-styles';
                     style.textContent = \`
+                      /* Hide PayPal's internal back button */
+                      button[aria-label*="Back"], 
+                      button[aria-label*="back"],
+                      a[aria-label*="Back"],
+                      a[aria-label*="back"],
+                      [class*="back"][class*="button"],
+                      [class*="back-button"],
+                      [id*="back-button"],
+                      [class*="backButton"],
+                      [id*="backButton"],
+                      button[class*="back"],
+                      a[class*="back"],
+                      nav button:first-child,
+                      header button:first-child,
+                      [role="navigation"] button:first-child,
+                      [class*="header"] button:first-child,
+                      [class*="nav"] button:first-child {
+                        display: none !important;
+                        visibility: hidden !important;
+                        opacity: 0 !important;
+                        width: 0 !important;
+                        height: 0 !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                      }
+                      
+                      /* Hide back arrow icons inside PayPal */
+                      svg[class*="back"],
+                      svg[class*="arrow-left"],
+                      [class*="back"] svg,
+                      [class*="arrow-left"] svg,
+                      button[class*="back"] svg,
+                      a[class*="back"] svg {
+                        display: none !important;
+                        visibility: hidden !important;
+                      }
+                      
                       /* Reduce all font sizes in PayPal content */
                       * {
-                        font-size: calc(1em * 0.85) !important;
+                        font-size: calc(1em * 0.75) !important;
                       }
                       body { 
-                        font-size: 13px !important; 
+                        font-size: 12px !important; 
                       }
                       h1, h2, h3, h4, h5, h6 { 
-                        font-size: 16px !important; 
+                        font-size: 14px !important; 
                         font-weight: 600 !important;
                         line-height: 1.3 !important;
                       }
                       .header, header, [class*="header"], [id*="header"], nav {
-                        font-size: 14px !important;
-                      }
-                      .title, [class*="title"], [id*="title"], [class*="heading"] {
-                        font-size: 16px !important;
-                      }
-                      .amount, [class*="amount"], [id*="amount"], [class*="price"], [class*="total"] {
-                        font-size: 18px !important;
-                      }
-                      .button, button, [class*="button"], [id*="button"], [role="button"] {
-                        font-size: 13px !important;
-                        padding: 10px 16px !important;
-                      }
-                      input, textarea, select {
-                        font-size: 13px !important;
-                        padding: 10px !important;
-                      }
-                      label, .label, [class*="label"] {
                         font-size: 12px !important;
                       }
+                      .title, [class*="title"], [id*="title"], [class*="heading"] {
+                        font-size: 14px !important;
+                      }
+                      .amount, [class*="amount"], [id*="amount"], [class*="price"], [class*="total"] {
+                        font-size: 16px !important;
+                      }
+                      .button, button, [class*="button"], [id*="button"], [role="button"] {
+                        font-size: 12px !important;
+                        padding: 8px 14px !important;
+                      }
+                      input, textarea, select {
+                        font-size: 12px !important;
+                        padding: 8px !important;
+                      }
+                      label, .label, [class*="label"] {
+                        font-size: 11px !important;
+                      }
                       p, span, div, li {
-                        font-size: 13px !important;
+                        font-size: 12px !important;
                         line-height: 1.4 !important;
                       }
                       /* Reduce back button and icons */
-                      svg, [class*="icon"], [class*="arrow"], [class*="back"], [class*="chevron"], 
+                      svg, [class*="icon"], [class*="arrow"], [class*="chevron"], 
                       button svg, a svg, [role="button"] svg {
-                        width: 18px !important;
-                        height: 18px !important;
-                        max-width: 18px !important;
-                        max-height: 18px !important;
+                        width: 16px !important;
+                        height: 16px !important;
+                        max-width: 16px !important;
+                        max-height: 16px !important;
                       }
                       /* Reduce logo size */
                       [class*="logo"], [id*="logo"], img[alt*="PayPal"], img[src*="logo"], 
                       [class*="brand"], [id*="brand"] {
-                        max-width: 100px !important;
-                        max-height: 35px !important;
+                        max-width: 90px !important;
+                        max-height: 30px !important;
                         width: auto !important;
                         height: auto !important;
                       }
                       /* Reduce spacing */
                       .container, [class*="container"], [class*="wrapper"] {
-                        padding: 12px !important;
+                        padding: 10px !important;
                       }
                     \`;
                     document.head.appendChild(style);
                   }
                   
+                  function hideBackButtons() {
+                    // Hide back buttons by various selectors
+                    const selectors = [
+                      'button[aria-label*="Back"]',
+                      'button[aria-label*="back"]',
+                      'a[aria-label*="Back"]',
+                      'a[aria-label*="back"]',
+                      '[class*="back"][class*="button"]',
+                      '[class*="back-button"]',
+                      '[id*="back-button"]',
+                      '[class*="backButton"]',
+                      '[id*="backButton"]',
+                      'button[class*="back"]',
+                      'a[class*="back"]',
+                      'nav button:first-child',
+                      'header button:first-child',
+                      '[role="navigation"] button:first-child',
+                      '[class*="header"] button:first-child',
+                      '[class*="nav"] button:first-child'
+                    ];
+                    
+                    selectors.forEach(selector => {
+                      try {
+                        const elements = document.querySelectorAll(selector);
+                        elements.forEach(el => {
+                          if (el && (el.textContent?.toLowerCase().includes('back') || 
+                              el.getAttribute('aria-label')?.toLowerCase().includes('back') ||
+                              el.className?.toLowerCase().includes('back'))) {
+                            el.style.display = 'none';
+                            el.style.visibility = 'hidden';
+                            el.style.opacity = '0';
+                            el.style.width = '0';
+                            el.style.height = '0';
+                            el.style.padding = '0';
+                            el.style.margin = '0';
+                          }
+                        });
+                      } catch(e) {}
+                    });
+                  }
+                  
                   // Inject immediately
                   injectStyles();
+                  hideBackButtons();
                   
                   // Re-inject after DOM is ready
                   if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', injectStyles);
+                    document.addEventListener('DOMContentLoaded', () => {
+                      injectStyles();
+                      hideBackButtons();
+                    });
                   } else {
                     injectStyles();
+                    hideBackButtons();
                   }
                   
                   // Re-inject after a short delay to catch dynamically loaded content
-                  setTimeout(injectStyles, 500);
-                  setTimeout(injectStyles, 1000);
+                  setTimeout(() => {
+                    injectStyles();
+                    hideBackButtons();
+                  }, 500);
+                  setTimeout(() => {
+                    injectStyles();
+                    hideBackButtons();
+                  }, 1000);
+                  setTimeout(() => {
+                    injectStyles();
+                    hideBackButtons();
+                  }, 2000);
                 })();
                 true;
               `}
               onLoadEnd={() => {
-                // Re-inject styles after page loads
+                // Re-inject styles and hide back buttons after page loads
                 setTimeout(() => {
-                  // Styles will be re-injected via injectedJavaScript
+                  // Styles and back button hiding will be re-injected via injectedJavaScript
                 }, 100);
               }}
               startInLoadingState={true}

@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import authService from '../../services/authService';
+import { STORAGE_BASE_URL } from '../../config/env';
 
 const BLUE_COLOR = '#0358a8';
 
@@ -31,9 +33,13 @@ interface Service {
 }
 
 interface TimeSlot {
-  id: string;
-  time: string;
-  isAvailable: boolean;
+  id: string | number;
+  name: string;
+  time?: string; // For backward compatibility
+  start_time?: string;
+  end_time?: string;
+  available?: number;
+  isAvailable?: boolean; // For backward compatibility
 }
 
 
@@ -46,8 +52,12 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   const [selectedService, setSelectedService] = useState<string>('car-wash');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
+  const [selectedTimeSlotId, setSelectedTimeSlotId] = useState<string | number | null>(null);
   const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [loadingTimeSlots, setLoadingTimeSlots] = useState<boolean>(false);
+  const [timeSlotsError, setTimeSlotsError] = useState<string | null>(null);
 
   // Helper function to get day name from date
   const getDayName = (date: Date): string => {
@@ -106,20 +116,145 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     },
   ];
 
-  const timeSlots: TimeSlot[] = [
-    { id: '08:00', time: '8:00 AM', isAvailable: true },
-    { id: '09:00', time: '9:00 AM', isAvailable: true },
-    { id: '10:00', time: '10:00 AM', isAvailable: true },
-    { id: '11:00', time: '11:00 AM', isAvailable: true },
-    { id: '12:00', time: '12:00 PM', isAvailable: true },
-    { id: '13:00', time: '1:00 PM', isAvailable: true },
-    { id: '14:00', time: '2:00 PM', isAvailable: true },
-    { id: '15:00', time: '3:00 PM', isAvailable: true },
-    { id: '16:00', time: '4:00 PM', isAvailable: true },
-    { id: '17:00', time: '5:00 PM', isAvailable: true },
-    { id: '18:00', time: '6:00 PM', isAvailable: true },
-    { id: '19:00', time: '7:00 PM', isAvailable: true },
-  ];
+  // Generate all time slots from 9 AM to 7 PM (30-minute intervals)
+  const generateAllTimeSlots = (): TimeSlot[] => {
+    const slots: TimeSlot[] = [];
+    let hour = 9; // Start at 9 AM
+    const endHour = 19; // End at 7 PM (19:00)
+    
+    while (hour < endHour) {
+      const minutes = [0, 30]; // 30-minute intervals
+      
+      for (const minute of minutes) {
+        const time24 = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+        const nextMinute = minute === 0 ? 30 : 0;
+        const nextHour = minute === 30 ? hour + 1 : hour;
+        const endTime24 = `${String(nextHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}:00`;
+        
+        // Format for display (12-hour format)
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+        const ampm = hour < 12 ? 'AM' : 'PM';
+        const displayMinute = minute === 0 ? '00' : '30';
+        const displayNextHour = nextHour === 0 ? 12 : nextHour > 12 ? nextHour - 12 : nextHour;
+        const nextAmpm = nextHour < 12 ? 'AM' : 'PM';
+        const nextDisplayMinute = nextMinute === 0 ? '00' : '30';
+        
+        const name = `${displayHour}:${displayMinute}${ampm}-${displayNextHour}:${nextDisplayMinute}${nextAmpm}`;
+        
+        slots.push({
+          id: time24,
+          name: name,
+          start_time: time24,
+          end_time: endTime24,
+          available: 0,
+          isAvailable: false,
+        });
+      }
+      
+      hour++;
+    }
+    
+    return slots;
+  };
+
+  // Fetch time slots when date is selected
+  const fetchTimeSlots = async (date: string) => {
+    if (!date || !selectedCenter?.id) {
+      setTimeSlots([]);
+      return;
+    }
+
+    try {
+      setLoadingTimeSlots(true);
+      setTimeSlotsError(null);
+      setSelectedTimeSlotId(null);
+      setSelectedTime('');
+
+      // Format date as YYYY-MM-DD
+      const dateObj = new Date(currentYear, currentMonth, parseInt(date));
+      const formattedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+
+      const centreId = selectedCenter.id || selectedCenter.service_centre_id;
+      const result = await authService.getTimeSlotsForCentre(centreId, formattedDate);
+
+      // Generate all time slots from 9 AM to 7 PM
+      const allSlots = generateAllTimeSlots();
+
+      if (result.success && result.timeSlots) {
+        // Create a map of available slots from API
+        const availableSlotsMap = new Map();
+        result.timeSlots.forEach((slot: any) => {
+          // Match by start_time
+          availableSlotsMap.set(slot.start_time, {
+            id: slot.id,
+            name: slot.name,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            available: slot.available,
+            isAvailable: (slot.available || 0) > 0,
+          });
+        });
+
+        // Update all slots with availability from API
+        const updatedSlots = allSlots.map((slot) => {
+          const apiSlot = availableSlotsMap.get(slot.start_time);
+          if (apiSlot) {
+            return {
+              ...slot,
+              id: apiSlot.id, // Use API ID for booking
+              name: apiSlot.name, // Use API name format
+              available: apiSlot.available,
+              isAvailable: apiSlot.isAvailable,
+            };
+          }
+          return slot; // Keep as unavailable if not in API response
+        });
+
+        setTimeSlots(updatedSlots);
+
+        // If there's a pre-selected time slot from API, select it
+        if (result.selectedTimeSlot) {
+          const preSelected = updatedSlots.find(slot => slot.id === result.selectedTimeSlot);
+          if (preSelected && preSelected.isAvailable) {
+            setSelectedTimeSlotId(preSelected.id);
+            setSelectedTime(preSelected.name);
+          }
+        }
+      } else {
+        // Even if API fails, show all slots as unavailable
+        setTimeSlots(allSlots);
+        // Show better error message
+        if (result.error && result.error.includes('timeout')) {
+          setTimeSlotsError('Connection timeout. Please check your internet and try again.');
+        } else {
+          setTimeSlotsError(result.error || 'No time slots available for this date');
+        }
+      }
+    } catch (error: any) {
+      // Show all slots as unavailable on error
+      const allSlots = generateAllTimeSlots();
+      setTimeSlots(allSlots);
+      // Show better error message based on error type
+      if (error.message && error.message.includes('timeout')) {
+        setTimeSlotsError('Connection timeout. Please check your internet and try again.');
+      } else if (error.message && error.message.includes('Network')) {
+        setTimeSlotsError('Network error. Please check your internet connection.');
+      } else {
+        setTimeSlotsError('Failed to load time slots. Please try again.');
+      }
+    } finally {
+      setLoadingTimeSlots(false);
+    }
+  };
+
+  // Fetch time slots when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      fetchTimeSlots(selectedDate);
+    } else {
+      setTimeSlots([]);
+    }
+  }, [selectedDate, currentMonth, currentYear]);
 
   const generateCalendarDays = () => {
     const days = [];
@@ -185,6 +320,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   const handleDateSelect = (day: string, isPast: boolean, isWeekoff: boolean) => {
     if (day && day !== '' && !isPast && !isWeekoff) {
       setSelectedDate(day);
+      // Time slots will be fetched automatically via useEffect
     } else if (isWeekoff) {
       Alert.alert(
         'Service Center Closed',
@@ -194,8 +330,17 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     }
   };
 
-  const handleTimeSelect = (timeId: string) => {
-    setSelectedTime(timeId);
+  const handleTimeSelect = (timeSlot: TimeSlot) => {
+    if (timeSlot.isAvailable && (timeSlot.available || 0) > 0) {
+      setSelectedTimeSlotId(timeSlot.id);
+      setSelectedTime(timeSlot.name);
+    } else {
+      Alert.alert(
+        'Slot Unavailable',
+        'This time slot is not available. Please select another time.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const validateBooking = () => {
@@ -215,11 +360,31 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       return false;
     }
     
-    if (!selectedTime) {
-      Alert.alert('Error', 'Please select a time');
+    if (!selectedTimeSlotId || !selectedTime) {
+      Alert.alert('Error', 'Please select a time slot');
       return false;
     }
     return true;
+  };
+
+  const getImageUrl = (imagePath: string | null | undefined): string => {
+    if (imagePath) {
+      // If image path is already a full URL, return it
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+      }
+      
+      // Remove leading slash if present
+      let cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+      
+      // API returns paths like "service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
+      // Server serves images from: "https://carwashapp.shoppypie.in/public/storage/service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
+      const imageUrl = `${STORAGE_BASE_URL}/${cleanPath}`;
+      return imageUrl;
+    }
+    
+    // Placeholder image for service centers
+    return 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400&h=300&fit=crop';
   };
 
   const handleBooking = () => {
@@ -227,9 +392,12 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       return;
     }
 
-    // Format time as HH:MM AM/PM
-    const selectedTimeSlot = timeSlots.find(slot => slot.id === selectedTime);
-    const formattedTime = selectedTimeSlot?.time || '';
+    // Get selected time slot details
+    const selectedTimeSlot = timeSlots.find(slot => slot.id === selectedTimeSlotId);
+    
+    // Format date as YYYY-MM-DD
+    const dateObj = new Date(currentYear, currentMonth, parseInt(selectedDate));
+    const formattedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 
     // Pass booking data to parent component for payment screen
     const bookingInfo = {
@@ -238,8 +406,12 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
         selectedService: selectedCenter?.selectedService, // Preserve selected service
       },
       service: selectedCenter?.selectedService?.name || 'Car Wash',
-      date: new Date(currentYear, currentMonth, parseInt(selectedDate)).toISOString(),
-      time: formattedTime,
+      date: dateObj.toISOString(),
+      formattedDate: formattedDate, // YYYY-MM-DD format for API
+      time: selectedTimeSlot?.name || selectedTime, // Use name from API (e.g., "06:30PM-07:00PM")
+      timeSlotId: selectedTimeSlotId,
+      start_time: selectedTimeSlot?.start_time,
+      end_time: selectedTimeSlot?.end_time,
     };
     
     onContinue(bookingInfo);
@@ -304,37 +476,88 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     );
   };
 
-  const renderTimeSlot = (timeSlot: TimeSlot) => (
-    <TouchableOpacity
-      key={timeSlot.id}
-      style={[
-        styles.timeSlotButton,
-        { 
-          backgroundColor: selectedTime === timeSlot.id ? BLUE_COLOR : colors.surface,
-          borderColor: selectedTime === timeSlot.id ? BLUE_COLOR : colors.border,
-        },
-        selectedTime === timeSlot.id && styles.timeSlotButtonSelected,
-      ]}
-      onPress={() => handleTimeSelect(timeSlot.id)}
-      disabled={!timeSlot.isAvailable}
-    >
-      {selectedTime === timeSlot.id && (
-        <Ionicons 
-          name="checkmark-circle" 
-          size={Platform.select({ ios: 18, android: 16 })} 
-          color="#FFFFFF" 
-          style={styles.checkIcon}
-        />
-      )}
-      <Text style={[
-        styles.timeSlotText,
-        { color: selectedTime === timeSlot.id ? '#FFFFFF' : colors.text },
-        selectedTime === timeSlot.id && styles.timeSlotTextSelected,
-      ]}>
-        {timeSlot.time}
-      </Text>
-    </TouchableOpacity>
-  );
+  // Format time for display on two lines
+  const formatTimeForDisplay = (timeString: string): { startTime: string; endTime: string } => {
+    if (!timeString) return { startTime: 'N/A', endTime: '' };
+    
+    // Handle format like "06:00PM-06:30PM" or "06:00PM-07:00PM"
+    if (timeString.includes('-')) {
+      const parts = timeString.split('-');
+      if (parts.length === 2) {
+        return {
+          startTime: parts[0] + '-',
+          endTime: parts[1],
+        };
+      }
+    }
+    
+    // If we have start_time and end_time, format them
+    // This is a fallback if name doesn't have the format we expect
+    return { startTime: timeString, endTime: '' };
+  };
+
+  // Pill-style time slot matching preview design
+  const renderTimeSlot = (timeSlot: TimeSlot, index: number) => {
+    const isSelected = selectedTimeSlotId === timeSlot.id;
+    const isAvailable = timeSlot.isAvailable && (timeSlot.available || 0) > 0;
+    const displayTime = timeSlot.name || timeSlot.time || 'N/A';
+    const { startTime, endTime } = formatTimeForDisplay(displayTime);
+
+    return (
+      <TouchableOpacity
+        key={`${timeSlot.id || timeSlot.start_time}-${index}`}
+        style={[
+          styles.timeSlotButton,
+          isSelected && isAvailable ? styles.timeSlotButtonSelectedAvailable : 
+          isAvailable ? styles.timeSlotButtonAvailable : 
+          styles.timeSlotButtonUnavailable,
+        ]}
+        onPress={() => handleTimeSelect(timeSlot)}
+        activeOpacity={0.8}
+        disabled={!isAvailable}
+      >
+        <View style={styles.timeSlotTextContainer}>
+          <Text
+            style={[
+              styles.timeSlotText,
+              isSelected && isAvailable ? styles.timeSlotTextSelectedAvailable :
+              isAvailable ? styles.timeSlotTextAvailable :
+              styles.timeSlotTextUnavailable,
+            ]}
+          >
+            {startTime}
+          </Text>
+          {endTime ? (
+            <Text
+              style={[
+                styles.timeSlotText,
+                isSelected && isAvailable ? styles.timeSlotTextSelectedAvailable :
+                isAvailable ? styles.timeSlotTextAvailable :
+                styles.timeSlotTextUnavailable,
+              ]}
+            >
+              {endTime}
+            </Text>
+          ) : null}
+        </View>
+        {isSelected && isAvailable && (
+          <View style={styles.timeSlotCheckmark}>
+            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+          </View>
+        )}
+        {isAvailable && !isSelected && (
+          <View style={styles.timeSlotRadio}>
+            <View style={styles.timeSlotRadioOuter} />
+          </View>
+        )}
+        {!isAvailable && (
+          <View style={styles.timeSlotX}>
+            <Ionicons name="close" size={12} color="#FFFFFF" />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
 
   const insets = useSafeAreaInsets();
@@ -352,7 +575,10 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
 
       <ScrollView 
         style={styles.scrollView} 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 100 + Math.max(insets.bottom || 0, 20) } // Add padding for fixed button
+        ]}
         showsVerticalScrollIndicator={false}
       >
 
@@ -360,7 +586,11 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
           <View style={styles.serviceCenterRow}>
             <View style={[styles.serviceIconWrapper, { backgroundColor: BLUE_COLOR + '10' }]}>
-              <Image source={{ uri: selectedCenter.image }} style={styles.serviceIconImage} />
+              <Image 
+                source={{ uri: getImageUrl(selectedCenter.image) }} 
+                style={styles.serviceIconImage}
+                resizeMode="cover"
+              />
             </View>
             <View style={styles.serviceCenterInfo}>
               <Text style={[styles.serviceCenterName, { color: colors.text }]}>{selectedCenter.name}</Text>
@@ -409,29 +639,102 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
           </View>
         </View>
 
-        {/* Time Slots Card - Redesigned */}
+        {/* Time Slots Card - Matching Preview Design */}
         <View style={[styles.timeCard, { backgroundColor: colors.card }]}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
-              <Ionicons name="time-outline" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
+          <View style={styles.timeCardHeader}>
+            <View style={styles.timeCardHeaderLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: BLUE_COLOR + '15' }]}>
+                <Ionicons name="time-outline" size={Platform.select({ ios: 20, android: 18 })} color={BLUE_COLOR} />
+              </View>
+              <Text style={styles.cardTitle}>Available Time Slot</Text>
             </View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Select Time Slot</Text>
+            {selectedDate && timeSlots.length > 0 && (
+              <Text style={[styles.timeSlotCount, { color: colors.textSecondary }]}>
+                {timeSlots.filter(slot => slot.isAvailable && (slot.available || 0) > 0).length} slots available
+              </Text>
+            )}
           </View>
-          <View style={styles.timeSlotsContainer}>
-            <View style={styles.timeSlotsGrid}>
-              {timeSlots.map(renderTimeSlot)}
+          
+          {/* Legend */}
+          {timeSlots.length > 0 && (
+            <View style={styles.timeSlotLegend}>
+              <View style={styles.legendItem}>
+                <View style={styles.legendCircleAvailable} />
+                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Available</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={styles.legendCircleBooked} />
+                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Booked</Text>
+              </View>
             </View>
+          )}
+
+          <View style={styles.timeSlotsContainer}>
+            {loadingTimeSlots ? (
+              <View style={styles.timeSlotsLoadingContainer}>
+                <ActivityIndicator size="small" color={BLUE_COLOR} />
+                <Text style={[styles.timeSlotsLoadingText, { color: colors.textSecondary }]}>
+                  Loading time slots...
+                </Text>
+              </View>
+            ) : timeSlotsError ? (
+              <View style={styles.timeSlotsErrorContainer}>
+                <Ionicons name="alert-circle-outline" size={48} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                <Text style={[styles.timeSlotsErrorText, { color: colors.textSecondary }]}>
+                  {timeSlotsError}
+                </Text>
+                {selectedDate && (
+                  <TouchableOpacity 
+                    onPress={() => fetchTimeSlots(selectedDate)}
+                    style={[styles.retryButton, { borderColor: BLUE_COLOR }]}
+                  >
+                    <Text style={[styles.retryButtonText, { color: BLUE_COLOR }]}>Retry</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : timeSlots.length === 0 ? (
+              <View style={styles.timeSlotsEmptyContainer}>
+                <Ionicons name="time-outline" size={48} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                <Text style={[styles.timeSlotsEmptyText, { color: colors.textSecondary }]}>
+                  {selectedDate ? 'No time slots available for this date' : 'Please select a date to view available time slots'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.timeSlotsGrid}>
+                {timeSlots
+                  .sort((a, b) => {
+                    // Sort: available slots first, then unavailable
+                    const aAvailable = a.isAvailable && (a.available || 0) > 0;
+                    const bAvailable = b.isAvailable && (b.available || 0) > 0;
+                    if (aAvailable && !bAvailable) return -1;
+                    if (!aAvailable && bAvailable) return 1;
+                    // If both have same availability, maintain original order (by time)
+                    return 0;
+                  })
+                  .map((slot, index) => renderTimeSlot(slot, index))}
+              </View>
+            )}
           </View>
         </View>
+      </ScrollView>
 
-        {/* Book Now Button */}
+      {/* Fixed Book Now Button at Bottom */}
+      <View style={[
+        styles.fixedButtonContainer,
+        { 
+          backgroundColor: colors.background,
+          paddingBottom: Math.max(insets.bottom || 0, 20),
+          borderTopColor: colors.border,
+        }
+      ]}>
         <TouchableOpacity 
           style={[styles.continueButton, { backgroundColor: BLUE_COLOR }]} 
           onPress={handleBooking}
+          activeOpacity={0.8}
         >
           <Text style={[styles.continueButtonText, { color: '#FFFFFF' }]}>Book Now</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -461,7 +764,21 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16, // Reduced padding
     paddingTop: 12, // Reduced padding
-    paddingBottom: 20,
+    // paddingBottom will be set dynamically to account for fixed button
+  },
+  fixedButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   header: {
     flexDirection: 'row',
@@ -474,8 +791,8 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     borderRadius: 14,
-    padding: 12, // Reduced from 16
-    marginBottom: 12, // Reduced from 16
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -497,41 +814,101 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   timeCard: {
-    borderRadius: 14,
-    padding: 12, // Reduced from 16
-    marginBottom: 12, // Reduced from 16
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+    backgroundColor: '#FFFFFF',
   },
   cardHeader: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    marginBottom: 24,
+  },
+  timeCardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12, // Increased gap
-    marginBottom: 18, // Increased spacing
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    width: '100%',
+  },
+  timeCardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  timeSlotCount: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    color: '#6B7280',
+  },
+  timeSlotLegend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+    marginBottom: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendCircleAvailable: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#10B981', // Green
+  },
+  legendCircleBooked: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#D1D5DB', // Light gray
+  },
+  legendText: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
   },
   iconContainer: {
-    width: 40, // Increased size
+    width: 40,
     height: 40,
-    borderRadius: 12, // Increased for modern look
+    borderRadius: 20, // Circular
     justifyContent: 'center',
     alignItems: 'center',
   },
+  cardTitleContainer: {
+    flex: 1,
+    paddingTop: 2,
+  },
   cardTitle: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Card title
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.3,
+    color: '#111827',
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    opacity: 0.7,
   },
   serviceCenterRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   serviceIconWrapper: {
-    width: 56, // Reduced from 64
+    width: 56,
     height: 56,
     borderRadius: 12,
     marginRight: 12,
@@ -541,15 +918,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   serviceIconImage: {
-    width: '100%',
-    height: '100%',
+    width: 56,
+    height: 56,
     resizeMode: 'cover',
   },
   serviceCenterInfo: {
     flex: 1,
   },
   serviceCenterName: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Center name
+    fontSize: 17,
     fontWeight: '600',
     marginBottom: Platform.select({ ios: 8, android: 6 }),
     fontFamily: FONTS.MONTserrat_SEMIBOLD,
@@ -698,52 +1075,104 @@ const styles = StyleSheet.create({
   timeSlotsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8, // Reduced gap
+    gap: 12,
     justifyContent: 'space-between',
   },
   timeSlotButton: {
-    flexDirection: 'row',
+    borderRadius: 12, // Rounded corners like boxes
+    width: '46%', // Reduced from 47%
+    minHeight: 46, // Reduced from 50
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 12, // Increased for better touch target
-    borderRadius: 12,
-    width: '31%',
-    minHeight: 44, // Increased for better touch target
-    borderWidth: 1.5, // Slightly reduced
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    borderWidth: 1.5,
+    position: 'relative',
+    paddingHorizontal: 12, // Reduced from 14
+    paddingVertical: 10, // Reduced from 12
   },
-  timeSlotButtonSelected: {
-    shadowColor: BLUE_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-    transform: [{ scale: 1.02 }],
+  timeSlotButtonSelectedAvailable: {
+    backgroundColor: '#D1FAE5', // Very light mint green background
+    borderColor: '#10B981', // Vibrant green border
   },
-  checkIcon: {
-    marginRight: Platform.select({ ios: 6, android: 4 }),
+  timeSlotButtonAvailable: {
+    backgroundColor: '#D1FAE5', // Very light mint green background
+    borderColor: '#10B981', // Vibrant green border
+  },
+  timeSlotButtonUnavailable: {
+    backgroundColor: '#F3F4F6', // Light grey background
+    borderColor: '#D1D5DB', // Darker grey border
+  },
+  timeSlotTextContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   timeSlotText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
+    fontSize: 15,
+    fontFamily: FONTS.INTER_MEDIUM,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  timeSlotTextSelected: {
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+  timeSlotTextSelectedAvailable: {
+    color: '#10B981', // Vibrant green text
+    fontWeight: '500',
+  },
+  timeSlotTextAvailable: {
+    color: '#10B981', // Vibrant green text
+    fontWeight: '500',
+  },
+  timeSlotTextUnavailable: {
+    color: '#6B7280', // Darker grey text
+    fontWeight: '400',
+  },
+  timeSlotCheckmark: {
+    position: 'absolute',
+    top: '50%',
+    right: 10,
+    marginTop: -9, // Half of height to center vertically
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#10B981', // Green circle background
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeSlotRadio: {
+    position: 'absolute',
+    top: '50%',
+    right: 10,
+    marginTop: -9, // Half of height to center vertically
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeSlotRadioOuter: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#10B981', // Vibrant green border
+    backgroundColor: 'transparent',
+  },
+  timeSlotX: {
+    position: 'absolute',
+    top: '50%',
+    right: 10,
+    marginTop: -9, // Half of height to center vertically
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#9CA3AF', // Grey circle background
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   continueButton: {
-    marginHorizontal: 0,
-    marginTop: 16, // Reduced from 24
-    marginBottom: 20, // Reduced from 24
-    paddingVertical: 14, // Reduced from 16
+    width: '100%',
+    paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
@@ -755,6 +1184,56 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.5,
+  },
+  timeSlotsLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  timeSlotsLoadingText: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+  },
+  timeSlotsErrorContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 16,
+  },
+  timeSlotsErrorText: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    lineHeight: 20,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    backgroundColor: 'transparent',
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '600',
+  },
+  timeSlotsEmptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 50,
+    gap: 12,
+  },
+  timeSlotsEmptyText: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    lineHeight: 20,
   },
 });
 

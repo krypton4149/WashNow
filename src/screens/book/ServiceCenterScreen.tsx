@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -16,7 +17,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 import authService from '../../services/authService';
-import { API_URL } from '../../config/env';
+import { API_URL, STORAGE_BASE_URL } from '../../config/env';
 
 const BLUE_COLOR = '#0358a8';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -57,10 +58,20 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
 
   const loadCenterDetails = async () => {
     try {
-      setLoading(true);
+      // Use passed center data immediately (no loading state for initial render)
+      if (center?.services_offered && center.services_offered.length > 0) {
+        setCenterDetails(center);
+        const sortedServices = (center.services_offered || []).sort((a: any, b: any) => 
+          (a.display_order || 0) - (b.display_order || 0)
+        );
+        setServices(sortedServices);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       
-      // Fetch all service centers to get the full details including services_offered
-      const result = await authService.getServiceCenters(true); // Force refresh to get latest data
+      // Fetch fresh data in background (don't force refresh - use cache first)
+      const result = await authService.getServiceCenters(false); // Use cache first for faster response
       
       if (result.success && result.serviceCenters) {
         // Find the selected center by ID
@@ -76,21 +87,23 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
             (a.display_order || 0) - (b.display_order || 0)
           );
           setServices(sortedServices);
-        } else {
-          // If center not found, use the passed center data
+        } else if (!center?.services_offered || center.services_offered.length === 0) {
+          // Only use fallback if we don't have initial data
           setCenterDetails(center);
           setServices(center.services_offered || []);
         }
-      } else {
-        // Fallback to center data passed as prop
+      } else if (!center?.services_offered || center.services_offered.length === 0) {
+        // Only use fallback if we don't have initial data
         setCenterDetails(center);
         setServices(center.services_offered || []);
       }
     } catch (error) {
       console.error('Error loading center details:', error);
       // Fallback to center data passed as prop
-      setCenterDetails(center);
-      setServices(center.services_offered || []);
+      if (!centerDetails) {
+        setCenterDetails(center);
+        setServices(center.services_offered || []);
+      }
     } finally {
       setLoading(false);
     }
@@ -103,10 +116,13 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
         return imagePath;
       }
       
-      // Otherwise, construct the full URL
-      const baseUrl = API_URL.replace(/\/$/, ''); // Remove trailing slash if present
-      const imageUrl = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-      return `${baseUrl}${imageUrl}`;
+      // Remove leading slash if present
+      let cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+      
+      // API returns paths like "service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
+      // Server serves images from: "https://carwashapp.shoppypie.in/public/storage/service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
+      const imageUrl = `${STORAGE_BASE_URL}/${cleanPath}`;
+      return imageUrl;
     }
     
     // Use different placeholder images for services based on ID or index
@@ -144,11 +160,8 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
   };
 
   const handleServiceSelect = (service: any) => {
+    // Only select the service, don't navigate yet
     setSelectedService(service);
-    // Navigate to schedule booking with selected service
-    if (onServiceSelect) {
-      onServiceSelect(service, centerDetails || center);
-    }
   };
 
   const renderServiceCard = (service: any, index: number) => {
@@ -168,8 +181,8 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
           },
         ]}
         onPress={() => {
+          // Only select the service, don't navigate yet
           setSelectedService(service);
-          handleServiceSelect(service);
         }}
         activeOpacity={0.7}
       >
@@ -185,7 +198,11 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
           <Image
             source={{ uri: imageUrl }}
             style={styles.serviceImage}
-            resizeMode="cover"
+            resizeMode="contain"
+            onError={(error) => {
+            }}
+            onLoad={() => {
+            }}
           />
           {priceInfo.hasOffer && (
             <View style={[styles.bestDealBadge, { backgroundColor: '#10B981' }]}>
@@ -207,7 +224,7 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
                 <Text style={[styles.originalPrice, { color: theme.textSecondary }]}>
                   £{priceInfo.original.toFixed(2)}
                 </Text>
-                <Text style={[styles.discountedPrice, { color: '#10B981' }]}>
+                <Text style={[styles.discountedPrice, { color: '#047857' }]}>
                   £{priceInfo.discounted.toFixed(2)}
                 </Text>
               </>
@@ -301,10 +318,15 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
           <TouchableOpacity 
             style={[styles.continueButton, { backgroundColor: BLUE_COLOR }]}
             onPress={() => {
-              if (onServiceSelect) {
+              if (selectedService && onServiceSelect) {
+                // Navigate to next screen (schedule booking) with selected service
                 onServiceSelect(selectedService, centerDetails || center);
+              } else {
+                // Show alert if no service is selected
+                Alert.alert('Please Select a Service', 'Please select a service before continuing to booking.');
               }
             }}
+            activeOpacity={0.8}
           >
             <Text style={styles.continueButtonText}>Continue to Booking</Text>
           </TouchableOpacity>
@@ -414,9 +436,12 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: 100, // Reduced for better proportions
+    height: 100,
     position: 'relative',
-    backgroundColor: '#F5F5F5', // Background for placeholder
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
   serviceImage: {
     width: '100%',
@@ -466,9 +491,9 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   discountedPrice: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Price value
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 16, // Increased font size for offered price
+    fontWeight: '700', // Increased font weight (Bold)
+    fontFamily: FONTS.INTER_BOLD,
   },
   serviceDescription: {
     fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Description
@@ -543,9 +568,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   selectedServicePrice: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Price value
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 18, // Increased font size for better visibility
+    fontWeight: '700', // Bold weight for better visibility
+    fontFamily: FONTS.INTER_BOLD,
   },
   continueButton: {
     borderRadius: Platform.select({ ios: 30, android: 28 }),

@@ -15,16 +15,16 @@ const CACHE_KEYS = {
 };
 
 const CACHE_DURATION = {
-  BOOKINGS: 30000, // 30 seconds - reduced for faster fresh data
-  SERVICE_CENTERS: 60000, // 1 minute - reduced for faster fresh data
-  ALERTS: 30000, // 30 seconds - reduced for faster fresh data
-  OWNER_BOOKINGS: 30000, // 30 seconds - reduced for faster fresh data
+  BOOKINGS: 60000, // 1 minute - cache for faster response
+  SERVICE_CENTERS: 300000, // 5 minutes - longer cache for instant response
+  ALERTS: 60000, // 1 minute - cache for faster response
+  OWNER_BOOKINGS: 60000, // 1 minute - cache for faster response
   LOGIN_RESPONSE: 0, // No cache - always get fresh login response
 };
 
-// Request timeout - optimized for faster responses
-const REQUEST_TIMEOUT = 10000; // 10 seconds - reduced for faster failure detection
-const MAX_RETRIES = 2; // Maximum number of retry attempts for failed requests
+// Request timeout - optimized for fast response with reasonable defaults
+const REQUEST_TIMEOUT = 5000; // 5 seconds - default timeout for most APIs
+const MAX_RETRIES = 0; // No retries for fastest response
 
 class AuthService {
   // Store authentication token
@@ -149,14 +149,19 @@ class AuthService {
     retries: number = MAX_RETRIES
   ): Promise<Response> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeout);
     
     try {
+      const startTime = Date.now();
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      
+      const elapsedTime = Date.now() - startTime;
       
       // Check if response is valid (status 0 usually means network error)
       if (!response || response.status === 0) {
@@ -167,28 +172,14 @@ class AuthService {
     } catch (error: any) {
       clearTimeout(timeoutId);
       
-      // Check if it's a timeout or network error that can be retried
-      const isRetryableError = 
-        error.name === 'AbortError' || 
-        error.message?.includes('Network') ||
-        error.message?.includes('timeout') ||
-        error.message?.includes('Failed to fetch');
-      
-      // Retry logic for network errors
-      if (isRetryableError && retries > 0) {
-        // Wait a bit before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 1000 * (MAX_RETRIES - retries + 1)));
-        return this.fetchWithTimeout(url, options, timeout, retries - 1);
-      }
-      
-      // Handle specific error types
-      if (error.name === 'AbortError') {
-        throw new Error('Request timeout. Please check your internet connection.');
+      // Handle specific error types with better messages
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        throw new Error('Request timeout. The server is taking too long to respond. Please check your internet connection and try again.');
       }
       
       // Handle network errors (no response, connection refused, etc.)
-      if (error.message && error.message.includes('Network')) {
-        throw error;
+      if (error.message && (error.message.includes('Network') || error.message.includes('Failed to fetch') || error.message.includes('Network request failed'))) {
+        throw new Error('Network error. Please check your internet connection and try again.');
       }
       
       if (!error.response && !error.status) {
@@ -263,7 +254,7 @@ class AuthService {
         return { success: true, token: mockToken, user: mockUser };
       }
 
-      // Regular email login with timeout and retry
+      // Regular email login with extended timeout for slow networks
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/login`, {
         method: 'POST',
         headers: {
@@ -274,7 +265,7 @@ class AuthService {
           email: emailOrPhone,
           password: password,
         }),
-      });
+      }, 60000); // 60 seconds timeout for login (allows for slow networks)
 
       let data;
       try {
@@ -282,6 +273,23 @@ class AuthService {
       } catch (parseError) {
         // If response is not ok, try to get error message from status
         if (!response.ok) {
+          // Provide better error messages based on status code
+          if (response.status === 401) {
+            return {
+              success: false,
+              error: 'Invalid email or password. Please check your credentials and try again.'
+            };
+          } else if (response.status === 500) {
+            return {
+              success: false,
+              error: 'Server error. Please try again in a few moments.'
+            };
+          } else if (response.status === 503) {
+            return {
+              success: false,
+              error: 'Service temporarily unavailable. Please try again later.'
+            };
+          }
           return {
             success: false,
             error: `Login failed with status ${response.status}. Please try again.`
@@ -330,17 +338,40 @@ class AuthService {
           user: user
         };
       } else {
-        // Handle non-success responses
-        const errorMessage = data.message || data.error || 'Login failed. Please check your credentials.';
+        // Handle non-success responses with better error messages
+        let errorMessage = data.message || data.error || 'Login failed. Please check your credentials.';
+        
+        // Provide more user-friendly error messages
+        if (errorMessage.toLowerCase().includes('invalid') || errorMessage.toLowerCase().includes('incorrect')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('does not exist')) {
+          errorMessage = 'Account not found. Please check your email address and try again.';
+        } else if (errorMessage.toLowerCase().includes('unauthorized')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        }
+        
         return {
           success: false,
           error: errorMessage
         };
       }
     } catch (error: any) {
+      // Provide more specific error messages for login
+      let errorMessage = 'Network error. Please check your internet connection and try again.';
+      
+      if (error.message) {
+        if (error.message.includes('timeout') || error.message.includes('AbortError')) {
+          errorMessage = 'Request timeout. The server is taking too long to respond. Please check your internet connection and try again.';
+        } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       return {
         success: false,
-        error: error.message || 'Network error. Please check your internet connection and try again.'
+        error: errorMessage
       };
     }
   }
@@ -367,7 +398,7 @@ class AuthService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload),
-      });
+      }, 10000); // 10 seconds timeout for registration (critical operation)
 
       const data = await response.json();
 
@@ -488,7 +519,7 @@ class AuthService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ phone }),
-      });
+      }, 10000); // 10 seconds timeout for OTP request (critical operation)
 
       const data = await response.json();
 
@@ -523,7 +554,7 @@ class AuthService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ phone, otp }),
-      });
+      }, 10000); // 10 seconds timeout for OTP verification (critical operation)
 
       const data = await response.json();
 
@@ -787,33 +818,86 @@ class AuthService {
     }
   }
 
-  // Service Centers API with caching - optimized for fast response
-  async getServiceCenters(forceRefresh: boolean = true): Promise<{ success: boolean; serviceCenters?: any[]; error?: string }> {
+  // Service Centers API with caching - optimized for fast response using stale-while-revalidate
+  async getServiceCenters(
+    forceRefresh: boolean = true,
+    lat?: number,
+    lng?: number,
+    activeService?: string,
+    radius?: number
+  ): Promise<{ success: boolean; serviceCenters?: any[]; error?: string }> {
     try {
       const token = await this.getToken();
       if (!token) {
         return { success: false, error: 'Please login to view service centers' };
       }
 
-      // Always force refresh for faster fresh data - skip cache check
-      // Return cached data only if forceRefresh is false and cache is very fresh (< 10 seconds)
-      if (!forceRefresh) {
-        const cached = await this.getCachedData(CACHE_KEYS.SERVICE_CENTERS);
-        if (cached && this.isCacheValid(cached.timestamp, 10000)) { // 10 seconds only
-          return {
-            success: true,
-            serviceCenters: cached.data,
-          };
-        }
+      // Stale-while-revalidate pattern: Return cached data immediately if available
+      const cachedData = await this.getCachedDataImmediate(CACHE_KEYS.SERVICE_CENTERS);
+      if (cachedData && !forceRefresh) {
+        // Return cached data immediately, then refresh in background
+        this.fetchServiceCentersInBackground(token, lat, lng, activeService, radius).catch(() => {
+          // Ignore background fetch errors
+        });
+        
+        return {
+          success: true,
+          serviceCenters: cachedData,
+        };
+      }
+
+      // If forceRefresh or no cache, fetch fresh data
+      return await this.fetchServiceCentersInBackground(token, lat, lng, activeService, radius);
+    } catch (error: any) {
+      // Try to return cached data on error
+      const cached = await this.getCachedDataImmediate(CACHE_KEYS.SERVICE_CENTERS);
+      if (cached) {
+        return {
+          success: true,
+          serviceCenters: cached,
+        };
+      }
+      
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Internal method to fetch service centers (used for background refresh)
+  private async fetchServiceCentersInBackground(
+    token: string,
+    lat?: number,
+    lng?: number,
+    activeService?: string,
+    radius?: number
+  ): Promise<{ success: boolean; serviceCenters?: any[]; error?: string }> {
+    try {
+      // Build request body
+      const requestBody: any = {};
+      if (lat !== undefined && lat !== null) {
+        requestBody.lat = lat.toString();
+      }
+      if (lng !== undefined && lng !== null) {
+        requestBody.lng = lng.toString();
+      }
+      if (activeService) {
+        requestBody.activeService = activeService;
+      }
+      if (radius !== undefined && radius !== null) {
+        requestBody.radius = radius.toString();
       }
 
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/servicecentrelist`, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-      });
+        body: JSON.stringify(requestBody),
+      }, 15000); // 15 seconds timeout for service centers (needs reasonable time)
 
       const data = await response.json();
 
@@ -855,6 +939,70 @@ class AuthService {
       return {
         success: false,
         error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Get Time Slots for Centre API
+  async getTimeSlotsForCentre(
+    centreId: string | number,
+    bookingDate: string
+  ): Promise<{ success: boolean; timeSlots?: any[]; selectedTimeSlot?: any; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to view time slots' };
+      }
+
+      // Format bookingDate as YYYY-MM-DD
+      const formattedDate = bookingDate;
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/timeslotsforcentre`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          centreId: centreId.toString(),
+          bookingDate: formattedDate,
+        }),
+      }, 5000); // 5 seconds timeout for time slots API (needs more time than other APIs)
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const timeSlotsData = data.data?.list || {};
+        const timeSlots = timeSlotsData.timeSlots || [];
+        
+        return {
+          success: true,
+          timeSlots: timeSlots,
+          selectedTimeSlot: timeSlotsData.selectedTimeSlot || null,
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || data.error || 'Failed to fetch time slots. Please try again.',
+        };
+      }
+    } catch (error: any) {
+      // Provide better error messages
+      if (error.message && error.message.includes('timeout')) {
+        return {
+          success: false,
+          error: 'Request timeout. Please check your internet connection and try again.',
+        };
+      } else if (error.message && error.message.includes('Network')) {
+        return {
+          success: false,
+          error: 'Network error. Please check your internet connection.',
+        };
+      }
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.',
       };
     }
   }
@@ -2241,12 +2389,6 @@ class AuthService {
       // Check if response is successful (either HTTP 200-299 or success: true in data)
       const isSuccess = (response.ok || response.status === 200) && data.success === true;
       
-      console.log('[authService.getFaqList] Response check:', {
-        status: response.status,
-        ok: response.ok,
-        dataSuccess: data.success,
-        isSuccess
-      });
 
       if (isSuccess) {
         // Handle different possible response structures

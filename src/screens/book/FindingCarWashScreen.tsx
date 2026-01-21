@@ -28,11 +28,6 @@ interface ServiceCenter {
 }
 
 const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, selectedLocation, filteredCenters }) => {
-  console.log('=== FindingCarWashScreen: Component rendered ===');
-  console.log('filteredCenters prop on render:', filteredCenters);
-  console.log('filteredCenters is array?', Array.isArray(filteredCenters));
-  console.log('filteredCenters length?', filteredCenters?.length);
-  
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [centers, setCenters] = useState<ServiceCenter[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -100,14 +95,12 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
             setCurrentLocation(`Current Location - ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
           }
         } catch (error) {
-          console.log('Location error:', error);
           setCurrentLocation('Location unavailable');
         } finally {
           setIsLoadingLocation(false);
         }
       },
       (error) => {
-        console.log('GPS error:', error);
         setCurrentLocation('Location unavailable');
         setIsLoadingLocation(false);
       },
@@ -138,20 +131,10 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
 
   // Use useLayoutEffect to check filteredCenters synchronously before paint
   useLayoutEffect(() => {
-    console.log('=== FindingCarWashScreen: useLayoutEffect (sync check) ===');
-    console.log('filteredCenters prop:', filteredCenters);
-    console.log('filteredCenters type:', typeof filteredCenters);
-    console.log('filteredCenters is array:', Array.isArray(filteredCenters));
-    console.log('filteredCenters length:', filteredCenters?.length);
+    // Synchronous check for filteredCenters
   }, [filteredCenters]);
 
   useEffect(() => {
-    console.log('=== FindingCarWashScreen: useEffect triggered ===');
-    console.log('filteredCenters prop:', filteredCenters);
-    console.log('filteredCenters type:', typeof filteredCenters);
-    console.log('filteredCenters is array:', Array.isArray(filteredCenters));
-    console.log('filteredCenters length:', filteredCenters?.length);
-    
     // Get current location on mount
     getCurrentLocation();
     
@@ -164,9 +147,6 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
         // Only load all centers if filteredCenters is explicitly null/undefined
         if (filteredCenters !== null && filteredCenters !== undefined) {
           if (Array.isArray(filteredCenters) && filteredCenters.length > 0) {
-          console.log('=== Using filtered centers for broadcasting ===');
-          console.log('Filtered centers count:', filteredCenters.length);
-          
           // Filter out centers with empty services_offered array (defensive check)
           // Even though filteredCenters should already be filtered, we double-check here
           const centersWithServices = filteredCenters.filter((center: any) => {
@@ -174,9 +154,6 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
                    Array.isArray(center.services_offered) && 
                    center.services_offered.length > 0;
           });
-          
-          console.log(`Double-filtered to ${centersWithServices.length} centers with services`);
-          console.log('Filtered centers data:', JSON.stringify(centersWithServices, null, 2));
           
           const mapped: ServiceCenter[] = centersWithServices.map((c: any, index: number) => {
             // Calculate distance based on coordinates (simplified calculation)
@@ -196,13 +173,11 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
             };
           });
           
-            console.log('Mapped filtered centers:', mapped);
             setCenters(mapped);
             setIsLoading(false);
             return;
           } else {
             // filteredCenters is an empty array - show empty state
-            console.log('=== Filtered centers is empty array - showing no centers ===');
             setCenters([]);
             setIsLoading(false);
             return;
@@ -210,10 +185,8 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
         }
         
         // Otherwise (filteredCenters is null/undefined), load all centers from API
-        console.log('=== Loading ALL service centers from API ===');
-        console.log('Reason: filteredCenters is null/undefined - no filter applied');
-        const resp = await authService.getServiceCenters();
-        console.log('Service centers API response:', JSON.stringify(resp, null, 2));
+        // Use user's current coordinates if available
+        const resp = await authService.getServiceCenters(false, userCoordinates?.lat, userCoordinates?.lng);
         
         if (resp.success && resp.serviceCenters) {
           // Filter out centers with empty services_offered array
@@ -223,8 +196,6 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
                    Array.isArray(center.services_offered) && 
                    center.services_offered.length > 0;
           });
-          
-          console.log(`Filtered ${resp.serviceCenters.length} centers to ${centersWithServices.length} centers with services`);
           
           const mapped: ServiceCenter[] = centersWithServices.map((c: any, index: number) => {
             // Calculate distance based on coordinates (simplified calculation)
@@ -242,10 +213,8 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
             };
           });
           
-          console.log('Mapped centers:', mapped);
           setCenters(mapped);
         } else {
-          console.log('Failed to fetch centers:', resp.error);
           // Fallback: show some mock centers for testing
           const mockCenters: ServiceCenter[] = [
             {
@@ -288,7 +257,6 @@ const FindingCarWashScreen: React.FC<Props> = ({ onBack, onBookingConfirmed, sel
           setCenters(mockCenters);
         }
       } catch (e) {
-        console.log('Error fetching service centers:', e);
         setCenters([]);
       } finally {
         setIsLoading(false);
