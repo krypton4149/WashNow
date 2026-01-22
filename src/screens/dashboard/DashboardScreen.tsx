@@ -399,7 +399,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
               Schedule your next car wash service
             </Text>
           </View>
-          <Ionicons name="car-outline" size={24} color="#1A1A1A" />
+          <View style={styles.bannerIconContainer}>
+            <Ionicons name="car-outline" size={24} color="#1A1A1A" />
+          </View>
         </TouchableOpacity>
 
         {/* Recent Activity Section */}
@@ -437,7 +439,7 @@ const styles = StyleSheet.create({
   headerSection: {
     backgroundColor: BLUE_COLOR,
     paddingHorizontal: 20,
-    paddingBottom: 25,
+    paddingBottom: 28,
     borderBottomLeftRadius: 35,
     borderBottomRightRadius: 35,
   },
@@ -448,16 +450,20 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   welcomeText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Welcome text
-    fontFamily: 'Inter-Regular',
-    fontWeight: '400',
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 15,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+    includeFontPadding: false,
   },
   userNameText: {
     color: '#fff',
-    fontSize: 22, // Reduced from 28 for better proportions
+    fontSize: 26,
     fontWeight: '700',
     fontFamily: 'Montserrat-Bold',
+    letterSpacing: -0.5,
+    includeFontPadding: false,
+    marginTop: 2,
   },
   iconButton: {
     padding: 6,
@@ -470,62 +476,84 @@ const styles = StyleSheet.create({
   metricCard: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   metricValue: {
-    fontSize: 20, // Keep large for emphasis
+    fontSize: 24,
     fontWeight: '700',
     fontFamily: 'Inter-Bold',
     color: '#fff',
-    marginVertical: 4,
+    marginVertical: 6,
+    includeFontPadding: false,
   },
   metricLabel: {
     color: '#fff',
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Metric label
-    fontFamily: 'Inter-Regular',
-    fontWeight: '400',
-    opacity: 0.9,
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+    opacity: 0.95,
+    includeFontPadding: false,
   },
   content: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 20,
+    paddingTop: 16,
   },
   banner: {
-    marginHorizontal: 20,
+    marginHorizontal: 24,
     backgroundColor: YELLOW_COLOR,
-    padding: 16,
-    borderRadius: 18,
+    padding: 14,
+    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(26, 26, 26, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   bannerTitle: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Banner title
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-    color: '#1A1A1A',
+    fontSize: 17,
+    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
     marginBottom: 3,
+    includeFontPadding: false,
   },
   bannerSubtitle: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Banner subtitle
-    fontFamily: 'Inter-Regular',
-    fontWeight: '400',
-    color: '#1A1A1A',
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+    color: '#374151',
+    includeFontPadding: false,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginBottom: 14,
+    marginBottom: 16,
+    alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 22, // font-size: 22px, font-weight: 700 (Bold) - Section title
+    fontSize: 24,
     fontWeight: '700',
     fontFamily: 'Montserrat-Bold',
+    color: '#111827',
+    letterSpacing: -0.5,
+    includeFontPadding: false,
   },
   seeAllBtn: {
     flexDirection: 'row',
@@ -541,16 +569,16 @@ const styles = StyleSheet.create({
   activityItem: {
     marginHorizontal: 20,
     backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    padding: 12, // Reduced padding
-    marginBottom: 8,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   activityContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   activityInfo: { flex: 1 },
@@ -561,11 +589,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   activityTitle: { 
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Activity title
-    fontWeight: '600', 
+    fontSize: 18,
+    fontWeight: '700', 
     flex: 1,
-    fontFamily: 'Montserrat-SemiBold',
-    color: '#1A1A1A',
+    fontFamily: 'Montserrat-Bold',
+    color: '#111827',
+    includeFontPadding: false,
   },
   activityService: { 
     fontSize: 14, 
@@ -679,6 +708,14 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#666',
     textAlign: 'center',
+  },
+  bannerIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

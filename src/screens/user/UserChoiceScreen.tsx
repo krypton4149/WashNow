@@ -65,8 +65,8 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             <View style={styles.cardImageContainer}>
               <Image 
                 source={require('../../assets/images/Customer.png')} 
-                style={styles.customerCardImage}
-                resizeMode="contain"
+                style={styles.cardImage}
+                resizeMode="cover"
               />
             </View>
             
@@ -75,7 +75,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
               <View style={styles.cardTitleContainer}>
                 <Text style={styles.cardTitle}>I'm a Customer</Text>
                 <View style={[styles.cardIconOverlay, { borderColor: BLUE_COLOR }]}>
-                  <Ionicons name="person" size={20} color={BLUE_COLOR} />
+                  <Ionicons name="person" size={22} color={BLUE_COLOR} />
                 </View>
               </View>
               <Text style={styles.cardDescription}>
@@ -98,7 +98,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             {/* Card Image */}
             <View style={styles.cardImageContainer}>
               <Image 
-                source={require('../../assets/images/owner.png')} 
+                source={require('../../assets/images/Customer1.png')} 
                 style={styles.cardImage}
                 resizeMode="cover"
               />
@@ -109,7 +109,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
               <View style={styles.cardTitleContainer}>
                 <Text style={styles.cardTitle}>I'm a Service Owner</Text>
                 <View style={[styles.cardIconOverlay, { borderColor: YELLOW_COLOR }]}>
-                  <Ionicons name="storefront" size={20} color={YELLOW_COLOR} />
+                  <Ionicons name="storefront" size={22} color={YELLOW_COLOR} />
                 </View>
               </View>
               <Text style={styles.cardDescription}>
@@ -134,7 +134,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F9FA',
   },
   scrollView: {
     flex: 1,
@@ -144,86 +144,88 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     alignItems: 'center',
-    marginTop: Platform.OS === 'ios' ? 8 : 16,
-    marginBottom: 28,
+    marginTop: Platform.OS === 'ios' ? 4 : 8,
+    marginBottom: 16,
   },
   logoImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 20,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
+    width: 130,
+    height: 130,
+    borderRadius: 24,
+    marginBottom: 8,
+    backgroundColor: 'transparent',
   },
   subtitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    color: '#666666',
+    fontSize: FONT_SIZES.BODY_LARGE + 1,
+    color: '#4A5568',
     textAlign: 'center',
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
-    letterSpacing: 0.2,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: 0.3,
+    marginTop: 0,
   },
   choicesContainer: {
     flex: 1,
     justifyContent: 'flex-start',
     paddingVertical: 0,
     paddingTop: 0,
-    marginTop: -20,
-    paddingBottom: 10,
+    marginTop: -4,
+    paddingBottom: 8,
   },
   choiceCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: 20,
+    marginBottom: 14,
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: '#E5E5E5',
+    borderColor: '#D1D5DB',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
     transform: [{ scale: 1 }],
     width: '100%',
-    minHeight: 270,
+    minHeight: 280,
   },
   choiceCardHovered: {
     borderColor: BLUE_COLOR,
-    borderWidth: 3,
+    borderWidth: 2.5,
     shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
-    transform: [{ scale: 1.01 }],
+    shadowRadius: 20,
+    elevation: 10,
+    transform: [{ scale: 1.02 }],
   },
   choiceCardPressed: {
     borderColor: BLUE_COLOR,
-    borderWidth: 3,
-    transform: [{ scale: 0.99 }],
-    shadowOpacity: 0.25,
-    shadowRadius: 18,
-    elevation: 10,
+    borderWidth: 2.5,
+    transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 6,
   },
   cardImageContainer: {
     width: '100%',
-    height: 150,
+    height: 180,
     position: 'relative',
-    backgroundColor: 'transparent',
+    backgroundColor: '#F0F4F8',
     flex: 0,
     overflow: 'hidden',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 5,
-    paddingHorizontal: 0,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    padding: 0,
+    margin: 0,
   },
   cardImage: {
-    width: '110%',
+    width: '100%',
     height: '100%',
+    alignSelf: 'stretch',
   },
   customerCardImage: {
     width: '100%',
@@ -237,52 +239,54 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
   },
   cardIconOverlay: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 2,
-    marginLeft: 8,
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 2.5,
+    marginLeft: 10,
   },
   cardContent: {
-    padding: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     paddingTop: 12,
     paddingBottom: 16,
-    minHeight: 100,
   },
   cardTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 4,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontSize: FONT_SIZES.HEADING_LARGE,
     fontWeight: '700',
-    color: '#1A1A1A',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.3,
+    color: '#1A202C',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.5,
+    includeFontPadding: false,
   },
   sparkleIcon: {
     marginLeft: 8,
   },
   cardDescription: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    color: '#555555',
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 22,
-    letterSpacing: 0.1,
-    marginTop: 8,
+    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    color: '#4A5568',
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+    lineHeight: 20,
+    letterSpacing: 0.2,
+    marginTop: 0,
+    includeFontPadding: false,
   },
   footer: {
     paddingVertical: 16,
@@ -292,12 +296,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   footerText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    color: '#999999',
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    color: '#718096',
     textAlign: 'center',
     fontWeight: '400',
     fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 18,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+    includeFontPadding: false,
   },
 });
 

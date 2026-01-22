@@ -23,7 +23,7 @@ const CACHE_DURATION = {
 };
 
 // Request timeout - optimized for fast response with reasonable defaults
-const REQUEST_TIMEOUT = 5000; // 5 seconds - default timeout for most APIs
+const REQUEST_TIMEOUT = 10000; // 10 seconds - default timeout for most APIs (increased for reliability)
 const MAX_RETRIES = 0; // No retries for fastest response
 
 class AuthService {
@@ -254,7 +254,7 @@ class AuthService {
         return { success: true, token: mockToken, user: mockUser };
       }
 
-      // Regular email login with extended timeout for slow networks
+      // Regular email login with optimized timeout
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/login`, {
         method: 'POST',
         headers: {
@@ -265,7 +265,7 @@ class AuthService {
           email: emailOrPhone,
           password: password,
         }),
-      }, 60000); // 60 seconds timeout for login (allows for slow networks)
+      }, 20000); // Reduced to 20 seconds for faster response
 
       let data;
       try {
@@ -325,12 +325,12 @@ class AuthService {
         }
         await this.setUser(user);
 
-        // Clear caches on login
-        await Promise.all([
+        // Clear caches on login (non-blocking for faster login)
+        Promise.all([
           AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
           AsyncStorage.removeItem(CACHE_KEYS.SERVICE_CENTERS),
           AsyncStorage.removeItem(CACHE_KEYS.ALERTS),
-        ]);
+        ]).catch(() => {}); // Don't wait for cache clearing
 
         return {
           success: true,

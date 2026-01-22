@@ -676,6 +676,9 @@ const styles = StyleSheet.create({
     marginTop: -20,
     paddingTop: 30,
     zIndex: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderBottomWidth: 0,
   },
   scrollContent: {
     paddingBottom: 40,
@@ -684,34 +687,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 28,
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '700', // Increased from 600 to 700 for sharper text
-    color: '#1A1A1A',
-    marginBottom: 8,
+    fontSize: FONT_SIZES.HEADING_LARGE + 2,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 6,
     textAlign: 'center',
-    fontFamily: FONTS.MONTserrat_BOLD, // Changed to BOLD for sharper appearance
-    letterSpacing: -0.3, // Reduced letter spacing for sharper look
-    includeFontPadding: false, // Remove extra padding for sharper text
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.5,
+    includeFontPadding: false,
     textAlignVertical: 'center',
   },
   subtitle: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    color: '#4B5563', // Darker color for better contrast
-    fontWeight: '500', // Increased from 400 to 500 for sharper text
+    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    color: '#374151',
+    fontWeight: '600',
     textAlign: 'center',
-    fontFamily: FONTS.INTER_MEDIUM, // Changed to MEDIUM for sharper appearance
-    includeFontPadding: false, // Remove extra padding for sharper text
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    includeFontPadding: false,
     textAlignVertical: 'center',
+    letterSpacing: 0.1,
   },
   inputsContainer: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   inputWrapper: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   inputLabel: {
     fontSize: FONT_SIZES.BODY_SMALL,
@@ -725,13 +729,18 @@ const styles = StyleSheet.create({
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderWidth: 1.5,
-    borderColor: '#D1D5DB',
-    minHeight: 40,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    minHeight: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inputFieldError: {
     borderColor: '#EF4444',
@@ -771,7 +780,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.INTER_MEDIUM,
   },
   termsContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -806,17 +815,17 @@ const styles = StyleSheet.create({
   },
   createAccountButton: {
     backgroundColor: BLUE_COLOR,
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: BLUE_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-    minHeight: 48,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+    minHeight: 56,
   },
   createAccountButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -853,7 +862,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   loginQuestion: {
     fontSize: FONT_SIZES.BODY_MEDIUM,
