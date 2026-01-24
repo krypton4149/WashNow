@@ -7,6 +7,10 @@ import {
   TouchableOpacity,
   ImageBackground,
   StatusBar,
+  Modal,
+  TextInput,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -67,6 +71,16 @@ const ProfileScreen: React.FC<Props> = ({
   const [userData, setUserData] = useState<UserData | null>(propUserData || null);
   const [isLoading, setIsLoading] = useState(!propUserData);
   const hasMountedRef = useRef(false);
+  
+  // Car details editing state
+  const [showCarDetailsModal, setShowCarDetailsModal] = useState(false);
+  const [editingField, setEditingField] = useState<'vehicle_no' | 'carmake' | 'carmodel' | null>(null);
+  const [carDetails, setCarDetails] = useState({
+    vehicle_no: '',
+    carmake: '',
+    carmodel: '',
+  });
+  const [isSavingCarDetails, setIsSavingCarDetails] = useState(false);
 
   // Refresh function to reload user data
   const refreshUserData = useCallback(async () => {
@@ -142,6 +156,54 @@ const ProfileScreen: React.FC<Props> = ({
       refreshUserData();
     }
   }, [isLoading, userData, refreshUserData]);
+
+  // Initialize car details from userData
+  useEffect(() => {
+    if (userData) {
+      setCarDetails({
+        vehicle_no: userData.vehicle_no || '',
+        carmake: userData.carmake || '',
+        carmodel: userData.carmodel || '',
+      });
+    }
+  }, [userData]);
+
+  // Handle opening edit modal for car details
+  const handleEditCarDetail = (field: 'vehicle_no' | 'carmake' | 'carmodel') => {
+    setEditingField(field);
+    setShowCarDetailsModal(true);
+  };
+
+  // Handle saving car details
+  const handleSaveCarDetails = async () => {
+    if (!editingField) return;
+
+    setIsSavingCarDetails(true);
+    try {
+      // Update local user data
+      const updatedUserData = {
+        ...userData,
+        [editingField]: carDetails[editingField],
+      };
+
+      // Save to AsyncStorage
+      await authService.setUser(updatedUserData);
+      setUserData(updatedUserData);
+
+      // Show success message
+      Alert.alert('Success', 'Car details updated successfully!');
+      setShowCarDetailsModal(false);
+      setEditingField(null);
+      
+      // Refresh user data
+      refreshUserData();
+    } catch (error) {
+      console.error('Error saving car details:', error);
+      Alert.alert('Error', 'Failed to save car details. Please try again.');
+    } finally {
+      setIsSavingCarDetails(false);
+    }
+  };
 
 
   // Helper function to get first letter of first name and last name
@@ -307,7 +369,11 @@ const ProfileScreen: React.FC<Props> = ({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Car Details</Text>
           
-          <View style={styles.contactCard}>
+          <TouchableOpacity 
+            style={styles.contactCard}
+            onPress={() => handleEditCarDetail('vehicle_no')}
+            activeOpacity={0.7}
+          >
             <View style={styles.contactIconCar}>
               <View style={styles.carGradientBackground} />
               <View style={styles.carGradientOverlay} />
@@ -319,9 +385,14 @@ const ProfileScreen: React.FC<Props> = ({
                 {userData?.vehicle_no || 'Not provided'}
               </Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
 
-          <View style={styles.contactCard}>
+          <TouchableOpacity 
+            style={styles.contactCard}
+            onPress={() => handleEditCarDetail('carmake')}
+            activeOpacity={0.7}
+          >
             <View style={styles.contactIconCarMake}>
               <View style={styles.carMakeGradientBackground} />
               <View style={styles.carMakeGradientOverlay} />
@@ -333,9 +404,14 @@ const ProfileScreen: React.FC<Props> = ({
                 {userData?.carmake || 'Not provided'}
               </Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
 
-          <View style={styles.contactCard}>
+          <TouchableOpacity 
+            style={styles.contactCard}
+            onPress={() => handleEditCarDetail('carmodel')}
+            activeOpacity={0.7}
+          >
             <View style={styles.contactIconCarModel}>
               <View style={styles.carModelGradientBackground} />
               <View style={styles.carModelGradientOverlay} />
@@ -347,7 +423,8 @@ const ProfileScreen: React.FC<Props> = ({
                 {userData?.carmodel || 'Not provided'}
               </Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         {/* Quick Actions Section */}
@@ -412,6 +489,89 @@ const ProfileScreen: React.FC<Props> = ({
           onTabChange={onTabChange} 
         />
       )}
+
+      {/* Car Details Edit Modal */}
+      <Modal
+        visible={showCarDetailsModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowCarDetailsModal(false);
+          setEditingField(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Edit {editingField === 'vehicle_no' ? 'Vehicle Number' : editingField === 'carmake' ? 'Car Make' : 'Car Model'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowCarDetailsModal(false);
+                  setEditingField(null);
+                }}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={[styles.modalLabel, { color: colors.textSecondary }]}>
+                {editingField === 'vehicle_no' ? 'Vehicle Number' : editingField === 'carmake' ? 'Car Make' : 'Car Model'}
+              </Text>
+              <TextInput
+                style={[styles.modalInput, { 
+                  backgroundColor: colors.surface || '#F3F4F6',
+                  color: colors.text,
+                  borderColor: colors.border,
+                }]}
+                value={editingField ? carDetails[editingField] : ''}
+                onChangeText={(text) => {
+                  if (editingField) {
+                    setCarDetails({ ...carDetails, [editingField]: text });
+                  }
+                }}
+                placeholder={`Enter ${editingField === 'vehicle_no' ? 'vehicle number' : editingField === 'carmake' ? 'car make' : 'car model'}`}
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize={editingField === 'vehicle_no' ? 'characters' : 'words'}
+              />
+            </View>
+
+            <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.modalCancelButton, { borderColor: colors.border }]}
+                onPress={() => {
+                  setShowCarDetailsModal(false);
+                  setEditingField(null);
+                  // Reset to original values
+                  if (userData) {
+                    setCarDetails({
+                      vehicle_no: userData.vehicle_no || '',
+                      carmake: userData.carmake || '',
+                      carmodel: userData.carmodel || '',
+                    });
+                  }
+                }}
+              >
+                <Text style={[styles.modalCancelText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSaveButton, { backgroundColor: BLUE_COLOR }]}
+                onPress={handleSaveCarDetails}
+                disabled={isSavingCarDetails}
+              >
+                {isSavingCarDetails ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.modalSaveText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       </SafeAreaView>
     </View>
   );
@@ -849,6 +1009,85 @@ const styles = StyleSheet.create({
     fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
     fontWeight: '400',
     fontFamily: FONTS.INTER_REGULAR,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: Platform.select({ ios: 34, android: 24 }),
+    maxHeight: '50%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+    fontFamily: FONTS.INTER_MEDIUM,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontFamily: FONTS.INTER_REGULAR,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.select({ ios: 0, android: 8 }),
+    borderTopWidth: 1,
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+  },
+  modalSaveButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalSaveText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
 });
 

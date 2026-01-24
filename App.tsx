@@ -54,6 +54,7 @@ import HelpSupportScreen from './src/screens/support/HelpSupportScreen';
 import SettingsScreen from './src/screens/settings/SettingsScreen';
 import NotificationsScreen from './src/screens/notifications/NotificationsScreen';
 import authService from './src/services/authService';
+import fcmService from './src/services/fcmService';
 import { ScreenType } from './src/types';
 import MainTabs from './src/navigation/MainTabs';
 
@@ -91,6 +92,12 @@ const AppContent: React.FC = () => {
         const storedUserType = user?.type === 'service-owner' ? 'service-owner' : 'customer';
         setUserType(storedUserType);
         setCurrentScreen(storedUserType === 'service-owner' ? 'service-owner' : 'customer');
+        
+        // Save FCM token when user is already authenticated on app start
+        // Completely silent - errors are handled internally and won't show error dialogs
+        fcmService.getAndSaveFCMToken().catch(() => {
+          // Silently ignore - FCM token saving is not critical
+        });
       }
     } catch (error) {
       console.error('Auth check error:', error);
@@ -198,6 +205,13 @@ const AppContent: React.FC = () => {
       const user = await authService.getUser();
       console.log('[App] handleAuthSuccess loaded user:', user);
       setUserData(user);
+      
+      // Save FCM token after successful login/registration
+      // Completely silent - errors are handled internally and won't show error dialogs
+      fcmService.getAndSaveFCMToken().catch(() => {
+        // Silently ignore - FCM token saving is not critical
+      });
+      
       // Redirect based on user type
       if (userType === 'service-owner') {
         setCurrentScreen('service-owner');
@@ -380,12 +394,6 @@ const AppContent: React.FC = () => {
 
   const { toggleDarkMode } = useTheme();
   
-  const handleDarkModeChange = (newDarkMode: boolean) => {
-    if (newDarkMode !== isDarkMode) {
-      toggleDarkMode();
-    }
-    console.log('Dark mode changed to:', newDarkMode);
-  };
 
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
@@ -741,7 +749,6 @@ const AppContent: React.FC = () => {
             onHelpCenter={() => setCurrentScreen('help-support')}
             onChangePassword={handleChangePassword}
             onLanguageChange={handleLanguageChange}
-            onDarkModeChange={handleDarkModeChange}
             onLogout={handleLogout}
           />
         );

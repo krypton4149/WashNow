@@ -9,6 +9,7 @@ import authService from '../../services/authService';
 import { STORAGE_BASE_URL } from '../../config/env';
 
 const BLUE_COLOR = '#0358a8';
+const PLACEHOLDER_IMAGE = require('../../assets/images/Centre.png');
 
 interface ScheduleBookingScreenProps {
   onBack: () => void;
@@ -48,6 +49,8 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
   onContinue,
   selectedCenter,
 }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const { colors } = useTheme();
   const [selectedService, setSelectedService] = useState<string>('car-wash');
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -367,11 +370,13 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
     return true;
   };
 
-  const getImageUrl = (imagePath: string | null | undefined): string => {
+  const getImageUrl = (imagePath: string | null | undefined, updatedAt?: string | null): string => {
     if (imagePath) {
-      // If image path is already a full URL, return it
+      // If image path is already a full URL, return it with cache busting
       if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
+        const separator = imagePath.includes('?') ? '&' : '?';
+        const cacheBuster = updatedAt ? `t=${new Date(updatedAt).getTime()}` : `t=${Date.now()}`;
+        return `${imagePath}${separator}${cacheBuster}`;
       }
       
       // Remove leading slash if present
@@ -380,7 +385,12 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
       // API returns paths like "service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
       // Server serves images from: "https://carwashapp.shoppypie.in/public/storage/service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
       const imageUrl = `${STORAGE_BASE_URL}/${cleanPath}`;
-      return imageUrl;
+      
+      // Add cache busting query parameter using updated_at timestamp or current time
+      // This ensures images are reloaded when updated on the server
+      const separator = imageUrl.includes('?') ? '&' : '?';
+      const cacheBuster = updatedAt ? `t=${new Date(updatedAt).getTime()}` : `t=${Date.now()}`;
+      return `${imageUrl}${separator}${cacheBuster}`;
     }
     
     // Placeholder image for service centers
@@ -587,13 +597,16 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
           <View style={styles.serviceCenterRow}>
             <View style={[styles.serviceIconWrapper, { backgroundColor: BLUE_COLOR + '10' }]}>
               <Image 
-                source={{ uri: getImageUrl(selectedCenter.image) }} 
+                source={imageError ? PLACEHOLDER_IMAGE : { uri: getImageUrl(selectedCenter.image, selectedCenter.updated_at), cache: 'reload' }} 
+                defaultSource={PLACEHOLDER_IMAGE}
                 style={styles.serviceIconImage}
                 resizeMode="cover"
+                onError={() => setImageError(true)}
+                onLoad={() => setImageError(false)}
               />
             </View>
             <View style={styles.serviceCenterInfo}>
-              <Text style={[styles.serviceCenterName, { color: colors.text }]}>{selectedCenter.name}</Text>
+              <Text style={[styles.serviceCenterName, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>{selectedCenter.name}</Text>
               <View style={styles.addressRow}>
                 <Ionicons name="location" size={Platform.select({ ios: 14, android: 12 })} color={BLUE_COLOR} />
                 <Text style={[styles.serviceCenterAddress, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -648,26 +661,9 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
               </View>
               <Text style={styles.cardTitle}>Available Time Slot</Text>
             </View>
-            {selectedDate && timeSlots.length > 0 && (
-              <Text style={[styles.timeSlotCount, { color: colors.textSecondary }]}>
-                {timeSlots.filter(slot => slot.isAvailable && (slot.available || 0) > 0).length} slots available
-              </Text>
-            )}
           </View>
           
-          {/* Legend */}
-          {timeSlots.length > 0 && (
-            <View style={styles.timeSlotLegend}>
-              <View style={styles.legendItem}>
-                <View style={styles.legendCircleAvailable} />
-                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Available</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={styles.legendCircleBooked} />
-                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Booked</Text>
-              </View>
-            </View>
-          )}
+          {/* Legend removed - only showing available slots */}
 
           <View style={styles.timeSlotsContainer}>
             {loadingTimeSlots ? (
@@ -692,7 +688,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
                   </TouchableOpacity>
                 )}
               </View>
-            ) : timeSlots.length === 0 ? (
+            ) : timeSlots.filter(slot => slot.isAvailable && (slot.available || 0) > 0).length === 0 ? (
               <View style={styles.timeSlotsEmptyContainer}>
                 <Ionicons name="time-outline" size={48} color={colors.textSecondary} style={{ opacity: 0.5 }} />
                 <Text style={[styles.timeSlotsEmptyText, { color: colors.textSecondary }]}>
@@ -702,14 +698,12 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
             ) : (
               <View style={styles.timeSlotsGrid}>
                 {timeSlots
+                  .filter((slot) => slot.isAvailable && (slot.available || 0) > 0)
                   .sort((a, b) => {
-                    // Sort: available slots first, then unavailable
-                    const aAvailable = a.isAvailable && (a.available || 0) > 0;
-                    const bAvailable = b.isAvailable && (b.available || 0) > 0;
-                    if (aAvailable && !bAvailable) return -1;
-                    if (!aAvailable && bAvailable) return 1;
-                    // If both have same availability, maintain original order (by time)
-                    return 0;
+                    // Sort by time (start_time)
+                    const aTime = a.start_time || a.time || '';
+                    const bTime = b.start_time || b.time || '';
+                    return aTime.localeCompare(bTime);
                   })
                   .map((slot, index) => renderTimeSlot(slot, index))}
               </View>
@@ -838,18 +832,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
     width: '100%',
+    gap: 12,
   },
   timeCardHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    minWidth: 0,
   },
   timeSlotCount: {
     fontSize: 14,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     color: '#6B7280',
+    flexShrink: 0,
+    marginLeft: 8,
   },
   timeSlotLegend: {
     flexDirection: 'row',
@@ -913,14 +911,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 12,
     overflow: 'hidden',
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5F5F5',
   },
   serviceIconImage: {
-    width: 56,
-    height: 56,
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     resizeMode: 'cover',
+  },
+  overlayImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  hiddenImage: {
+    opacity: 0,
   },
   serviceCenterInfo: {
     flex: 1,

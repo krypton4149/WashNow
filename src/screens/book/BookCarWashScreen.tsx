@@ -10,6 +10,7 @@ import { FONTS, FONT_SIZES } from '../../utils/fonts';
 import { STORAGE_BASE_URL } from '../../config/env';
 
 const BLUE_COLOR = '#0358a8';
+const PLACEHOLDER_IMAGE = require('../../assets/images/Centre.png');
 
 interface Props {
   onBack?: () => void;
@@ -23,6 +24,8 @@ interface Props {
 const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, onNavigateToScheduleForLater, onConfirmBooking, onCenterSelect, onServiceSelect }) => {
   const [searchText, setSearchText] = useState('');
   const [serviceCenters, setServiceCenters] = useState<any[]>([]);
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
+  const [imageLoaded, setImageLoaded] = useState<{ [key: string]: boolean }>({});
   const [loadingCenters, setLoadingCenters] = useState(true);
   const [centersError, setCentersError] = useState<string | null>(null);
   const [selectedServiceTab, setSelectedServiceTab] = useState<string>('all');
@@ -31,6 +34,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   const [centerServices, setCenterServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(Date.now());
   const textInputRef = useRef<TextInput>(null);
   const { isDarkMode, colors } = useTheme();
   
@@ -209,6 +213,8 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         setServiceCenters(centersWithServices);
         setCentersError(null);
         setLoadingCenters(false);
+        // Update fetch time to force image refresh
+        setLastFetchTime(Date.now());
         
         // Then fetch fresh data in background
         fetchFreshServiceCenters(useLat, useLng, activeService);
@@ -232,6 +238,8 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         });
         setServiceCenters(centersWithServices);
         setCentersError(null);
+        // Update fetch time to force image refresh
+        setLastFetchTime(Date.now());
       } else {
         setServiceCenters(mockServiceCenters);
         setCentersError('Failed to load service centers');
@@ -242,6 +250,9 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
   const fetchFreshServiceCenters = async (lat?: number, lng?: number, activeService?: string) => {
     try {
       const result = await authService.getServiceCenters(true, lat, lng, activeService);
+      
+      // Update fetch time to force image refresh
+      setLastFetchTime(Date.now());
       
       if (result.success && result.serviceCenters) {
         // Filter out centers with empty services_offered array
@@ -371,10 +382,14 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
     }
   };
 
-  const getImageUrl = (imagePath: string | null | undefined, centerId?: string | number, index?: number, isService: boolean = false): string => {
+  const getImageUrl = (imagePath: string | null | undefined, centerId?: string | number, index?: number, isService: boolean = false, updatedAt?: string | null): string => {
     if (imagePath) {
       if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
+        // Add cache busting to external URLs too
+        const separator = imagePath.includes('?') ? '&' : '?';
+        // Use updated_at if available, otherwise use lastFetchTime for consistency
+        const cacheBuster = updatedAt ? `t=${new Date(updatedAt).getTime()}` : `t=${lastFetchTime}`;
+        return `${imagePath}${separator}${cacheBuster}`;
       }
       
       // Remove leading slash if present
@@ -384,9 +399,11 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
       // Server serves images from: "https://carwashapp.shoppypie.in/public/storage/service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
       const imageUrl = `${STORAGE_BASE_URL}/${cleanPath}`;
       
-      // Log for debugging
-      
-      return imageUrl;
+      // Add cache busting query parameter using updated_at timestamp or lastFetchTime
+      // This ensures images are reloaded when updated on the server or when data is refreshed
+      const separator = imageUrl.includes('?') ? '&' : '?';
+      const cacheBuster = updatedAt ? `t=${new Date(updatedAt).getTime()}` : `t=${lastFetchTime}`;
+      return `${imageUrl}${separator}${cacheBuster}`;
     }
     
     // Use different placeholder images for services vs centers
@@ -529,7 +546,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
           ) : centersError ? (
             <View style={styles.errorContainer}>
               <Text style={[styles.errorText, { color: '#000000' }]}>{centersError}</Text>
-              <TouchableOpacity onPress={fetchServiceCenters} style={styles.retryButton}>
+              <TouchableOpacity onPress={() => { fetchServiceCenters(); }} style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
             </View>
@@ -556,7 +573,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
               
               // Use image from API response - prioritize center image
               const centerImagePath = center.image || null;
-              const imageUrl = getImageUrl(centerImagePath, center.id || center.service_centre_id, index);
+              const imageUrl = getImageUrl(centerImagePath, center.id || center.service_centre_id, index, false, center.updated_at);
               
               // Use distance_miles from API response
               const distanceMiles = center.distance_miles;
@@ -578,15 +595,36 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                 >
                   {/* Center Image */}
                   <View style={styles.centerImageContainer}>
+                    {/* Placeholder Image - Always shown first */}
                     <Image
-                      source={{ uri: imageUrl }}
-                      style={styles.centerImage}
+                      source={PLACEHOLDER_IMAGE}
+                      style={[
+                        styles.centerImage,
+                        imageLoaded[`center-${center.id}`] && !imageErrors[`center-${center.id}`] && styles.hiddenImage
+                      ]}
                       resizeMode="cover"
-                      onError={(error) => {
-                      }}
-                      onLoad={() => {
-                      }}
                     />
+                    {/* Server Image - Shown when loaded */}
+                    {!imageErrors[`center-${center.id}`] && (
+                      <Image
+                        key={`center-${center.id}-${center.updated_at || lastFetchTime}`}
+                        source={{ uri: imageUrl, cache: 'default' }}
+                        style={[
+                          styles.centerImage,
+                          styles.overlayImage,
+                          !imageLoaded[`center-${center.id}`] && styles.hiddenImage
+                        ]}
+                        resizeMode="cover"
+                        onError={(error) => {
+                          setImageErrors(prev => ({ ...prev, [`center-${center.id}`]: true }));
+                          setImageLoaded(prev => ({ ...prev, [`center-${center.id}`]: false }));
+                        }}
+                        onLoad={() => {
+                          setImageLoaded(prev => ({ ...prev, [`center-${center.id}`]: true }));
+                          setImageErrors(prev => ({ ...prev, [`center-${center.id}`]: false }));
+                        }}
+                      />
+                    )}
                   </View>
                   
                   <View style={styles.centerCardBody}>
@@ -708,7 +746,9 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
               ) : (
                 centerServices.map((service, index) => {
                   const priceInfo = formatPrice(service.price, service.offer_price);
-                  const imageUrl = getImageUrl(service.image, service.id, index, true); // true = isService
+                  // Use updated_at from service center or current time for cache busting
+                  const serviceUpdatedAt = selectedCenterForSheet?.updated_at || null;
+                  const imageUrl = getImageUrl(service.image, service.id, index, true, serviceUpdatedAt); // true = isService
                   
                   return (
                     <TouchableOpacity
@@ -718,19 +758,40 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
                       activeOpacity={0.7}
                     >
                       <View style={styles.serviceModalImageContainer}>
+                        {/* Placeholder Image - Always shown first */}
                         <Image
-                          source={{ uri: imageUrl }}
-                          style={styles.serviceModalImage}
-                          resizeMode="contain"
-                          onError={(error) => {
-                          }}
-                          onLoad={() => {
-                          }}
+                          source={PLACEHOLDER_IMAGE}
+                          style={[
+                            styles.serviceModalImage,
+                            imageLoaded[`service-${service.id}`] && !imageErrors[`service-${service.id}`] && styles.hiddenImage
+                          ]}
+                          resizeMode="cover"
                         />
+                        {/* Server Image - Shown when loaded */}
+                        {!imageErrors[`service-${service.id}`] && (
+                          <Image
+                            key={`service-${service.id}-${selectedCenterForSheet?.updated_at || lastFetchTime}`}
+                            source={{ uri: imageUrl, cache: 'default' }}
+                            style={[
+                              styles.serviceModalImage,
+                              styles.overlayImage,
+                              !imageLoaded[`service-${service.id}`] && styles.hiddenImage
+                            ]}
+                            resizeMode="cover"
+                            onError={(error) => {
+                              setImageErrors(prev => ({ ...prev, [`service-${service.id}`]: true }));
+                              setImageLoaded(prev => ({ ...prev, [`service-${service.id}`]: false }));
+                            }}
+                            onLoad={() => {
+                              setImageLoaded(prev => ({ ...prev, [`service-${service.id}`]: true }));
+                              setImageErrors(prev => ({ ...prev, [`service-${service.id}`]: false }));
+                            }}
+                          />
+                        )}
                       </View>
                       <View style={styles.serviceModalInfo}>
                         <View style={styles.serviceModalHeader}>
-                          <Text style={[styles.serviceModalName, { color: theme.textPrimary }]} numberOfLines={1}>
+                          <Text style={[styles.serviceModalName, { color: BLUE_COLOR }]} numberOfLines={1}>
                             {service.name}
                           </Text>
                           {priceInfo.hasOffer && (
@@ -892,11 +953,27 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   centerImage: {
     width: '100%',
     height: '100%',
     backgroundColor: '#F5F5F5',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  overlayImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  hiddenImage: {
+    opacity: 0,
   },
   centerCardBody: {
     padding: 12, // Slightly increased for better spacing
@@ -1203,10 +1280,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
   serviceModalImage: {
     width: '100%',
     height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   serviceModalInfo: {
     flex: 1,
@@ -1218,9 +1301,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   serviceModalName: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Service name
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontSize: 17, // font-size: 17px, font-weight: 700 (Bold) - Service name
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
     flex: 1,
   },
   bestDealBadgeSmall: {

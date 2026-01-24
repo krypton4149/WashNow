@@ -1,11 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   ImageBackground,
   Platform,
 } from 'react-native';
@@ -20,19 +19,13 @@ const YELLOW_COLOR = '#f4c901';
 interface OwnerSettingsScreenProps {
   onBack?: () => void;
   onChangePassword?: () => void;
-  initialPushNotificationsEnabled?: boolean;
-  initialDarkModeEnabled?: boolean;
 }
 
 const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
   onBack,
   onChangePassword,
-  initialPushNotificationsEnabled = true,
-  initialDarkModeEnabled = false,
 }) => {
-  const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState(initialPushNotificationsEnabled);
-  const { isDarkMode, toggleDarkMode, colors } = useTheme();
-  const [darkModeEnabled, setDarkModeEnabled] = useState(initialDarkModeEnabled || isDarkMode);
+  const { colors } = useTheme();
 
   const dynamicStyles = useMemo(() => ({
     container: {
@@ -46,17 +39,22 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
       color: colors.text,
     },
     heroOverlay: {
-      backgroundColor: isDarkMode ? 'rgba(15, 23, 42, 0.68)' : 'rgba(17, 24, 39, 0.45)',
+      backgroundColor: 'rgba(17, 24, 39, 0.45)',
     },
     scrollContent: {
       backgroundColor: colors.background,
     },
     sectionCard: {
       backgroundColor: colors.card,
-      shadowColor: isDarkMode ? '#020617' : '#000000',
+      shadowColor: '#000000',
     },
     sectionLabel: {
       color: colors.text,
+      fontSize: FONT_SIZES.BODY_LARGE + 1,
+      fontWeight: '700',
+      fontFamily: FONTS.INTER_BOLD,
+      letterSpacing: -0.3,
+      includeFontPadding: false,
     },
     settingTitle: {
       color: colors.text,
@@ -67,14 +65,8 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
     bookingBanner: {
       backgroundColor: colors.button,
     },
-  }), [colors, isDarkMode]);
+  }), [colors]);
 
-  const handleToggleDarkMode = async (value: boolean) => {
-    setDarkModeEnabled(value);
-    if (value !== isDarkMode) {
-      toggleDarkMode();
-    }
-  };
 
   return (
     <View style={[styles.container, dynamicStyles.container]}>
@@ -112,48 +104,6 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
             <Text style={styles.heroSubtitle}>Manage your preferences</Text>
           </View>
         </ImageBackground>
-
-        <View style={[styles.sectionCard, dynamicStyles.sectionCard]}>
-          <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Notifications</Text>
-          <View style={styles.settingRow}>
-            <View style={styles.settingIconWrapper}>
-              <View style={[styles.settingIcon, { backgroundColor: BLUE_COLOR }]}>
-                <Ionicons name="notifications" size={20} color="#FFFFFF" />
-              </View>
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Push Notifications</Text>
-              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>Receive booking updates</Text>
-            </View>
-            <Switch
-              value={pushNotificationsEnabled}
-              onValueChange={setPushNotificationsEnabled}
-              trackColor={{ false: '#D1D5DB', true: `${BLUE_COLOR}33` }}
-              thumbColor={pushNotificationsEnabled ? BLUE_COLOR : '#F4F5F7'}
-            />
-          </View>
-        </View>
-
-        <View style={[styles.sectionCard, dynamicStyles.sectionCard]}>
-          <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Preferences</Text>
-          <View style={styles.settingRow}>
-            <View style={styles.settingIconWrapper}>
-              <View style={[styles.settingIcon, { backgroundColor: YELLOW_COLOR }]}>
-                <Ionicons name="moon" size={20} color="#FFFFFF" />
-              </View>
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingTitle, dynamicStyles.settingTitle]}>Dark Mode</Text>
-              <Text style={[styles.settingSubtitle, dynamicStyles.settingSubtitle]}>Switch to dark theme</Text>
-            </View>
-            <Switch
-              value={darkModeEnabled}
-              onValueChange={handleToggleDarkMode}
-              trackColor={{ false: '#D1D5DB', true: `${YELLOW_COLOR}33` }}
-              thumbColor={darkModeEnabled ? YELLOW_COLOR : '#F4F5F7'}
-            />
-          </View>
-        </View>
 
         <View style={[styles.sectionCard, dynamicStyles.sectionCard]}>
           <Text style={[styles.sectionLabel, dynamicStyles.sectionLabel]}>Security</Text>
@@ -206,10 +156,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontSize: FONT_SIZES.HEADING_LARGE,
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
     color: '#111827',
+    letterSpacing: -0.5,
+    includeFontPadding: false,
   },
   headerPlaceholder: {
     width: 40,
@@ -279,11 +231,13 @@ const styles = StyleSheet.create({
     elevation: Platform.select({ ios: 0, android: 3 }),
   },
   sectionLabel: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    fontSize: FONT_SIZES.BODY_LARGE + 1,
     fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
     color: '#111827',
     marginBottom: Platform.select({ ios: 18, android: 16 }),
+    letterSpacing: -0.3,
+    includeFontPadding: false,
   },
   settingRow: {
     flexDirection: 'row',
@@ -304,10 +258,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.BODY_LARGE + 1,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#111827',
+    includeFontPadding: false,
   },
   settingSubtitle: {
     fontSize: FONT_SIZES.BODY_SMALL,

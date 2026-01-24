@@ -103,16 +103,49 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
 
       console.log('Owner login raw response:', responseData);
 
-      if (!response.ok || responseData?.success === false) {
+      const payload = responseData?.data || responseData;
+      
+      // Check for actual success indicators: token or user data
+      const hasToken = payload?.token || payload?.access_token || payload?.jwt || responseData?.token || responseData?.access_token || responseData?.jwt;
+      const hasUserData = payload?.user || payload?.userData || payload?.owner || payload?.profile || payload;
+      
+      // Determine if login was successful
+      // Success if: HTTP OK AND (explicit success flag OR we have token/user data)
+      // This handles cases where API returns inconsistent success flags
+      const explicitSuccess = response.ok && responseData?.success === true;
+      // If we have token or user data, treat as success even if success flag is false
+      const hasDataSuccess = response.ok && (hasToken || hasUserData);
+      const isSuccess = explicitSuccess || hasDataSuccess;
+      
+      if (!isSuccess) {
         const errorMessage =
           responseData?.message ||
           responseData?.error ||
           'Login failed. Please check your credentials.';
-        Alert.alert('Login Failed', errorMessage);
-        return;
+        
+        // If error message says "success" but we're treating it as failure,
+        // check if HTTP was OK - if so, try to proceed anyway (data might be in unexpected format)
+        const messageLower = errorMessage.toLowerCase();
+        const messageIndicatesSuccess = messageLower.includes('success') || messageLower.includes('successful');
+        
+        if (messageIndicatesSuccess && response.ok) {
+          // Message says success and HTTP is OK - try to proceed even without explicit data
+          // The data extraction below might still work
+          console.warn('API returned success message with HTTP 200 but no explicit token/user data found, attempting to proceed');
+          // Don't return - continue to data extraction below
+        } else {
+          // Normal error case - show error and return
+          if (messageIndicatesSuccess) {
+            // Message contradicts the failure - show a clear error
+            console.error('API returned contradictory response: success message but HTTP error or no data');
+            Alert.alert('Login Error', 'Unable to complete login. Please try again.');
+          } else {
+            Alert.alert('Login Failed', errorMessage);
+          }
+          setIsLoading(false);
+          return;
+        }
       }
-
-      const payload = responseData?.data || responseData;
       console.log('Owner login parsed payload:', payload);
       const userPayload =
         payload?.user ||
@@ -224,6 +257,10 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
             style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
             blurRadius={0}
+            imageStyle={{ 
+              resizeMode: 'cover',
+              opacity: 1.0, // Ensure full opacity for better visibility
+            }}
           >
             <View style={styles.gradientOverlay} />
             {/* Back Button */}
@@ -369,7 +406,7 @@ const styles = StyleSheet.create({
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3, 88, 168, 0.2)',
+    backgroundColor: 'rgba(3, 88, 168, 0.1)', // Reduced opacity to show more of the image
   },
   backButton: {
     position: 'absolute',
@@ -427,48 +464,60 @@ const styles = StyleSheet.create({
     paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 28,
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 8,
+    fontSize: FONT_SIZES.HEADING_LARGE + 2,
+    fontWeight: '800',
+    color: BLUE_COLOR,
+    marginBottom: 6,
     textAlign: 'center',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontFamily: FONTS.MONTserrat_BOLD,
     letterSpacing: -0.5,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   subtitle: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    color: '#666666',
-    fontWeight: '400',
+    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    color: '#374151',
+    fontWeight: '600',
     textAlign: 'center',
-    fontFamily: FONTS.INTER_REGULAR,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    letterSpacing: 0.1,
   },
   inputsContainer: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   inputWrapper: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
   inputLabel: {
     fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontWeight: '700',
+    color: '#111827',
     marginBottom: 8,
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderWidth: 1.5,
-    borderColor: '#D1D5DB',
-    minHeight: 40,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    minHeight: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inputFieldError: {
     borderColor: '#EF4444',
@@ -479,8 +528,10 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: FONT_SIZES.BODY_LARGE,
-    color: '#1A1A1A',
-    fontFamily: FONTS.INTER_REGULAR,
+    color: '#111827',
+    fontFamily: FONTS.INTER_MEDIUM,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   errorText: {
     fontSize: FONT_SIZES.CAPTION_MEDIUM,
@@ -494,7 +545,7 @@ const styles = StyleSheet.create({
   },
   forgotPasswordContainer: {
     alignItems: 'flex-end',
-    marginBottom: 28,
+    marginBottom: 24,
   },
   forgotPasswordText: {
     fontSize: FONT_SIZES.BUTTON_SMALL,
@@ -504,17 +555,17 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: BLUE_COLOR,
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: BLUE_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-    minHeight: 48,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+    minHeight: 56,
   },
   loginButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -524,8 +575,10 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: '#FFFFFF',
     fontSize: FONT_SIZES.BUTTON_LARGE,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   termsContainer: {
     paddingHorizontal: 20,

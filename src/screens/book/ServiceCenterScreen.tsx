@@ -20,6 +20,7 @@ import authService from '../../services/authService';
 import { API_URL, STORAGE_BASE_URL } from '../../config/env';
 
 const BLUE_COLOR = '#0358a8';
+const PLACEHOLDER_IMAGE = require('../../assets/images/Centre.png');
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 12;
 const CARD_WIDTH = (SCREEN_WIDTH - (CARD_MARGIN * 3)) / 2; // 2 columns with margins
@@ -33,6 +34,8 @@ interface Props {
 const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center }) => {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
+  const [imageLoaded, setImageLoaded] = useState<{ [key: string]: boolean }>({});
   const [selectedService, setSelectedService] = useState<any>(null);
   const [centerDetails, setCenterDetails] = useState<any>(null);
   const { isDarkMode, colors } = useTheme();
@@ -87,6 +90,8 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
             (a.display_order || 0) - (b.display_order || 0)
           );
           setServices(sortedServices);
+          // Update load time to force image refresh
+          setLastLoadTime(Date.now());
         } else if (!center?.services_offered || center.services_offered.length === 0) {
           // Only use fallback if we don't have initial data
           setCenterDetails(center);
@@ -109,11 +114,17 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
     }
   };
 
-  const getImageUrl = (imagePath: string | null | undefined, serviceId?: string | number, index?: number): string => {
+  // Track last load time to ensure images refresh on data reload
+  const [lastLoadTime, setLastLoadTime] = useState<number>(Date.now());
+
+  const getImageUrl = (imagePath: string | null | undefined, serviceId?: string | number, index?: number, updatedAt?: string | null): string => {
     if (imagePath) {
-      // If image path is already a full URL, return it
+      // If image path is already a full URL, return it with cache busting
       if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
+        const separator = imagePath.includes('?') ? '&' : '?';
+        // Use updated_at if available, otherwise use lastLoadTime for consistency
+        const cacheBuster = updatedAt ? `t=${new Date(updatedAt).getTime()}` : `t=${lastLoadTime}`;
+        return `${imagePath}${separator}${cacheBuster}`;
       }
       
       // Remove leading slash if present
@@ -122,7 +133,12 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
       // API returns paths like "service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
       // Server serves images from: "https://carwashapp.shoppypie.in/public/storage/service_types/01KEBNEJX30YRC1T1QE0K58JGX.jpg"
       const imageUrl = `${STORAGE_BASE_URL}/${cleanPath}`;
-      return imageUrl;
+      
+      // Add cache busting query parameter using updated_at timestamp or lastLoadTime
+      // This ensures images are reloaded when updated on the server or when data is refreshed
+      const separator = imageUrl.includes('?') ? '&' : '?';
+      const cacheBuster = updatedAt ? `t=${new Date(updatedAt).getTime()}` : `t=${lastLoadTime}`;
+      return `${imageUrl}${separator}${cacheBuster}`;
     }
     
     // Use different placeholder images for services based on ID or index
@@ -167,7 +183,9 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
   const renderServiceCard = (service: any, index: number) => {
     const isSelected = selectedService?.id === service.id;
     const priceInfo = formatPrice(service.price, service.offer_price);
-    const imageUrl = getImageUrl(service.image, service.id, index);
+    // Use updated_at from centerDetails or center for cache busting
+    const updatedAt = centerDetails?.updated_at || center?.updated_at || null;
+    const imageUrl = getImageUrl(service.image, service.id, index, updatedAt);
 
     return (
       <TouchableOpacity
@@ -195,15 +213,36 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
 
         {/* Service Image */}
         <View style={styles.imageContainer}>
+          {/* Placeholder Image - Always shown first */}
           <Image
-            source={{ uri: imageUrl }}
-            style={styles.serviceImage}
-            resizeMode="contain"
-            onError={(error) => {
-            }}
-            onLoad={() => {
-            }}
+            source={PLACEHOLDER_IMAGE}
+            style={[
+              styles.serviceImage,
+              imageLoaded[`service-${service.id}`] && !imageErrors[`service-${service.id}`] && styles.hiddenImage
+            ]}
+            resizeMode="cover"
           />
+          {/* Server Image - Shown when loaded */}
+          {!imageErrors[`service-${service.id}`] && (
+            <Image
+              key={`service-${service.id}-${updatedAt || lastLoadTime}`}
+              source={{ uri: imageUrl, cache: 'default' }}
+              style={[
+                styles.serviceImage,
+                styles.overlayImage,
+                !imageLoaded[`service-${service.id}`] && styles.hiddenImage
+              ]}
+              resizeMode="cover"
+              onError={(error) => {
+                setImageErrors(prev => ({ ...prev, [`service-${service.id}`]: true }));
+                setImageLoaded(prev => ({ ...prev, [`service-${service.id}`]: false }));
+              }}
+              onLoad={() => {
+                setImageLoaded(prev => ({ ...prev, [`service-${service.id}`]: true }));
+                setImageErrors(prev => ({ ...prev, [`service-${service.id}`]: false }));
+              }}
+            />
+          )}
           {priceInfo.hasOffer && (
             <View style={[styles.bestDealBadge, { backgroundColor: '#10B981' }]}>
               <Text style={styles.bestDealText}>Best Deal</Text>
@@ -213,7 +252,7 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
 
         {/* Service Info */}
         <View style={styles.serviceInfo}>
-          <Text style={[styles.serviceName, { color: theme.textPrimary }]} numberOfLines={2}>
+          <Text style={[styles.serviceName, { color: BLUE_COLOR }]} numberOfLines={2}>
             {service.name}
           </Text>
           
@@ -307,7 +346,7 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
           <View style={styles.selectedServiceInfo}>
             <View style={styles.selectedServiceLeft}>
               <Text style={[styles.selectedServiceLabel, { color: theme.textSecondary }]}>Selected Service</Text>
-              <Text style={[styles.selectedServiceName, { color: theme.textPrimary }]}>{selectedService.name}</Text>
+              <Text style={[styles.selectedServiceName, { color: BLUE_COLOR }]}>{selectedService.name}</Text>
             </View>
             <View style={styles.selectedServiceRight}>
               <Text style={[styles.selectedServicePrice, { color: theme.textPrimary }]}>
@@ -447,6 +486,21 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#F5F5F5',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  overlayImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  hiddenImage: {
+    opacity: 0,
   },
   bestDealBadge: {
     position: 'absolute',
@@ -471,9 +525,9 @@ const styles = StyleSheet.create({
     padding: 14, // Increased padding for better spacing
   },
   serviceName: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Service name
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontSize: 17, // font-size: 17px, font-weight: 700 (Bold) - Service name
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
     marginBottom: 10,
     lineHeight: 22, // Better line height for readability
   },
@@ -560,9 +614,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   selectedServiceName: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Selected service name
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontSize: 17, // font-size: 17px, font-weight: 700 (Bold) - Selected service name
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
   },
   selectedServiceRight: {
     alignItems: 'flex-end',

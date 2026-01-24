@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(3, 88, 168, 0.35)', // Increased contrast from 0.2 to 0.35
+    backgroundColor: 'rgba(3, 88, 168, 0.15)', // Reduced opacity to show more of the image
   },
   backButton: {
     position: 'absolute',
@@ -328,8 +328,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FONT_SIZES.HEADING_LARGE + 2,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '800',
+    color: BLUE_COLOR,
     marginBottom: 6,
     textAlign: 'center',
     fontFamily: FONTS.MONTserrat_BOLD,

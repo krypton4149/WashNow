@@ -966,7 +966,7 @@ const PaymentScreen: React.FC<Props> = ({
             <View style={[styles.bookingSummaryIconContainer, { backgroundColor: BLUE_COLOR + '20' }]}>
               <Ionicons name="calendar-outline" size={20} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.bookingSummaryTitle, { color: colors.text }]}>Booking Summary</Text>
+            <Text style={[styles.bookingSummaryTitle, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>Booking Summary</Text>
           </View>
 
           <View style={styles.bookingSummaryContent}>
@@ -1035,7 +1035,7 @@ const PaymentScreen: React.FC<Props> = ({
                   <View style={[styles.bookingSummaryItemIcon, { backgroundColor: '#FF6B35' + '20' }]}>
                     <Ionicons name="time-outline" size={16} color="#FF6B35" />
                   </View>
-                  <Text style={[styles.bookingSummaryItemLabel, { color: colors.textSecondary }]}>Time</Text>
+                  <Text style={[styles.bookingSummaryItemLabel, { color: colors.textSecondary }]}>Time Slot</Text>
                 </View>
                 <Text style={[styles.bookingSummaryItemValue, { color: colors.text }]}>
                   {editableBookingTime || bookingData.time}
@@ -1079,7 +1079,7 @@ const PaymentScreen: React.FC<Props> = ({
             <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
               <Ionicons name="car" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Vehicle Information</Text>
+            <Text style={[styles.cardTitle, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>Vehicle Information</Text>
           </View>
           
           <View style={styles.inputWrapper}>
@@ -1183,7 +1183,7 @@ const PaymentScreen: React.FC<Props> = ({
             <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
               <Ionicons name="card" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Payment Method</Text>
+            <Text style={[styles.cardTitle, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>Payment Method</Text>
           </View>
           
           <View style={styles.paymentMethodsContainer}>
@@ -1350,7 +1350,7 @@ const PaymentScreen: React.FC<Props> = ({
               <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '20' }]}>
                 <Ionicons name="receipt" size={20} color={BLUE_COLOR} />
               </View>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>Payment Summary</Text>
+              <Text style={[styles.cardTitle, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>Payment Summary</Text>
             </View>
             
             <View style={styles.summaryRow}>

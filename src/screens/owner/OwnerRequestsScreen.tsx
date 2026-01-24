@@ -20,6 +20,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
 import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
+const BLUE_COLOR = '#0358a8';
+
 interface OwnerRequestsScreenProps {
   onBack?: () => void;
 }
@@ -888,7 +890,6 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                         styles.actionChip,
                         styles.acceptChip,
                         cancellationLoading[request.id] && styles.actionChipDisabled,
-                        { backgroundColor: colors.button, borderColor: colors.button },
                       ]}
                       disabled={!!cancellationLoading[request.id]}
                       onPress={() => handleCompleteBooking(request.id)}
@@ -940,11 +941,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.2,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '700',
+    fontFamily: FONTS.MONTserrat_BOLD,
+    letterSpacing: -0.5,
     textAlign: 'center',
+    includeFontPadding: false,
   },
   headerSubtitle: {
     marginTop: Platform.select({ ios: 2, android: 2 }),
@@ -976,16 +978,16 @@ const styles = StyleSheet.create({
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.select({ ios: 20, android: 18 }),
-    padding: Platform.select({ ios: 20, android: 18 }),
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: Platform.select({ ios: 7, android: 6 }) },
-    shadowOpacity: Platform.select({ ios: 0.06, android: 0.05 }),
-    shadowRadius: Platform.select({ ios: 10, android: 8 }),
-    elevation: Platform.select({ ios: 0, android: 2 }),
-    gap: Platform.select({ ios: 16, android: 14 }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+    gap: 16,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1041,10 +1043,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   infoValue: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
+    includeFontPadding: false,
   },
   infoSubValue: {
     fontSize: FONT_SIZES.BODY_SMALL,
@@ -1117,10 +1120,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   amountValue: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
-    color: '#0F172A',
+    fontSize: FONT_SIZES.HEADING_SMALL,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
+    color: '#111827',
+    includeFontPadding: false,
   },
   footerActions: {
     flexDirection: 'row',
@@ -1129,11 +1133,16 @@ const styles = StyleSheet.create({
   actionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    borderRadius: 14,
-    borderWidth: 1,
+    gap: 8,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   actionChipDisabled: {
     opacity: 0.6,
@@ -1147,16 +1156,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   declineText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
+    includeFontPadding: false,
   },
   acceptText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#FFFFFF',
+    includeFontPadding: false,
   },
   stateContainer: {
     flex: 1,

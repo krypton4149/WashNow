@@ -2444,6 +2444,73 @@ class AuthService {
     }
   }
 
+  // Save FCM Device Token API
+  async saveFCMToken(deviceToken: string, platform: 'android' | 'ios'): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to save device token' };
+      }
+
+      // Determine if user is an owner or visitor
+      const user = await this.getUser();
+      const isOwner = user?.type === 'service-owner' || 
+                      user?.loginType === 'owner' || 
+                      user?.type === 'owner' ||
+                      user?.role === 'service-owner' ||
+                      user?.role === 'owner';
+      
+      // Use appropriate endpoint based on user type
+      const endpoint = isOwner 
+        ? `${BASE_URL}/api/v1/user/savefcmtoken`
+        : `${BASE_URL}/api/v1/visitor/savefcmtoken`;
+
+      // Use longer timeout for FCM token saving (not critical, can wait longer)
+      const response = await this.fetchWithTimeout(endpoint, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          deviceToken: deviceToken,
+          platform: platform,
+        }),
+      }, 30000); // 30 seconds timeout for FCM token saving
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return {
+          success: true,
+          message: data.message || 'Device token saved successfully'
+        };
+      } else {
+        return {
+          success: false,
+          error: data.message || data.error || 'Failed to save device token. Please try again.'
+        };
+      }
+    } catch (error: any) {
+      // Completely silent error handling - don't log anything
+      // Return a generic error without details to prevent error overlays
+      
+      // Handle timeout specifically but don't expose detailed error messages
+      if (error.name === 'AbortError' || error.message?.includes('timeout') || error.message?.includes('aborted')) {
+        return {
+          success: false,
+          error: 'Request timeout'
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Network error'
+      };
+    }
+  }
+
 }
 
 const authService = new AuthService();

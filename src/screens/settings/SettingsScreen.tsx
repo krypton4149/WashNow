@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   ImageBackground,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +16,6 @@ interface Props {
   onBack?: () => void;
   onHelpCenter?: () => void;
   onChangePassword?: () => void;
-  onDarkModeChange?: (isDarkMode: boolean) => void;
   onLogout?: () => void;
 }
 
@@ -25,19 +23,9 @@ const SettingsScreen: React.FC<Props> = ({
   onBack,
   onHelpCenter,
   onChangePassword,
-  onDarkModeChange,
   onLogout,
 }) => {
-  const { isDarkMode, colors, toggleDarkMode } = useTheme();
-  const [pushNotifications, setPushNotifications] = useState(true);
-
-  // Logout removed from Settings
-
-
-  const handleDarkModeChange = (value: boolean) => {
-    toggleDarkMode();
-    onDarkModeChange?.(value);
-  };
+  const { colors } = useTheme();
 
   const renderSettingItem = (
     iconColor: string,
@@ -97,48 +85,6 @@ const SettingsScreen: React.FC<Props> = ({
             <Text style={styles.bannerSubtitle}>Manage your preferences</Text>
           </View>
         </ImageBackground>
-
-        {/* Notifications Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {renderSettingItem(
-              '#3366FF',
-              'notifications-outline',
-              'Push Notifications',
-              'Receive booking updates',
-              undefined,
-              <Switch
-                value={pushNotifications}
-                onValueChange={setPushNotifications}
-                trackColor={{ false: colors.border, true: colors.primary + '33' }}
-                thumbColor={pushNotifications ? colors.primary : colors.surface}
-              />,
-              false
-            )}
-          </View>
-        </View>
-
-        {/* Preferences Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {renderSettingItem(
-              '#8B5CF6',
-              'moon-outline',
-              'Dark Mode',
-              'Switch to dark theme',
-              undefined,
-              <Switch
-                value={isDarkMode}
-                onValueChange={handleDarkModeChange}
-                trackColor={{ false: colors.border, true: colors.primary + '33' }}
-                thumbColor={isDarkMode ? colors.primary : colors.surface}
-              />,
-              false
-            )}
-          </View>
-        </View>
 
         {/* Security Section */}
         <View style={styles.section}>

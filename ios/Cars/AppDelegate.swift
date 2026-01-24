@@ -169,7 +169,22 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
 
   override func bundleURL() -> URL? {
 #if DEBUG
-    RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    // Use RCTBundleURLProvider which automatically handles:
+    // - localhost for iOS Simulator
+    // - Machine IP address for physical devices
+    let bundleURLProvider = RCTBundleURLProvider.sharedSettings()
+    
+    // Get the bundle URL - this will automatically detect the correct host
+    if let url = bundleURLProvider.jsBundleURL(forBundleRoot: "index") {
+      print("📦 Bundle URL: \(url.absoluteString)")
+      return url
+    }
+    
+    // Fallback to localhost if automatic detection fails
+    // This ensures we always have a valid URL
+    let fallbackURL = URL(string: "http://localhost:8081/index.bundle?platform=ios&dev=true&minify=false")
+    print("⚠️ Using fallback localhost URL: \(fallbackURL?.absoluteString ?? "nil")")
+    return fallbackURL
 #else
     Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif

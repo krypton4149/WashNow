@@ -278,7 +278,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
             {activity.status === 'In Progress' && (
               <View style={styles.statusTagInProgress}>
                 <Text style={styles.statusTextInProgress}>{activity.status}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                <Ionicons name="chevron-forward" size={14} color="#FFFFFF" />
               </View>
             )}
             {activity.status === 'Completed' && (
@@ -461,7 +461,9 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
               Manage and respond to customer bookings
             </Text>
           </View>
-          <Ionicons name="calendar-outline" size={24} color="#1A1A1A" />
+          <View style={styles.bannerIconContainer}>
+            <Ionicons name="calendar-outline" size={28} color="#1A1A1A" />
+          </View>
         </TouchableOpacity>
 
         {/* Recent Activity Section */}
@@ -511,15 +513,20 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   welcomeText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
+    color: 'rgba(255,255,255,0.95)',
+    fontSize: 15,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+    includeFontPadding: false,
   },
   userNameText: {
     color: '#fff',
-    fontSize: Platform.OS === 'ios' ? 24 : 28,
+    fontSize: 26,
     fontWeight: '700',
     fontFamily: 'Montserrat-Bold',
+    letterSpacing: -0.5,
+    includeFontPadding: false,
+    marginTop: 2,
   },
   iconButton: {
     padding: 6,
@@ -531,18 +538,39 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 14,
-    paddingVertical: 12,
+    backgroundColor: Platform.select({
+      ios: 'rgba(3, 88, 168, 0.2)', // Lighter translucent BLUE_COLOR for iOS
+      android: '#1a4d7a', // Solid lighter blue for Android to prevent white background issue
+    }),
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     marginHorizontal: 4,
+    borderWidth: 2, // Clear visible border for both platforms
+    borderColor: 'rgba(255, 255, 255, 0.3)', // White border for clear visibility
+    overflow: 'hidden', // Ensure consistent rendering on Android
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: Platform.select({
+      ios: 0.1,
+      android: 0.15, // Slightly more shadow on Android
+    }),
+    shadowRadius: Platform.select({
+      ios: 4,
+      android: 6, // Larger shadow radius on Android
+    }),
+    elevation: Platform.select({
+      ios: 2,
+      android: 4, // Higher elevation on Android for better depth
+    }),
   },
   metricValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     fontFamily: 'Inter-Bold',
     color: '#fff',
-    marginVertical: 4,
+    marginVertical: 6,
+    includeFontPadding: false,
   },
   metricLabel: {
     color: '#fff',
@@ -553,39 +581,69 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 20,
+    paddingTop: 16,
   },
   banner: {
     marginHorizontal: 20,
     backgroundColor: YELLOW_COLOR,
-    padding: 16,
-    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
+    borderWidth: Platform.select({
+      ios: 1,
+      android: 1.5, // Slightly thicker border on Android
+    }),
+    borderColor: Platform.select({
+      ios: 'rgba(26, 26, 26, 0.1)',
+      android: 'rgba(26, 26, 26, 0.15)', // More visible border on Android
+    }),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: Platform.select({
+      ios: 0.15,
+      android: 0.2, // More shadow on Android
+    }),
+    shadowRadius: Platform.select({
+      ios: 8,
+      android: 10, // Larger shadow radius on Android
+    }),
+    elevation: Platform.select({
+      ios: 4,
+      android: 6, // Higher elevation on Android
+    }),
   },
   bannerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-    color: '#1A1A1A',
-    marginBottom: 3,
+    fontSize: 19,
+    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+    marginBottom: 2,
+    includeFontPadding: false,
   },
   bannerSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Inter-Medium',
-    color: '#1A1A1A',
+    fontWeight: '500',
+    color: '#374151',
+    includeFontPadding: false,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginBottom: 14,
+    marginBottom: 16,
+    alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 24,
+    fontWeight: '700',
+    fontFamily: 'Montserrat-Bold',
+    color: '#111827',
+    letterSpacing: -0.5,
+    includeFontPadding: false,
   },
   seeAllBtn: {
     flexDirection: 'row',
@@ -601,11 +659,16 @@ const styles = StyleSheet.create({
   activityItem: {
     marginHorizontal: 20,
     backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 16,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    padding: 12,
-    marginBottom: 8,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   activityContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   activityInfo: { flex: 1 },
@@ -616,11 +679,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   activityTitle: { 
-    fontSize: 16, 
-    fontWeight: '400', 
+    fontSize: 18,
+    fontWeight: '700', 
     flex: 1,
-    fontFamily: 'Inter-Regular',
-    color: '#1A1A1A',
+    fontFamily: 'Montserrat-Bold',
+    color: '#111827',
+    includeFontPadding: false,
   },
   activityService: { 
     fontSize: 14, 
@@ -654,9 +718,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: BLUE_COLOR,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 18,
   },
   statusTextInProgress: {
     color: '#FFFFFF',
@@ -729,6 +793,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#666',
     textAlign: 'center',
+  },
+  bannerIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
