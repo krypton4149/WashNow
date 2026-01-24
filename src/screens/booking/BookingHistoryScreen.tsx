@@ -234,7 +234,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
       type: booking.service_type || 'Car Wash',
       date: formatDate(booking.booking_date),
       time: formatTime(booking.booking_time),
-      dateTime: `${formatDate(booking.booking_date)} • ${formatTime(booking.booking_time)}`,
+      dateTime: formatDateTimeRange(booking.booking_date, booking.booking_time),
       status: mapBookingStatus(booking.status),
       total: totalPrice,
       servicePrice: servicePrice ? String(servicePrice) : undefined,
@@ -249,6 +249,60 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
     
     console.log('Display data:', JSON.stringify(displayData, null, 2));
     return displayData;
+  };
+
+  // Format date and time for display: "24 Jan 2026 09AM-09:30AM"
+  const formatDateTimeRange = (bookingDate: string, bookingTime: string): string => {
+    try {
+      if (!bookingDate) return '';
+      
+      // Format date: "24 Jan 2026"
+      const date = new Date(bookingDate);
+      const day = date.getDate();
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const year = date.getFullYear();
+      
+      // Format time: "09AM-09:30AM"
+      let timeRange = '';
+      if (bookingTime) {
+        try {
+          // Handle time format like "09:00:00" or "09:00"
+          const [hours, minutes] = bookingTime.split(':');
+          const startHour = parseInt(hours);
+          const startMin = minutes ? parseInt(minutes) : 0;
+          
+          // Calculate end time (assuming 30 min duration)
+          const endMin = startMin + 30;
+          const endHour = endMin >= 60 ? startHour + 1 : startHour;
+          const finalEndMin = endMin >= 60 ? endMin - 60 : endMin;
+          
+          const formatTime = (hour: number, min: number) => {
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            // Format: "09AM" or "09:30AM"
+            if (min === 0) {
+              return `${displayHour.toString().padStart(2, '0')}${ampm}`;
+            } else {
+              return `${displayHour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}${ampm}`;
+            }
+          };
+          
+          const startTimeStr = formatTime(startHour, startMin);
+          const endTimeStr = formatTime(endHour, finalEndMin);
+          timeRange = `${startTimeStr}-${endTimeStr}`;
+        } catch (error) {
+          // Fallback: just format the start time
+          const hour = parseInt(bookingTime.split(':')[0]);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour % 12 || 12;
+          timeRange = `${displayHour.toString().padStart(2, '0')}${ampm}`;
+        }
+      }
+      
+      return timeRange ? `${day} ${month} ${year} ${timeRange}` : `${day} ${month} ${year}`;
+    } catch (error) {
+      return '';
+    }
   };
 
   // Format date for display
@@ -303,41 +357,61 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
     return 'In Progress'; // Default fallback
   };
 
-  // Attempt to build a comparable timestamp from booking fields; fallback to created_at/updated_at
-  const getBookingTimestamp = (b: Booking): number => {
-    try {
-      // Normalize booking_date
-      let datePart = (b.booking_date || '').trim();
-      let timePart = (b.booking_time || '00:00:00').trim();
-
-      // Handle common non-ISO formats
-      // If format is DD-MM-YYYY or DD/MM/YYYY, convert to YYYY-MM-DD
-      const dmYMatch = datePart.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
-      if (dmYMatch) {
-        const d = dmYMatch[1].padStart(2, '0');
-        const m = dmYMatch[2].padStart(2, '0');
-        const y = dmYMatch[3];
-        datePart = `${y}-${m}-${d}`;
-      }
-
-      // If time is HH:MM, add :00 seconds
-      if (/^\d{1,2}:\d{2}$/.test(timePart)) {
-        timePart = `${timePart}:00`;
-      }
-
-      const ts = Date.parse(`${datePart}T${timePart}`);
-      if (!Number.isNaN(ts)) return ts;
-    } catch (e) {
-      // ignore, fallback below
-    }
-    const createdTs = Date.parse(b.created_at || '');
-    const updatedTs = Date.parse(b.updated_at || '');
-    return Math.max(isNaN(createdTs) ? 0 : createdTs, isNaN(updatedTs) ? 0 : updatedTs);
-  };
-
-  // Sort bookings by most recent first (by booking_date and booking_time)
+  // Sort bookings by created_at date/time (most recent first)
   const allBookingDisplayData = ([...(bookings || [])]
-    .sort((a, b) => getBookingTimestamp(b) - getBookingTimestamp(a)))
+    .sort((a, b) => {
+      // Prioritize created_at, then createdAt, then updated_at, then booking_date/booking_time
+      const dateA = new Date(a.created_at || a.createdAt || a.updated_at || 0).getTime();
+      const dateB = new Date(b.created_at || b.createdAt || b.updated_at || 0).getTime();
+      
+      // If created_at dates are valid, use them
+      if (dateA > 0 && dateB > 0) {
+        return dateB - dateA; // Most recent first
+      }
+      
+      // Fallback to booking_date/booking_time if created_at is not available
+      try {
+        let datePartA = (a.booking_date || '').trim();
+        let timePartA = (a.booking_time || '00:00:00').trim();
+        let datePartB = (b.booking_date || '').trim();
+        let timePartB = (b.booking_time || '00:00:00').trim();
+
+        // Handle common non-ISO formats
+        const dmYMatchA = datePartA.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+        if (dmYMatchA) {
+          const d = dmYMatchA[1].padStart(2, '0');
+          const m = dmYMatchA[2].padStart(2, '0');
+          const y = dmYMatchA[3];
+          datePartA = `${y}-${m}-${d}`;
+        }
+        const dmYMatchB = datePartB.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+        if (dmYMatchB) {
+          const d = dmYMatchB[1].padStart(2, '0');
+          const m = dmYMatchB[2].padStart(2, '0');
+          const y = dmYMatchB[3];
+          datePartB = `${y}-${m}-${d}`;
+        }
+
+        // If time is HH:MM, add :00 seconds
+        if (/^\d{1,2}:\d{2}$/.test(timePartA)) {
+          timePartA = `${timePartA}:00`;
+        }
+        if (/^\d{1,2}:\d{2}$/.test(timePartB)) {
+          timePartB = `${timePartB}:00`;
+        }
+
+        const tsA = Date.parse(`${datePartA}T${timePartA}`);
+        const tsB = Date.parse(`${datePartB}T${timePartB}`);
+        if (!Number.isNaN(tsA) && !Number.isNaN(tsB)) {
+          return tsB - tsA;
+        }
+      } catch (e) {
+        // ignore
+      }
+      
+      // Final fallback: use 0 for invalid dates
+      return dateB - dateA;
+    }))
     .map(booking => {
       console.log('Mapping booking:', booking.id);
       return getBookingDisplayData(booking);
@@ -528,12 +602,12 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
               
               {/* Card Content */}
               <View style={styles.cardContent}>
-                <Text style={[styles.serviceName, { color: colors.text }]}>{booking.name}</Text>
+                <Text style={styles.serviceName}>{booking.name}</Text>
                 
                 {/* Service Name */}
                 {booking.serviceName && (
                   <View style={styles.serviceNameRow}>
-                    <Ionicons name="sparkles-outline" size={16} color={BLUE_COLOR} />
+                    <Ionicons name="water-outline" size={16} color={BLUE_COLOR} />
                     <Text style={[styles.serviceNameText, { color: colors.text }]}>{booking.serviceName}</Text>
                   </View>
                 )}
@@ -562,13 +636,13 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                         : BLUE_COLOR
                     } 
                   />
-                  <Text style={[styles.dateTimeText, { color: colors.text }]}>{booking.dateTime}</Text>
+                  <Text style={styles.dateTimeText}>{booking.dateTime}</Text>
                 </View>
                 
                 {/* Vehicle Number */}
                 <View style={styles.infoRow}>
-                  <Ionicons name="car-outline" size={16} color={colors.textSecondary} />
-                  <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                  <Ionicons name="car-outline" size={14} color={BLUE_COLOR} />
+                  <Text style={styles.infoText}>
                     Vehicle: {booking.vehicle_no}
                   </Text>
                 </View>
@@ -576,8 +650,8 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                 {/* Car Model */}
                 {booking.carmodel && (
                   <View style={styles.infoRow}>
-                    <Ionicons name="car-sport-outline" size={16} color={colors.textSecondary} />
-                    <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                    <Ionicons name="car-sport-outline" size={14} color={BLUE_COLOR} />
+                    <Text style={styles.infoText}>
                       Model: {booking.carmodel}
                     </Text>
                   </View>
@@ -585,17 +659,17 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                 
                 {/* Booking ID */}
                 <View style={styles.infoRow}>
-                  <Ionicons name="receipt-outline" size={16} color={BLUE_COLOR} />
-                  <Text style={[styles.infoTextBold, { color: BLUE_COLOR }]}>
-                    Booking ID: {booking.id}
+                  <Ionicons name="receipt-outline" size={14} color={BLUE_COLOR} />
+                  <Text style={styles.infoTextBold}>
+                    Booking No: {booking.id}
                   </Text>
                 </View>
                 
                 {/* Service ID */}
                 {booking.serviceId && (
                   <View style={styles.infoRow}>
-                    <Ionicons name="pricetag-outline" size={16} color={BLUE_COLOR} />
-                    <Text style={[styles.infoTextBold, { color: BLUE_COLOR }]}>
+                    <Ionicons name="pricetag-outline" size={14} color={BLUE_COLOR} />
+                    <Text style={[styles.infoTextBold, { fontSize: 13.5, fontWeight: '400', color: '#6B7280', lineHeight: undefined }]}>
                       Service ID: {booking.serviceId}
                     </Text>
                   </View>
@@ -613,13 +687,13 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                     {booking.serviceOfferPrice && booking.servicePrice && 
                      parseFloat(String(booking.serviceOfferPrice)) < parseFloat(String(booking.servicePrice)) ? (
                       <>
-                        <Text style={[styles.cardTotalPrice, { color: colors.text }]}>{booking.total}</Text>
+                        <Text style={styles.cardTotalPrice}>{booking.total}</Text>
                         <Text style={[styles.originalPrice, { color: colors.textSecondary }]}>
                           ${parseFloat(String(booking.servicePrice)).toFixed(2)}
                         </Text>
                       </>
                     ) : (
-                      <Text style={[styles.cardTotalPrice, { color: colors.text }]}>{booking.total}</Text>
+                      <Text style={styles.cardTotalPrice}>{booking.total}</Text>
                     )}
                   </View>
                 </View>
@@ -680,12 +754,13 @@ const styles = StyleSheet.create({
     marginBottom: Platform.select({ ios: 2, android: 2 }),
   },
   title: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Header title
+    fontSize: 20, // Reduced from 23 - Page Heading
     fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    letterSpacing: -0.2,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: -0.3,
     textAlign: 'center',
     flex: 1,
+    includeFontPadding: false,
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -747,7 +822,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   statusHeaderBar: {
-    backgroundColor: BLUE_COLOR,
+    backgroundColor: BLUE_COLOR, // Blue color for In Progress
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -794,30 +869,38 @@ const styles = StyleSheet.create({
   },
   statusHeaderText: {
     color: '#FFFFFF',
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Status header
+    fontSize: 12.5, // 12-13px, Weight: 500, Letter spacing: 0.2px - Status Badge
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
+    letterSpacing: 0.2,
+    includeFontPadding: false,
   },
   statusHeaderTextCompleted: {
     color: '#FFFFFF',
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Status header
+    fontSize: 12.5, // 12-13px, Weight: 500, Letter spacing: 0.2px - Status Badge
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
+    letterSpacing: 0.2,
+    includeFontPadding: false,
   },
   statusHeaderTextCanceled: {
     color: '#FFFFFF',
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Status header
+    fontSize: 12.5, // 12-13px, Weight: 500, Letter spacing: 0.2px - Status Badge
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
+    letterSpacing: 0.2,
+    includeFontPadding: false,
   },
   cardContent: {
     padding: 14, // Reduced from 16
   },
   serviceName: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Service center name
+    fontSize: 18, // 17-18px, Weight: 600 (Semi-Bold) - Service Name
     fontWeight: '600',
     marginBottom: 8,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: BLUE_COLOR, // Center name in blue color
+    includeFontPadding: false,
   },
   serviceNameRow: {
     flexDirection: 'row',
@@ -826,10 +909,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   serviceNameText: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Service name
+    fontSize: 14, // 14px, Weight: 500 (Medium) - Service Type Line
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     flex: 1,
+    includeFontPadding: false,
   },
   serviceType: {
     fontSize: 14,
@@ -857,9 +941,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   dateTimeText: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Date/time text
+    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
     fontWeight: '400',
     fontFamily: FONTS.INTER_REGULAR,
+    color: '#6B7280', // Muted gray
+    includeFontPadding: false,
   },
   infoRow: {
     flexDirection: 'row',
@@ -868,14 +954,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   infoText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Info text
+    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
+    color: '#6B7280', // Muted gray
+    includeFontPadding: false,
   },
   infoTextBold: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Info text bold
-    fontWeight: '500',
+    fontSize: 18, // Reduced from 21px - Booking Number
+    fontWeight: '500', // Reduced font weight
     fontFamily: FONTS.INTER_MEDIUM,
+    lineHeight: 23.4, // 18 * 1.3
+    color: '#111827', // Dark blue/black
+    includeFontPadding: false,
   },
   cardDivider: {
     height: 1,
@@ -903,9 +994,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTotalPrice: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Total price
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontSize: 18, // Increased font size - Total Amount
+    fontWeight: '700', // Increased font weight (Bold)
+    fontFamily: FONTS.INTER_BOLD,
+    color: '#10B981', // Green color
+    includeFontPadding: false,
   },
   originalPrice: {
     fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Original price (strikethrough)
@@ -921,9 +1014,10 @@ const styles = StyleSheet.create({
   },
   cancelButtonFooterText: {
     color: '#DC2626',
-    fontWeight: '500',
-    fontSize: 13, // font-size: 13px, font-weight: 500 (Medium) - Cancel button
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '600', // 14-15px, Weight: 600 (Semi-Bold) - Button Text
+    fontSize: 14.5,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    includeFontPadding: false,
   },
   noBookingsContainer: {
     alignItems: 'center',

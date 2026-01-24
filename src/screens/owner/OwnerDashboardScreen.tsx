@@ -10,6 +10,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
@@ -110,6 +111,60 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
                    userData?.ownerName || 
                    businessName || 
                    'Owner';
+
+  // Format date and time for display: "24 Jan 2026 09AM-09:30AM"
+  const formatDateTimeRange = (bookingDate: string, bookingTime: string): string => {
+    try {
+      if (!bookingDate) return '';
+      
+      // Format date: "24 Jan 2026"
+      const date = new Date(bookingDate);
+      const day = date.getDate();
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const year = date.getFullYear();
+      
+      // Format time: "09AM-09:30AM"
+      let timeRange = '';
+      if (bookingTime) {
+        try {
+          // Handle time format like "09:00:00" or "09:00"
+          const [hours, minutes] = bookingTime.split(':');
+          const startHour = parseInt(hours);
+          const startMin = minutes ? parseInt(minutes) : 0;
+          
+          // Calculate end time (assuming 30 min duration)
+          const endMin = startMin + 30;
+          const endHour = endMin >= 60 ? startHour + 1 : startHour;
+          const finalEndMin = endMin >= 60 ? endMin - 60 : endMin;
+          
+          const formatTime = (hour: number, min: number) => {
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            // Format: "09AM" or "09:30AM"
+            if (min === 0) {
+              return `${displayHour.toString().padStart(2, '0')}${ampm}`;
+            } else {
+              return `${displayHour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}${ampm}`;
+            }
+          };
+          
+          const startTimeStr = formatTime(startHour, startMin);
+          const endTimeStr = formatTime(endHour, finalEndMin);
+          timeRange = `${startTimeStr}-${endTimeStr}`;
+        } catch (error) {
+          // Fallback: just format the start time
+          const hour = parseInt(bookingTime.split(':')[0]);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour % 12 || 12;
+          timeRange = `${displayHour.toString().padStart(2, '0')}${ampm}`;
+        }
+      }
+      
+      return timeRange ? `${day} ${month} ${year} · ${timeRange}` : `${day} ${month} ${year}`;
+    } catch (error) {
+      return '';
+    }
+  };
 
   // 🧩 Helper functions defined BEFORE use
   const formatBookingTime = (bookingDate: string, createdAt: string) => {
@@ -264,75 +319,99 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
       customerName: booking.visitor?.name,
     }));
 
-  const renderActivityItem = (activity: Activity) => (
-    <TouchableOpacity
-      key={activity.id}
-      style={[styles.activityItem, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={() => onActivityPress?.(activity)}
-    >
-      <View style={styles.activityContent}>
-        <View style={styles.activityInfo}>
-          {/* Title and Status Tag on Same Row */}
-          <View style={styles.titleRow}>
-            <Text style={[styles.activityTitle, { color: colors.text }]}>{activity.title}</Text>
+  const renderActivityItem = (activity: Activity) => {
+    const dateTimeStr = formatDateTimeRange(activity.bookingDate || '', activity.bookingTime || '');
+    
+    return (
+      <TouchableOpacity
+        key={activity.id}
+        style={[
+          styles.activityItem,
+          Platform.OS === 'android' 
+            ? { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' }
+            : { backgroundColor: colors.card, borderColor: colors.border }
+        ]}
+        onPress={() => onActivityPress?.(activity)}
+      >
+        <View style={styles.activityContent}>
+          <View style={styles.activityInfo}>
+            {/* Service Name */}
+            <View style={styles.titleRow}>
+              <Text style={styles.serviceName}>{activity.title}</Text>
+            </View>
+
+            {/* Service Type Line: "Full Valet · In Progress" */}
+            {activity.serviceType && (
+              <View style={styles.serviceTypeRow}>
+                <Ionicons name="water-outline" size={13} color="#6B7280" style={styles.serviceTypeIcon} />
+                <Text style={styles.serviceTypeText}>
+                  {activity.serviceType}
+                  {activity.status === 'In Progress' && (
+                    <>
+                      {' · '}
+                      <Text style={styles.inProgressText}>In Progress</Text>
+                    </>
+                  )}
+                </Text>
+              </View>
+            )}
+
+            {/* Meta Info: Date and Time */}
+            {dateTimeStr && (
+              <View style={styles.metaInfoRow}>
+                <Ionicons name="calendar-outline" size={13} color="#9CA3AF" style={styles.metaIcon} />
+                <Text style={styles.metaInfoText}>
+                  {dateTimeStr}
+                </Text>
+              </View>
+            )}
+
+            {/* Vehicle No. */}
+            {activity.vehicleNo && (
+              <View style={styles.metaInfoRow}>
+                <Ionicons name="car-outline" size={13} color="#9CA3AF" style={styles.metaIcon} />
+                <Text style={styles.metaInfoText}>
+                  Vehicle: {activity.vehicleNo}
+                </Text>
+              </View>
+            )}
+
+            {/* Car Model */}
+            {activity.carmodel && activity.carmodel.trim() !== '' && (
+              <View style={styles.metaInfoRow}>
+                <Ionicons name="car-sport-outline" size={13} color="#9CA3AF" style={styles.metaIcon} />
+                <Text style={styles.metaInfoText}>
+                  Model: {activity.carmodel}
+                </Text>
+              </View>
+            )}
+
+            {/* Booking Number (Important) */}
+            {activity.bookingCode && (
+              <View style={styles.bookingNumberRow}>
+                <Ionicons name="receipt-outline" size={14} color="#6B7280" style={styles.bookingNumberIcon} />
+                <Text style={styles.bookingNumberLabel}>Booking No: </Text>
+                <Text style={styles.bookingNumberValue}>{activity.bookingCode}</Text>
+              </View>
+            )}
+
+            {/* Action Buttons */}
             {activity.status === 'In Progress' && (
-              <View style={styles.statusTagInProgress}>
-                <Text style={styles.statusTextInProgress}>{activity.status}</Text>
-                <Ionicons name="chevron-forward" size={14} color="#FFFFFF" />
-              </View>
-            )}
-            {activity.status === 'Completed' && (
-              <View style={styles.statusTagCompleted}>
-                <Text style={styles.statusTextCompleted}>{activity.status}</Text>
-              </View>
-            )}
-            {activity.status === 'Canceled' && (
-              <View style={styles.statusTagCanceled}>
-                <Text style={styles.statusTextCanceled}>{activity.status}</Text>
-              </View>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleCancel(activity.id);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel Booking</Text>
+              </TouchableOpacity>
             )}
           </View>
-          <View style={styles.timeRow}>
-            <Ionicons name="time-outline" size={16} color={colors.textSecondary} style={styles.timeIcon} />
-            <Text style={[styles.activityTimeText, { color: colors.textSecondary }]}>{activity.time}</Text>
-          </View>
-          {activity.serviceType ? (
-            <View style={styles.recentRow}>
-              <Ionicons name="sparkles-outline" size={16} color={BLUE_COLOR} style={styles.recentIcon} />
-              <Text style={[styles.recentText, { color: colors.text }]}>{activity.serviceType}</Text>
-            </View>
-          ) : null}
-          {activity.vehicleNo ? (
-            <View style={styles.recentRow}>
-              <Ionicons name="car-outline" size={16} color={colors.textSecondary} style={styles.recentIcon} />
-              <Text style={[styles.recentText, { color: colors.textSecondary }]}>Vehicle: {activity.vehicleNo}</Text>
-            </View>
-          ) : null}
-          {activity.carmodel && activity.carmodel.trim() !== '' ? (
-            <View style={styles.recentRow}>
-              <Ionicons name="car-sport-outline" size={16} color={colors.textSecondary} style={styles.recentIcon} />
-              <Text style={[styles.recentText, { color: colors.textSecondary }]}>Model: {activity.carmodel}</Text>
-            </View>
-          ) : null}
-          {activity.bookingCode ? (
-            <View style={styles.recentRow}>
-              <Ionicons name="receipt-outline" size={16} color={colors.textSecondary} style={styles.recentIcon} />
-              <Text style={[styles.recentBookingId, { color: colors.text }]}>{activity.bookingCode}</Text>
-            </View>
-          ) : null}
-          <View style={[styles.activityDivider, { backgroundColor: colors.border }]} />
-          {activity.status === 'In Progress' && (
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => handleCancel(activity.id)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel Booking</Text>
-            </TouchableOpacity>
-          )}
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const handleCancel = async (bookingId: string) => {
     Alert.alert(
@@ -397,12 +476,21 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
     );
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.container}>
-      <StatusBar translucent={true} backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
       {/* BLUE HEADER WITH CURVE */}
-      <View style={styles.headerSection}>
+      <View style={[styles.headerSection, { paddingTop: insets.top + 10 }]}>
+        {/* Decorative Dots */}
+        <View style={styles.decorativeDot1} />
+        <View style={styles.decorativeDot2} />
+        <View style={styles.decorativeDot3} />
+        <View style={styles.decorativeDot4} />
+        <View style={styles.decorativeDot5} />
+        
         <View style={styles.headerTop}>
           <View style={{ flex: 1 }}>
             <Text style={styles.welcomeText}>Welcome to Kwik Wash,</Text>
@@ -413,58 +501,68 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Metric Cards */}
-        <View style={styles.metricsRow}>
-          <View style={styles.metricCard}>
-            <Ionicons name="calendar-outline" color="#fff" size={22} />
+        {/* Booking Statistics Cards - Inside Blue Header */}
+        <View style={styles.statsContainerBlue}>
+          <View style={styles.statCardBlue}>
+            <View style={[styles.statIconContainerBlue, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+              <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
+            </View>
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: 4 }} />
             ) : (
-              <Text style={styles.metricValue}>{totalBookings}</Text>
+              <Text style={styles.statValueBlue}>{totalBookings}</Text>
             )}
-            <Text style={styles.metricLabel}>Total</Text>
+            <Text style={styles.statLabelBlue}>Total</Text>
           </View>
 
-          <View style={styles.metricCard}>
-            <Ionicons name="time-outline" color={YELLOW_COLOR} size={22} />
+          <View style={styles.statCardBlue}>
+            <View style={[styles.statIconContainerBlue, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+              <Ionicons name="time-outline" size={18} color="#FFFFFF" />
+            </View>
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: 4 }} />
             ) : (
-              <Text style={styles.metricValue}>{currentRequests}</Text>
+              <Text style={styles.statValueBlue}>{currentRequests}</Text>
             )}
-            <Text style={styles.metricLabel}>Pending</Text>
+            <Text style={styles.statLabelBlue}>Pending</Text>
           </View>
 
-          <View style={styles.metricCard}>
-            <Ionicons name="checkmark-circle-outline" color="#fff" size={22} />
+          <View style={styles.statCardBlue}>
+            <View style={[styles.statIconContainerBlue, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}>
+              <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" />
+            </View>
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" style={{ marginVertical: 4 }} />
             ) : (
-              <Text style={styles.metricValue}>{completedBookings}</Text>
+              <Text style={styles.statValueBlue}>{completedBookings}</Text>
             )}
-            <Text style={styles.metricLabel}>Done</Text>
+            <Text style={styles.statLabelBlue}>Done</Text>
           </View>
         </View>
       </View>
 
-      {/* WHITE CONTENT */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Yellow Banner */}
-        <TouchableOpacity
-          style={styles.banner}
-          onPress={onBookingRequestPress || onBookWash}
-          activeOpacity={0.8}
-        >
+      {/* Yellow Book a Car Wash Card - Only button is clickable */}
+      <View style={styles.yellowBanner}>
+        <View style={styles.yellowBannerContent}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>View Booking Requests</Text>
-            <Text style={styles.bannerSubtitle}>
-              Manage and respond to customer bookings
+            <Text style={styles.yellowBannerTitle}>View Booking Requests</Text>
+            <Text style={styles.yellowBannerSubtitle}>
+              Manage and respond to{'\n'}customer bookings
             </Text>
           </View>
-          <View style={styles.bannerIconContainer}>
-            <Ionicons name="calendar-outline" size={28} color="#1A1A1A" />
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.bookNowButton}
+            onPress={onBookingRequestPress || onBookWash}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="calendar-outline" size={22} color="#111827" style={{ marginRight: 8 }} />
+            <Text style={styles.bookNowText}>View</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* WHITE CONTENT */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
         {/* Recent Activity Section */}
         <View style={styles.sectionHeader}>
@@ -501,16 +599,63 @@ const styles = StyleSheet.create({
   headerSection: {
     backgroundColor: BLUE_COLOR,
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 10,
-    paddingBottom: 25,
-    borderBottomLeftRadius: 35,
-    borderBottomRightRadius: 35,
+    paddingBottom: 20, // Add bottom padding for stats cards
+    borderBottomLeftRadius: 0, // No curve - straight edge
+    borderBottomRightRadius: 0, // No curve - straight edge
+    overflow: 'visible', // Allow yellow card to overlap
+    position: 'relative',
+    zIndex: 1,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 12, // Reduced margin
+  },
+  decorativeDot1: {
+    position: 'absolute',
+    top: 96,
+    right: 80,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  decorativeDot2: {
+    position: 'absolute',
+    top: 128,
+    right: 128,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  decorativeDot3: {
+    position: 'absolute',
+    top: 112,
+    right: 48,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  decorativeDot4: {
+    position: 'absolute',
+    bottom: 96,
+    left: 48,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  decorativeDot5: {
+    position: 'absolute',
+    bottom: 80,
+    left: 96,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   welcomeText: {
     color: 'rgba(255,255,255,0.95)',
@@ -531,118 +676,144 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 6,
   },
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 5,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: Platform.select({
-      ios: 'rgba(3, 88, 168, 0.2)', // Lighter translucent BLUE_COLOR for iOS
-      android: '#1a4d7a', // Solid lighter blue for Android to prevent white background issue
-    }),
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginHorizontal: 4,
-    borderWidth: 2, // Clear visible border for both platforms
-    borderColor: 'rgba(255, 255, 255, 0.3)', // White border for clear visibility
-    overflow: 'hidden', // Ensure consistent rendering on Android
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: Platform.select({
-      ios: 0.1,
-      android: 0.15, // Slightly more shadow on Android
-    }),
-    shadowRadius: Platform.select({
-      ios: 4,
-      android: 6, // Larger shadow radius on Android
-    }),
-    elevation: Platform.select({
-      ios: 2,
-      android: 4, // Higher elevation on Android for better depth
-    }),
-  },
-  metricValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: 'Inter-Bold',
-    color: '#fff',
-    marginVertical: 6,
-    includeFontPadding: false,
-  },
-  metricLabel: {
-    color: '#fff',
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
-    opacity: 0.9,
-  },
   content: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 16,
+    marginTop: -30, // Increased negative margin to remove extra blue background
   },
-  banner: {
-    marginHorizontal: 20,
-    backgroundColor: YELLOW_COLOR,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+  scrollContent: {
+    paddingTop: 30, // Increased padding to account for yellow card overlap and add space
+  },
+  statsContainerBlue: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    borderWidth: Platform.select({
-      ios: 1,
-      android: 1.5, // Slightly thicker border on Android
+    justifyContent: 'space-between',
+    marginTop: 16,
+    gap: 10,
+  },
+  statCardBlue: {
+    flex: 1,
+    backgroundColor: Platform.select({
+      android: BLUE_COLOR, // Solid blue color for Android
+      ios: 'rgba(255, 255, 255, 0.15)', // Glassmorphism effect for iOS
     }),
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
     borderColor: Platform.select({
-      ios: 'rgba(26, 26, 26, 0.1)',
-      android: 'rgba(26, 26, 26, 0.15)', // More visible border on Android
+      android: 'rgba(255, 255, 255, 0.3)', // Slightly more visible border for Android
+      ios: 'rgba(255, 255, 255, 0.2)',
     }),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: Platform.select({
-      ios: 0.15,
-      android: 0.2, // More shadow on Android
-    }),
-    shadowRadius: Platform.select({
-      ios: 8,
-      android: 10, // Larger shadow radius on Android
-    }),
-    elevation: Platform.select({
-      ios: 4,
-      android: 6, // Higher elevation on Android
-    }),
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  bannerTitle: {
-    fontSize: 19,
+  statIconContainerBlue: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statValueBlue: {
+    fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Inter-Bold',
-    color: '#111827',
+    color: '#FFFFFF',
     marginBottom: 2,
     includeFontPadding: false,
   },
-  bannerSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
+  statLabelBlue: {
+    fontSize: 11,
     fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    color: 'rgba(255, 255, 255, 0.9)',
+    includeFontPadding: false,
+  },
+  yellowBanner: {
+    marginHorizontal: 20, // Increased margin for better width
+    marginTop: -25, // Increased overlap to cover blue background
+    backgroundColor: YELLOW_COLOR,
+    paddingVertical: 16, // Adjusted vertical padding for better height
+    paddingHorizontal: 20, // Keep horizontal padding
+    borderRadius: 20, // Slightly reduced border radius
+    marginBottom: 0, // Remove bottom margin to eliminate blue gap
+    zIndex: 20, // Higher zIndex to ensure it's on top of blue section
+    borderWidth: 6, // Increased border thickness for more prominent white border
+    borderColor: '#FFFFFF', // White border
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: Platform.select({
+      ios: 0.25,
+      android: 0.3,
+    }),
+    shadowRadius: Platform.select({
+      ios: 12,
+      android: 14,
+    }),
+    elevation: Platform.select({
+      ios: 10,
+      android: 12,
+    }),
+  },
+  yellowBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  yellowBannerTitle: {
+    fontSize: 18, // Further reduced
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    color: '#111827',
+    marginBottom: 4,
+    includeFontPadding: false,
+  },
+  yellowBannerSubtitle: {
+    fontSize: 12, // Further reduced
+    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#374151',
+    includeFontPadding: false,
+  },
+  bookNowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF08A', // Soft, light yellow color
+    paddingHorizontal: 22, // Increased width
+    paddingVertical: 8, // Reduced height
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)', // More visible white border
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  bookNowText: {
+    fontSize: 13,
+    fontWeight: '600', // Increased to Semi-Bold
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
     includeFontPadding: false,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    marginTop: 24, // Added top margin to create space between yellow card and text
     marginBottom: 16,
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: 'Montserrat-Bold',
+    fontSize: 18, // 18px
+    fontWeight: '600', // Semi-Bold
+    fontFamily: 'Inter-SemiBold',
     color: '#111827',
-    letterSpacing: -0.5,
     includeFontPadding: false,
   },
   seeAllBtn: {
@@ -650,121 +821,139 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   seeAllText: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - See all text
+    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
     color: BLUE_COLOR,
     marginRight: 4,
   },
   activityItem: {
     marginHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB', // Subtle border
+    padding: 14, // Reduced padding to decrease height
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: Platform.select({
+      ios: 0.06,
+      android: 0.08,
+    }),
+    shadowRadius: Platform.select({
+      ios: 8,
+      android: 10,
+    }),
+    elevation: Platform.select({
+      ios: 3,
+      android: 5,
+    }),
   },
   activityContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   activityInfo: { flex: 1 },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 4,
   },
-  activityTitle: { 
-    fontSize: 18,
-    fontWeight: '700', 
+  serviceName: { 
+    fontSize: 17,
+    fontWeight: '600', // Semi-Bold
     flex: 1,
-    fontFamily: 'Montserrat-Bold',
-    color: '#111827',
+    fontFamily: 'Inter-SemiBold',
+    color: BLUE_COLOR, // Blue color for center name
     includeFontPadding: false,
+    marginBottom: 0,
   },
   activityService: { 
-    fontSize: 14, 
-    marginBottom: 8,
+    fontSize: 13, 
+    marginBottom: 4,
     fontFamily: 'Inter-Regular',
     color: '#666666',
   },
-  timeRow: { flexDirection: 'row', alignItems: 'center' },
-  timeIcon: { marginRight: 6 },
-  activityTimeText: { 
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
-  },
-  recentRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  recentIcon: { marginRight: 6 },
-  recentText: { 
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
-    color: '#666666',
-  },
-  recentBookingId: { 
-    fontSize: 16, 
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-    color: '#1A1A1A',
-  },
-  activityDivider: { height: 1, marginTop: 12 },
-  statusTagInProgress: {
+  serviceTypeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: BLUE_COLOR,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 18,
+    marginTop: 2,
+    marginBottom: 4,
   },
-  statusTextInProgress: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+  serviceTypeIcon: {
+    marginRight: 6,
+  },
+  serviceTypeText: {
+    fontSize: 13,
+    fontWeight: '500', // Medium
     fontFamily: 'Inter-Medium',
+    color: '#374151',
   },
-  statusTagCompleted: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+  inProgressText: {
+    fontSize: 13,
+    fontWeight: '600', // Semi-Bold (increased from Medium)
+    fontFamily: 'Inter-SemiBold',
+    color: '#10B981', // Green color
   },
-  statusTextCompleted: {
-    color: '#FFFFFF',
+  metaInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  metaIcon: {
+    marginRight: 6,
+  },
+  metaInfoText: {
+    fontSize: 13,
+    fontWeight: '400', // Regular
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280', // Darker gray for better readability
+  },
+  bookingNumberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6', // Subtle divider
+  },
+  bookingNumberIcon: {
+    marginRight: 6,
+  },
+  bookingNumberLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    fontFamily: 'Inter-Medium',
+    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
+    color: '#6B7280',
   },
-  statusTagCanceled: {
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  statusTextCanceled: {
-    color: '#DC2626',
-    fontSize: 12,
-    fontWeight: '700',
-    fontFamily: 'Inter-Medium',
+  bookingNumberValue: {
+    fontSize: 16,
+    fontWeight: '600', // Reduced from 700 to 600
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827', // Dark blue/black
+    lineHeight: 20.8, // 1.3 line height (16 * 1.3)
   },
   cancelButton: {
-    marginTop: 10,
+    marginTop: 6,
     alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    borderWidth: 1.5, // Add border line
+    borderColor: '#9CA3AF', // Gray border color
+    backgroundColor: '#FCA5A5', // Lighter red filled color
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25, // Cylindrical/pill shape
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FCA5A5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cancelButtonText: {
-    color: '#DC2626',
-    fontWeight: '700',
+    color: '#991B1B', // Darker red text for contrast on light background
+    fontWeight: '600', // Semi-Bold
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
   },
@@ -773,8 +962,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
     fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#666',
     marginTop: 12,
   },
@@ -783,24 +973,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Empty text
     fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#666',
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 13,
+    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Empty subtext
     fontFamily: 'Inter-Regular',
+    fontWeight: '400',
     color: '#666',
     textAlign: 'center',
-  },
-  bannerIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 

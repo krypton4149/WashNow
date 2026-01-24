@@ -132,6 +132,7 @@ const formatRelativeTime = (input: any): string => {
   return parsed.toLocaleDateString();
 };
 
+// Format date and time for display: "24 Jan 2026 09AM-09:30AM"
 const formatScheduled = (booking: any): string => {
   const dateCandidate = ensureString('',
     booking?.scheduledAt,
@@ -149,34 +150,62 @@ const formatScheduled = (booking: any): string => {
     booking?.time
   );
 
-  if (!dateCandidate && !timeCandidate) {
+  if (!dateCandidate) {
     return 'Not scheduled';
   }
 
-  let formattedDate = dateCandidate;
-  const parsedDate = dateCandidate ? new Date(dateCandidate) : null;
-  if (parsedDate && !Number.isNaN(parsedDate.getTime())) {
-    formattedDate = parsedDate.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-    });
+  try {
+    // Format date: "24 Jan 2026"
+    const date = new Date(dateCandidate);
+    if (Number.isNaN(date.getTime())) {
+      return 'Not scheduled';
+    }
+    
+    const day = date.getDate();
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    
+    // Format time: "09AM-09:30AM"
+    let timeRange = '';
+    if (timeCandidate) {
+      try {
+        // Handle time format like "09:00:00" or "09:00"
+        const [hours, minutes] = timeCandidate.split(':');
+        const startHour = parseInt(hours);
+        const startMin = minutes ? parseInt(minutes) : 0;
+        
+        // Calculate end time (assuming 30 min duration)
+        const endMin = startMin + 30;
+        const endHour = endMin >= 60 ? startHour + 1 : startHour;
+        const finalEndMin = endMin >= 60 ? endMin - 60 : endMin;
+        
+        const formatTime = (hour: number, min: number) => {
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour % 12 || 12;
+          // Format: "09AM" or "09:30AM"
+          if (min === 0) {
+            return `${displayHour.toString().padStart(2, '0')}${ampm}`;
+          } else {
+            return `${displayHour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}${ampm}`;
+          }
+        };
+        
+        const startTimeStr = formatTime(startHour, startMin);
+        const endTimeStr = formatTime(endHour, finalEndMin);
+        timeRange = `${startTimeStr}-${endTimeStr}`;
+      } catch (error) {
+        // Fallback: just format the start time
+        const hour = parseInt(timeCandidate.split(':')[0]);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        timeRange = `${displayHour.toString().padStart(2, '0')}${ampm}`;
+      }
+    }
+    
+    return timeRange ? `${day} ${month} ${year}, ${timeRange}` : `${day} ${month} ${year}`;
+  } catch (error) {
+    return 'Not scheduled';
   }
-
-  let formattedTime = timeCandidate;
-  const parsedTime = timeCandidate ? new Date(`1970-01-01T${timeCandidate}`) : null;
-  if ((!formattedTime || formattedTime === dateCandidate) && parsedDate && !Number.isNaN(parsedDate.getTime())) {
-    formattedTime = parsedDate.toLocaleTimeString(undefined, {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } else if (parsedTime && !Number.isNaN(parsedTime.getTime())) {
-    formattedTime = parsedTime.toLocaleTimeString(undefined, {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
-  return [formattedDate, formattedTime].filter(Boolean).join(', ');
 };
 
 const formatAmount = (booking: any): string => {
@@ -502,44 +531,90 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
       }
       setError(null);
 
-      const token = await authService.getToken();
-      if (!token) {
-        throw new Error('Missing authentication token. Please log in again.');
-      }
+      // Use the proper authService method for owner bookings
+      const result = await authService.getOwnerBookings(isRefresh);
 
-      const response = await apiClient.get('/user/bookings', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (result.success && result.bookings) {
+        // Sort bookings by created_at date (most recent first)
+        const sortedBookings = [...result.bookings].sort((a, b) => {
+          const dateA = new Date(a.created_at || a.createdAt || a.requested_at || 0).getTime();
+          const dateB = new Date(b.created_at || b.createdAt || b.requested_at || 0).getTime();
+          return dateB - dateA; // Most recent first
+        });
 
-      const payload = response.data;
-      const bookingsArray = extractBookingArray(payload);
+        console.log('[OwnerRequestsScreen] bookings loaded and sorted', {
+          count: sortedBookings.length,
+          sample: sortedBookings.slice(0, 2),
+        });
 
-      console.log('[OwnerRequestsScreen] bookings response extracted', {
-        count: bookingsArray.length,
-        payloadKeys: payload ? Object.keys(payload) : null,
-        sample: bookingsArray.slice(0, 2),
-      });
-
-      setRawBookings(bookingsArray);
-      setCancellationLoading({});
-      hasHydratedCacheRef.current = true;
-      try {
-        await AsyncStorage.setItem(BOOKINGS_CACHE_KEY, JSON.stringify({
-          timestamp: Date.now(),
-          data: bookingsArray,
-        }));
-      } catch (cacheError) {
-        console.error('[OwnerRequestsScreen] failed to cache bookings', cacheError);
+        setRawBookings(sortedBookings);
+        setCancellationLoading({});
+        hasHydratedCacheRef.current = true;
+        
+        // Cache the sorted bookings
+        try {
+          await AsyncStorage.setItem(BOOKINGS_CACHE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            data: sortedBookings,
+          }));
+        } catch (cacheError) {
+          console.error('[OwnerRequestsScreen] failed to cache bookings', cacheError);
+        }
+      } else {
+        // If no bookings or error, still try to use cached data if available
+        const cached = await AsyncStorage.getItem(BOOKINGS_CACHE_KEY);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed?.data && Array.isArray(parsed.data) && parsed.data.length > 0) {
+              // Sort cached bookings by created_at
+              const sortedCached = [...parsed.data].sort((a: any, b: any) => {
+                const dateA = new Date(a.created_at || a.createdAt || a.requested_at || 0).getTime();
+                const dateB = new Date(b.created_at || b.createdAt || b.requested_at || 0).getTime();
+                return dateB - dateA;
+              });
+              setRawBookings(sortedCached);
+              hasHydratedCacheRef.current = true;
+              // Don't show error if we have cached data
+              setError(null);
+              return; // Exit early if we have cached data
+            }
+          } catch (cacheError) {
+            console.error('[OwnerRequestsScreen] failed to parse cached bookings', cacheError);
+          }
+        }
+        
+        // Only show error if we don't have cached data
+        if (!result.success) {
+          setError(result.error || 'Failed to load booking requests. Please try again.');
+        }
       }
     } catch (fetchError: any) {
       console.error('[OwnerRequestsScreen] failed to load bookings', {
         message: fetchError?.message,
-        response: fetchError?.response?.data,
-        status: fetchError?.response?.status,
         error: fetchError,
       });
+
+      // Try to load from cache on error
+      try {
+        const cached = await AsyncStorage.getItem(BOOKINGS_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.data && Array.isArray(parsed.data)) {
+            // Sort cached bookings by created_at
+            const sortedCached = [...parsed.data].sort((a: any, b: any) => {
+              const dateA = new Date(a.created_at || a.createdAt || a.requested_at || 0).getTime();
+              const dateB = new Date(b.created_at || b.createdAt || b.requested_at || 0).getTime();
+              return dateB - dateA;
+            });
+            setRawBookings(sortedCached);
+            hasHydratedCacheRef.current = true;
+            setError(null); // Clear error if we have cached data
+          }
+        }
+      } catch (cacheError) {
+        console.error('[OwnerRequestsScreen] failed to load from cache', cacheError);
+      }
 
       // Handle 401 Unauthorized errors specifically
       if (fetchError?.status === 401 || fetchError?.response?.status === 401 || fetchError?.message === 'Unauthorized') {
@@ -552,11 +627,13 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         } catch (clearError) {
           console.error('[OwnerRequestsScreen] failed to clear auth data', clearError);
         }
-      } else {
-        setError(fetchError?.message || 'Failed to load booking requests. Please try again.');
+      } else if (!hasHydratedCacheRef.current) {
+        setError(fetchError?.message || 'Failed to load booking requests. Please check your internet connection and try again.');
       }
       
-      setRawBookings([]);
+      if (!hasHydratedCacheRef.current) {
+        setRawBookings([]);
+      }
       setCancellationLoading({});
     } finally {
       if (isRefresh) {
@@ -604,7 +681,18 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   }, [fetchBookings, loadCachedBookings]);
 
   const requests = useMemo<BookingRequestCard[]>(() => {
+    // Sort bookings by created_at date (most recent first)
     const sorted = [...rawBookings].sort((a, b) => {
+      // Prioritize created_at, then createdAt, then requested_at, then booking timestamp
+      const dateA = new Date(a.created_at || a.createdAt || a.requested_at || 0).getTime();
+      const dateB = new Date(b.created_at || b.createdAt || b.requested_at || 0).getTime();
+      
+      // If dates are valid, use them; otherwise fall back to booking timestamp
+      if (dateA > 0 && dateB > 0) {
+        return dateB - dateA; // Most recent first
+      }
+      
+      // Fallback to booking timestamp
       const tsA = getBookingTimestamp(a);
       const tsB = getBookingTimestamp(b);
       return tsB - tsA;
@@ -734,7 +822,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         <View style={styles.placeholder} />
         <View style={styles.headerTextGroup}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>New Requests</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{headerSubtitle}</Text>
+          <Text style={styles.headerSubtitle}>{headerSubtitle}</Text>
         </View>
         <TouchableOpacity 
           onPress={handleRefresh} 
@@ -792,117 +880,120 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
           {requests.map((request) => {
             const statusStyles = getStatusStyles(request.status);
             return (
-              <View key={request.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.button === '#1F2937' ? '#000' : '#020617' }]}>
+              <View key={request.id} style={[styles.requestCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {/* Card Header */}
                 <View style={styles.cardHeader}>
-                  <View>
-                    <Text style={[styles.customerName, { color: colors.text }]}>{request.customerName}</Text>
-                    <Text style={[styles.timeAgo, { color: colors.textSecondary }]}>{request.timeAgo}</Text>
+                  <View style={styles.customerInfo}>
+                    <Text style={styles.customerName}>{request.customerName}</Text>
+                    <Text style={styles.timeAgo}>{request.timeAgo}</Text>
                   </View>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: statusStyles.bg },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.statusBadgeText, { color: statusStyles.text }]}
-                    >
+                  <View style={[styles.statusBadge, { backgroundColor: statusStyles.bg }]}>
+                    <Text style={[styles.statusBadgeText, { color: statusStyles.text }]}>
                       {statusStyles.label}
                     </Text>
                   </View>
                 </View>
 
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="car-outline" size={20} color={colors.text} />
+                {/* Vehicle Information */}
+                <View style={styles.vehicleSection}>
+                  <View style={styles.vehicleIconContainer}>
+                    <Ionicons name="car" size={18} color={BLUE_COLOR} />
                   </View>
-                  <View style={styles.infoText}>
-                      <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Vehicle</Text>
-                      <Text style={[styles.infoValue, { color: colors.text }]}>{request.vehicle.primary}</Text>
-                      {request.vehicle.carmodel ? (
-                        <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>Model: {request.vehicle.carmodel}</Text>
-                      ) : request.vehicle.secondary ? (
-                        <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.vehicle.secondary}</Text>
-                      ) : null}
-                  </View>
-                </View>
-
-                <View style={styles.infoRow}>
-                  <View style={styles.infoIcon}>
-                    <Ionicons name="location-outline" size={20} color={colors.text} />
-                  </View>
-                  <View style={styles.infoText}>
-                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Location</Text>
-                    <Text style={[styles.infoValue, { color: colors.text }]}>{request.location.address}</Text>
-                      {request.location.distance ? (
-                    <View style={styles.infoSubRow}>
-                      <Ionicons name="navigate-outline" size={12} color={colors.textSecondary} />
-                      <Text style={[styles.infoSubValue, { color: colors.textSecondary }]}>{request.location.distance}</Text>
-                    </View>
-                      ) : null}
+                  <View style={styles.vehicleInfo}>
+                    <Text style={styles.vehicleLabel}>VEHICLE</Text>
+                    <Text style={styles.vehicleNumber}>{request.vehicle.primary}</Text>
+                    {request.vehicle.carmodel && (
+                      <Text style={styles.vehicleModel}>Model: {request.vehicle.carmodel}</Text>
+                    )}
                   </View>
                 </View>
 
+                {/* Scheduled and Service Pills */}
                 <View style={styles.metaRow}>
                   <View style={styles.metaPill}>
-                    <Text style={styles.metaLabel}>Scheduled</Text>
+                    <View style={styles.metaPillHeader}>
+                      <Ionicons name="calendar-outline" size={13} color="#9CA3AF" />
+                      <Text style={styles.metaLabel}>SCHEDULED</Text>
+                    </View>
                     <Text style={styles.metaValue}>{request.scheduled}</Text>
                   </View>
                   <View style={styles.metaPill}>
-                    <Text style={styles.metaLabel}>Service</Text>
-                    <Text style={styles.metaValue}>{request.service}</Text>
+                    <View style={styles.metaPillHeader}>
+                      <Ionicons name="water-outline" size={13} color={BLUE_COLOR} />
+                      <Text style={styles.metaLabel}>SERVICE</Text>
+                    </View>
+                    <Text style={[styles.metaValue, { color: BLUE_COLOR, fontWeight: '600' }]}>{request.service}</Text>
                   </View>
                 </View>
 
-                {request.notes ? (
-                  <View style={[styles.notesContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                    <Text style={[styles.notesLabel, { color: colors.text }]}>{'Customer Notes'}</Text>
-                    <Text style={[styles.notesValue, { color: colors.textSecondary }]}>{request.notes}</Text>
+                {/* Customer Notes (if available) */}
+                {request.notes && (
+                  <View style={styles.notesContainer}>
+                    <Text style={styles.notesLabel}>Customer Notes</Text>
+                    <Text style={styles.notesValue}>{request.notes}</Text>
                   </View>
-                ) : null}
+                )}
 
+                {/* Footer: Amount and Action Buttons */}
                 <View style={styles.footerRow}>
-                  <View>
-                    <Text style={[styles.amountLabel, { color: colors.textSecondary }]}>Amount</Text>
-                    <Text style={[styles.amountValue, { color: colors.text }]}>{request.amount}</Text>
+                  <View style={styles.amountSection}>
+                    <Text style={styles.amountLabel}>Amount</Text>
+                    <Text style={styles.amountValue}>{request.amount}</Text>
                   </View>
                   <View style={styles.footerActions}>
-                    <Pressable
-                      style={[
-                        styles.actionChip,
-                        styles.declineChip,
-                        cancellationLoading[request.id] && styles.actionChipDisabled,
-                      ]}
-                      disabled={!!cancellationLoading[request.id]}
-                      onPress={() => handleCancelBooking(request.id)}
-                    >
-                      {cancellationLoading[request.id] ? (
-                        <ActivityIndicator size="small" color={colors.text} />
-                      ) : (
-                        <>
-                          <Ionicons name="close" size={16} color={colors.text} />
-                          <Text style={[styles.declineText, { color: colors.text }]}>{'Decline'}</Text>
-                        </>
-                      )}
-                    </Pressable>
-                    <Pressable
-                      style={[
-                        styles.actionChip,
-                        styles.acceptChip,
-                        cancellationLoading[request.id] && styles.actionChipDisabled,
-                      ]}
-                      disabled={!!cancellationLoading[request.id]}
-                      onPress={() => handleCompleteBooking(request.id)}
-                    >
-                      {cancellationLoading[request.id] ? (
-                        <ActivityIndicator size="small" color={colors.buttonText} />
-                      ) : (
-                        <>
-                          <Ionicons name="checkmark" size={16} color={colors.buttonText} />
-                          <Text style={[styles.acceptText, { color: colors.buttonText }]}>{'Accept'}</Text>
-                        </>
-                      )}
-                    </Pressable>
+                    {/* Show Decline and Accept buttons for pending requests */}
+                    {request.status === 'pending' && (
+                      <>
+                        <TouchableOpacity
+                          style={[styles.declineButton, cancellationLoading[request.id] && styles.buttonDisabled]}
+                          disabled={!!cancellationLoading[request.id]}
+                          onPress={() => handleCancelBooking(request.id)}
+                          activeOpacity={0.7}
+                        >
+                          {cancellationLoading[request.id] ? (
+                            <ActivityIndicator size="small" color={BLUE_COLOR} />
+                          ) : (
+                            <>
+                              <Ionicons name="close" size={16} color={BLUE_COLOR} />
+                              <Text style={styles.declineButtonText}>Decline</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.acceptButton, cancellationLoading[request.id] && styles.buttonDisabled]}
+                          disabled={!!cancellationLoading[request.id]}
+                          onPress={() => handleCompleteBooking(request.id)}
+                          activeOpacity={0.7}
+                        >
+                          {cancellationLoading[request.id] ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <>
+                              <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                              <Text style={styles.acceptButtonText}>Accept</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      </>
+                    )}
+                    {/* Show Cancel button for accepted requests */}
+                    {request.status === 'accepted' && (
+                      <TouchableOpacity
+                        style={[styles.cancelButton, cancellationLoading[request.id] && styles.buttonDisabled]}
+                        disabled={!!cancellationLoading[request.id]}
+                        onPress={() => handleCancelBooking(request.id)}
+                        activeOpacity={0.7}
+                      >
+                        {cancellationLoading[request.id] ? (
+                          <ActivityIndicator size="small" color="#DC2626" />
+                        ) : (
+                          <>
+                            <Ionicons name="close-circle" size={16} color="#DC2626" />
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               </View>
@@ -941,19 +1032,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
-    letterSpacing: -0.5,
+    fontSize: 23, // 22-24px, Weight: 600 (Semi-Bold) - Page Heading
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    letterSpacing: -0.3,
     textAlign: 'center',
     includeFontPadding: false,
   },
   headerSubtitle: {
     marginTop: Platform.select({ ios: 2, android: 2 }),
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     textAlign: 'center',
+    color: '#6B7280', // Muted gray
+    includeFontPadding: false,
   },
   placeholder: {
     width: 40,
@@ -974,199 +1067,267 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.select({ ios: 60, android: 50 }),
   },
   requestsList: {
-    gap: 14,
+    gap: 0, // Cards now have their own marginBottom
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 20,
+    padding: 18,
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.1,
     shadowRadius: 12,
-    elevation: 4,
-    gap: 16,
+    elevation: 5,
+    marginBottom: 16,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  customerInfo: {
+    flex: 1,
   },
   customerName: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
-    color: '#111827',
+    fontSize: 18, // 17-18px, Weight: 600 (Semi-Bold) - Service Name
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: BLUE_COLOR, // Blue color for customer name
+    includeFontPadding: false,
   },
   timeAgo: {
     marginTop: 4,
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    color: '#6B7280',
+    color: '#6B7280', // Muted gray
+    includeFontPadding: false,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusBadgeText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
+    fontSize: 12.5, // 12-13px, Weight: 500, Letter spacing: 0.2px - Status Badge
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
+    letterSpacing: 0.2,
+    includeFontPadding: false,
   },
-  infoRow: {
+  vehicleSection: {
     flexDirection: 'row',
-    gap: 12,
     alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  infoIcon: {
-    width: 40,
-    height: 40,
+  vehicleIconContainer: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F0F9FF',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
-  infoText: {
+  vehicleInfo: {
     flex: 1,
-    gap: 2,
   },
-  infoLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+  vehicleLabel: {
+    fontSize: 11,
     fontFamily: FONTS.INTER_MEDIUM,
     fontWeight: '500',
     color: '#9CA3AF',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  infoValue: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    color: '#111827',
+    letterSpacing: 0.8,
+    marginBottom: 4,
     includeFontPadding: false,
   },
-  infoSubValue: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+  vehicleNumber: {
+    fontSize: 18, // Reduced font size - Booking Number/Vehicle
+    fontWeight: '700', // Bold
+    fontFamily: FONTS.INTER_BOLD,
+    color: BLUE_COLOR, // Blue color
+    marginBottom: 2,
+    includeFontPadding: false,
+  },
+  vehicleModel: {
+    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    color: '#6B7280',
-  },
-  infoSubRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    color: '#6B7280', // Muted gray
+    marginTop: 2,
+    includeFontPadding: false,
   },
   metaRow: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 16,
   },
   metaPill: {
     flex: 1,
-    backgroundColor: '#F5F6FA',
-    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+    paddingVertical: 14,
     paddingHorizontal: 14,
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  metaPillHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
   },
   metaLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 12, // 12-13px, Weight: 500 - Status Badge / Label
     fontFamily: FONTS.INTER_MEDIUM,
     fontWeight: '500',
     color: '#9CA3AF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    includeFontPadding: false,
   },
   metaValue: {
     marginTop: 4,
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
-    color: '#1F2937',
+    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#6B7280', // Muted gray
+    includeFontPadding: false,
   },
   notesContainer: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#DBEAFE',
     backgroundColor: '#EFF6FF',
     padding: 14,
+    marginBottom: 16,
     gap: 6,
   },
   notesLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
-    color: '#1D4ED8',
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#1E40AF',
+    marginBottom: 4,
+    includeFontPadding: false,
   },
   notesValue: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 13.5,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     color: '#1E3A8A',
     lineHeight: 20,
+    includeFontPadding: false,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  amountSection: {
+    flex: 1,
   },
   amountLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     color: '#9CA3AF',
     marginBottom: 4,
+    includeFontPadding: false,
   },
   amountValue: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '700',
+    fontSize: 20, // Increased font size - Total Amount
+    fontWeight: '700', // Increased font weight (Bold)
     fontFamily: FONTS.INTER_BOLD,
-    color: '#111827',
+    color: '#10B981', // Green color
     includeFontPadding: false,
   },
   footerActions: {
     flexDirection: 'row',
     gap: 10,
+    alignItems: 'center',
   },
-  actionChip: {
+  declineButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 22,
-    paddingVertical: 12,
-    borderRadius: 16,
-    borderWidth: 2,
-    shadowColor: '#000',
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: BLUE_COLOR,
+    backgroundColor: '#EFF6FF',
+    shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
-  actionChipDisabled: {
-    opacity: 0.6,
-  },
-  declineChip: {
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-  },
-  acceptChip: {
-    borderColor: '#000000',
-    backgroundColor: '#000000',
-  },
-  declineText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+  declineButtonText: {
+    fontSize: 14.5, // 14-15px, Weight: 600 (Semi-Bold) - Button Text
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
-    color: '#111827',
+    color: BLUE_COLOR,
     includeFontPadding: false,
   },
-  acceptText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+  acceptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 25,
+    backgroundColor: '#111827',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  acceptButtonText: {
+    fontSize: 14.5, // 14-15px, Weight: 600 (Semi-Bold) - Button Text
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#FFFFFF',
+    includeFontPadding: false,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 11,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: '#DC2626',
+    backgroundColor: '#FEE2E2',
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cancelButtonText: {
+    fontSize: 14.5, // 14-15px, Weight: 600 (Semi-Bold) - Button Text
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#DC2626',
     includeFontPadding: false,
   },
   stateContainer: {

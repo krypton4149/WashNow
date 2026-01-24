@@ -1402,7 +1402,7 @@ class AuthService {
               'Accept': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
-          }).then(async (response) => {
+          }, 30000).then(async (response) => {
             try {
               const data = await response.json();
               if (response.ok && data.success) {
@@ -1455,13 +1455,14 @@ class AuthService {
         }
       }
 
+      // Use longer timeout for owner bookings API (30 seconds) as it may take longer to process
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/bookings`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-      });
+      }, 30000); // 30 seconds timeout for owner bookings
 
       const data = await response.json();
 
