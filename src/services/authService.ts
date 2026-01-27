@@ -391,6 +391,7 @@ class AuthService {
         device_token: 'mobile-app',
       };
 
+      // Use longer timeout for registration API (30 seconds) as it may take longer to process
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/register`, {
         method: 'POST',
         headers: {
@@ -398,7 +399,7 @@ class AuthService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload),
-      }, 10000); // 10 seconds timeout for registration (critical operation)
+      }, 30000); // 30 seconds timeout for registration (increased for reliability)
 
       const data = await response.json();
 
@@ -957,6 +958,7 @@ class AuthService {
       // Format bookingDate as YYYY-MM-DD
       const formattedDate = bookingDate;
 
+      // Use longer timeout for time slots API (30 seconds) as it may take longer to process
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/timeslotsforcentre`, {
         method: 'POST',
         headers: {
@@ -968,7 +970,7 @@ class AuthService {
           centreId: centreId.toString(),
           bookingDate: formattedDate,
         }),
-      }, 5000); // 5 seconds timeout for time slots API (needs more time than other APIs)
+      }, 30000); // 30 seconds timeout for time slots API (increased for reliability)
 
       const data = await response.json();
 
@@ -989,12 +991,12 @@ class AuthService {
       }
     } catch (error: any) {
       // Provide better error messages
-      if (error.message && error.message.includes('timeout')) {
+      if (error.message && (error.message.includes('timeout') || error.message.includes('Timeout'))) {
         return {
           success: false,
-          error: 'Request timeout. Please check your internet connection and try again.',
+          error: 'Connection timeout. Please check your internet and try again.',
         };
-      } else if (error.message && error.message.includes('Network')) {
+      } else if (error.message && (error.message.includes('Network') || error.message.includes('network'))) {
         return {
           success: false,
           error: 'Network error. Please check your internet connection.',
@@ -1375,6 +1377,120 @@ class AuthService {
         };
       }
     } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Network error. Please check your internet connection and try again.'
+      };
+    }
+  }
+
+  // Reschedule Booking API
+  async rescheduleBooking(
+    bookingId: string,
+    bookingDate: string, // YYYY-MM-DD format
+    timeSlotId: string | number // Time slot ID
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to reschedule a booking' };
+      }
+
+      // Validate required fields
+      if (!bookingId || bookingId.trim() === '') {
+        return { success: false, error: 'Booking ID is required' };
+      }
+      if (!bookingDate || bookingDate.trim() === '') {
+        return { success: false, error: 'Booking date is required' };
+      }
+      if (!timeSlotId) {
+        return { success: false, error: 'Time slot ID is required' };
+      }
+
+      // Prepare request payload - ensure correct data types
+      // The backend expects numeric IDs
+      const bookingIdNum = Number(bookingId.trim());
+      const timeSlotIdNum = Number(timeSlotId);
+      
+      // Validate numeric conversion
+      if (isNaN(bookingIdNum)) {
+        return { success: false, error: 'Invalid booking ID format' };
+      }
+      if (isNaN(timeSlotIdNum)) {
+        return { success: false, error: 'Invalid time slot ID format' };
+      }
+      
+      const requestPayload = {
+        id: bookingIdNum,
+        booking_date: bookingDate.trim(),
+        time_slot_id: timeSlotIdNum,
+      };
+
+      console.log('[Reschedule API] Request payload:', requestPayload);
+      console.log('[Reschedule API] Payload types:', {
+        id: typeof requestPayload.id,
+        booking_date: typeof requestPayload.booking_date,
+        time_slot_id: typeof requestPayload.time_slot_id,
+      });
+      console.log('[Reschedule API] Endpoint:', `${BASE_URL}/api/v1/visitor/bookingreschedule`);
+      console.log('[Reschedule API] Full URL:', `${BASE_URL}/api/v1/visitor/bookingreschedule`);
+      console.log('[Reschedule API] Token present:', !!token);
+
+      // Use JSON format with proper Content-Type header
+      // The backend expects JSON with Content-Type: application/json
+      // Ensure all required headers are present for Laravel to properly parse the request
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/visitor/bookingreschedule`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest', // Some Laravel apps expect this
+        },
+        body: JSON.stringify(requestPayload),
+      }, 30000); // 30 seconds timeout for reschedule booking
+
+      console.log('[Reschedule API] Response status:', response.status);
+      
+      let data;
+      try {
+        const responseText = await response.text();
+        console.log('[Reschedule API] Raw response:', responseText);
+        data = JSON.parse(responseText);
+        console.log('[Reschedule API] Parsed response data:', data);
+      } catch (parseError) {
+        console.error('[Reschedule API] Failed to parse response:', parseError);
+        return {
+          success: false,
+          error: 'Invalid response from server. Please try again.'
+        };
+      }
+
+      if (response.ok && data.success) {
+        // Invalidate booking caches
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        ]);
+        
+        return {
+          success: true,
+          message: data.message || 'Booking rescheduled successfully'
+        };
+      } else {
+        console.error('[Reschedule API] API returned error:', data);
+        // Return the actual error message from backend
+        const errorMessage = data.message || data.error || data.data?.message || 'Failed to reschedule booking. Please try again.';
+        return {
+          success: false,
+          error: errorMessage
+        };
+      }
+    } catch (error: any) {
+      console.error('[Reschedule API] Exception caught:', error);
+      console.error('[Reschedule API] Error message:', error.message);
+      console.error('[Reschedule API] Error type:', error.name);
+      
       return {
         success: false,
         error: error.message || 'Network error. Please check your internet connection and try again.'

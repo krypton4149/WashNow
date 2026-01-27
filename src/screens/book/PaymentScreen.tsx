@@ -1225,7 +1225,7 @@ const PaymentScreen: React.FC<Props> = ({
                         style={{ marginRight: 4 }}
                       />
                       <Text style={[styles.methodBadgeText, { color: selectedPaymentMethod === 'stripe' ? '#FFFFFF' : colors.textSecondary }]}>
-                        Card
+                        Stripe
                       </Text>
                     </View>
                     {Platform.OS === 'ios' && (
@@ -1328,7 +1328,7 @@ const PaymentScreen: React.FC<Props> = ({
                     styles.paymentCardSubtext, 
                     { color: selectedPaymentMethod === 'cash' ? '#FFFFFF' + 'CC' : colors.textSecondary }
                   ]}>
-                    Cash on delivery
+                    Cash or online
                   </Text>
                 </View>
               </View>

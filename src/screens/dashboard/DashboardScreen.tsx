@@ -9,12 +9,14 @@ import {
   Alert,
   Platform,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
+import { FONTS } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -89,6 +91,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [serviceCenters, setServiceCenters] = useState<any[]>([]);
+  
+  // Reschedule modal state
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [selectedBookingForReschedule, setSelectedBookingForReschedule] = useState<Booking | null>(null);
+  const [rescheduleSelectedDate, setRescheduleSelectedDate] = useState<string>('');
+  const [rescheduleSelectedTimeSlotId, setRescheduleSelectedTimeSlotId] = useState<string | number | null>(null);
+  const [rescheduleSelectedTime, setRescheduleSelectedTime] = useState<string>('');
+  const [rescheduleCurrentMonth, setRescheduleCurrentMonth] = useState<number>(new Date().getMonth());
+  const [rescheduleCurrentYear, setRescheduleCurrentYear] = useState<number>(new Date().getFullYear());
+  const [rescheduleTimeSlots, setRescheduleTimeSlots] = useState<any[]>([]);
+  const [loadingRescheduleTimeSlots, setLoadingRescheduleTimeSlots] = useState<boolean>(false);
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [showTimeSlotDropdown, setShowTimeSlotDropdown] = useState(false);
 
   // 🧩 Helper functions defined BEFORE use
   const formatBookingTime = (bookingDate: string, createdAt: string) => {
@@ -417,13 +432,242 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   };
 
   const handleReschedule = (activity: Activity) => {
-    // Navigate to reschedule screen or show reschedule options
-    // For now, we'll just show an alert - this can be connected to navigation later
-    Alert.alert(
-      'Reschedule Booking',
-      'Reschedule functionality will be implemented soon.',
-      [{ text: 'OK' }]
+    // Find the booking from activities
+    const booking = bookings.find(b => b.booking_id === activity.id);
+    if (booking) {
+      setSelectedBookingForReschedule(booking);
+      setShowRescheduleModal(true);
+      // Initialize with today's date
+      const today = new Date();
+      setRescheduleCurrentMonth(today.getMonth());
+      setRescheduleCurrentYear(today.getFullYear());
+      setRescheduleSelectedDate('');
+      setRescheduleSelectedTimeSlotId(null);
+      setRescheduleSelectedTime('');
+    }
+  };
+
+  // Helper function to check if a date is a weekoff day
+  const isWeekoffDay = (date: Date, serviceCenter: any): boolean => {
+    if (!serviceCenter?.weekoff_days || !Array.isArray(serviceCenter.weekoff_days) || serviceCenter.weekoff_days.length === 0) {
+      return false;
+    }
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = days[date.getDay()];
+    return serviceCenter.weekoff_days.includes(dayName);
+  };
+
+  // Generate all time slots from 9 AM to 7 PM (30-minute intervals)
+  const generateAllTimeSlots = (): any[] => {
+    const slots: any[] = [];
+    let hour = 9; // Start at 9 AM
+    const endHour = 19; // End at 7 PM (19:00)
+    
+    while (hour < endHour) {
+      const minutes = [0, 30]; // 30-minute intervals
+      
+      for (const minute of minutes) {
+        const time24 = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+        const nextMinute = minute === 0 ? 30 : 0;
+        const nextHour = minute === 30 ? hour + 1 : hour;
+        const endTime24 = `${String(nextHour).padStart(2, '0')}:${String(nextMinute).padStart(2, '0')}:00`;
+        
+        // Format for display (12-hour format)
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+        const ampm = hour < 12 ? 'AM' : 'PM';
+        const displayMinute = minute === 0 ? '00' : '30';
+        const displayNextHour = nextHour === 0 ? 12 : nextHour > 12 ? nextHour - 12 : nextHour;
+        const nextAmpm = nextHour < 12 ? 'AM' : 'PM';
+        const nextDisplayMinute = nextMinute === 0 ? '00' : '30';
+        
+        const name = `${displayHour}:${displayMinute}${ampm}-${displayNextHour}:${nextDisplayMinute}${nextAmpm}`;
+        
+        slots.push({
+          id: time24,
+          name: name,
+          start_time: time24,
+          end_time: endTime24,
+          available: 0,
+          isAvailable: false,
+        });
+      }
+      
+      hour++;
+    }
+    
+    return slots;
+  };
+
+  // Fetch time slots for reschedule
+  const fetchRescheduleTimeSlots = async (date: string) => {
+    if (!date || !selectedBookingForReschedule) {
+      setRescheduleTimeSlots([]);
+      return;
+    }
+
+    try {
+      setLoadingRescheduleTimeSlots(true);
+      setRescheduleSelectedTimeSlotId(null);
+      setRescheduleSelectedTime('');
+
+      // Format date as YYYY-MM-DD
+      const dateObj = new Date(rescheduleCurrentYear, rescheduleCurrentMonth, parseInt(date));
+      const formattedDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+
+      const centreId = selectedBookingForReschedule.service_centre_id;
+      const result = await authService.getTimeSlotsForCentre(centreId, formattedDate);
+
+      if (result.success && result.timeSlots && Array.isArray(result.timeSlots)) {
+        // Only show available time slots (where available > 0)
+        const availableSlots = result.timeSlots
+          .filter((slot: any) => (slot.available || 0) > 0)
+          .map((slot: any) => ({
+            id: slot.id,
+            name: slot.name || slot.time,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            available: slot.available,
+            isAvailable: true,
+          }));
+
+        setRescheduleTimeSlots(availableSlots);
+      } else {
+        // No available slots
+        setRescheduleTimeSlots([]);
+      }
+    } catch (error: any) {
+      console.error('Error fetching reschedule time slots:', error);
+      setRescheduleTimeSlots([]);
+    } finally {
+      setLoadingRescheduleTimeSlots(false);
+    }
+  };
+
+  // Fetch time slots when date changes
+  useEffect(() => {
+    if (rescheduleSelectedDate && selectedBookingForReschedule) {
+      fetchRescheduleTimeSlots(rescheduleSelectedDate);
+    } else {
+      setRescheduleTimeSlots([]);
+    }
+  }, [rescheduleSelectedDate, rescheduleCurrentMonth, rescheduleCurrentYear]);
+
+  // Generate calendar days
+  const generateRescheduleCalendarDays = () => {
+    const days = [];
+    const today = new Date();
+    const currentDate = new Date(rescheduleCurrentYear, rescheduleCurrentMonth, 1);
+    const lastDay = new Date(rescheduleCurrentYear, rescheduleCurrentMonth + 1, 0);
+    
+    const serviceCenter = serviceCenters.find(
+      (sc: any) => sc.id === Number(selectedBookingForReschedule?.service_centre_id) || 
+                   String(sc.id) === String(selectedBookingForReschedule?.service_centre_id)
     );
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < currentDate.getDay(); i++) {
+      days.push({ day: '', isCurrentMonth: false, isSelected: false, isPast: false, isWeekoff: false });
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+      const dayDate = new Date(rescheduleCurrentYear, rescheduleCurrentMonth, day);
+      const startOfToday = new Date(today);
+      startOfToday.setHours(0, 0, 0, 0);
+      const isPast = dayDate.getTime() < startOfToday.getTime();
+      const isWeekoff = serviceCenter ? isWeekoffDay(dayDate, serviceCenter) : false;
+      
+      days.push({
+        day: day.toString(),
+        isCurrentMonth: true,
+        isSelected: day.toString() === rescheduleSelectedDate,
+        isPast: isPast,
+        isWeekoff: isWeekoff,
+      });
+    }
+    
+    return days;
+  };
+
+  const handleRescheduleDateSelect = (day: string, isPast: boolean, isWeekoff: boolean) => {
+    if (day && day !== '' && !isPast && !isWeekoff) {
+      setRescheduleSelectedDate(day);
+    } else if (isWeekoff) {
+      Alert.alert(
+        'Service Center Closed',
+        'This service center is closed on this day. Please select another date.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleRescheduleTimeSelect = (timeSlot: any) => {
+    // All slots shown are available, so we can directly select
+    setRescheduleSelectedTimeSlotId(timeSlot.id);
+    setRescheduleSelectedTime(timeSlot.name);
+  };
+
+  const handleRescheduleConfirm = async () => {
+    if (!rescheduleSelectedDate || !rescheduleSelectedTimeSlotId) {
+      Alert.alert('Error', 'Please select a date and time slot');
+      return;
+    }
+
+    if (!selectedBookingForReschedule) {
+      Alert.alert('Error', 'Booking information is missing');
+      return;
+    }
+
+    setIsRescheduling(true);
+    try {
+      // Format date as YYYY-MM-DD for API
+      const dateObj = new Date(rescheduleCurrentYear, rescheduleCurrentMonth, parseInt(rescheduleSelectedDate));
+      const day = dateObj.getDate().toString().padStart(2, '0');
+      const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+      const year = dateObj.getFullYear();
+      const formattedDate = `${year}-${month}-${day}`; // YYYY-MM-DD format
+
+      // Get time slot ID
+      const timeSlotId = rescheduleSelectedTimeSlotId;
+
+      if (!timeSlotId) {
+        Alert.alert('Error', 'Please select a time slot');
+        setIsRescheduling(false);
+        return;
+      }
+
+      // Call reschedule API with correct parameters
+      // Use the numeric booking ID (id) - this is the booking's database ID
+      const bookingId = String(selectedBookingForReschedule.id);
+      
+      console.log('Reschedule booking data:', {
+        bookingId,
+        bookingNumericId: selectedBookingForReschedule.id,
+        bookingCode: selectedBookingForReschedule.booking_id,
+        formattedDate,
+        timeSlotId,
+        serviceCentreId: selectedBookingForReschedule.service_centre_id,
+      });
+      
+      const result = await authService.rescheduleBooking(
+        bookingId,
+        formattedDate,
+        timeSlotId
+      );
+
+      if (result.success) {
+        Alert.alert('Success', result.message || 'Booking rescheduled successfully');
+        setShowRescheduleModal(false);
+        await loadBookings();
+      } else {
+        Alert.alert('Error', result.error || 'Failed to reschedule booking. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Reschedule error:', error);
+      Alert.alert('Error', 'Failed to reschedule booking. Please try again.');
+    } finally {
+      setIsRescheduling(false);
+    }
   };
 
   return (
@@ -522,8 +766,260 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </View>
         )}
       </ScrollView>
+
+      {/* Reschedule Modal */}
+      <Modal
+        visible={showRescheduleModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowRescheduleModal(false)}
+      >
+        <SafeAreaView style={styles.modalOverlay} edges={['bottom']}>
+          <TouchableOpacity
+            style={styles.modalOverlayTouchable}
+            activeOpacity={1}
+            onPress={() => {
+              setShowRescheduleModal(false);
+              setShowTimeSlotDropdown(false);
+            }}
+          >
+            <View 
+              style={[styles.rescheduleModalContent, { backgroundColor: colors.card }]}
+              onStartShouldSetResponder={() => true}
+            >
+              {/* Modal Header */}
+              <View style={styles.rescheduleModalHeader}>
+                <Text style={[styles.rescheduleModalTitle, { color: colors.text }]}>Reschedule Booking</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowRescheduleModal(false);
+                    setShowTimeSlotDropdown(false);
+                  }}
+                  style={styles.rescheduleModalCloseButton}
+                >
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView 
+                style={styles.rescheduleModalScroll} 
+                contentContainerStyle={styles.rescheduleModalScrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+              {/* Calendar Section - Smaller */}
+              <View style={styles.rescheduleCalendarSection}>
+                <Text style={[styles.rescheduleSectionTitle, { color: colors.text }]}>Select Date</Text>
+                
+                {/* Month Navigation */}
+                <View style={styles.rescheduleMonthNavigation}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (rescheduleCurrentMonth === 0) {
+                        setRescheduleCurrentMonth(11);
+                        setRescheduleCurrentYear(rescheduleCurrentYear - 1);
+                      } else {
+                        setRescheduleCurrentMonth(rescheduleCurrentMonth - 1);
+                      }
+                    }}
+                    style={styles.rescheduleMonthButton}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="chevron-back" size={18} color="#6B7280" />
+                  </TouchableOpacity>
+                  
+                  <Text style={[styles.rescheduleMonthText, { color: colors.text }]}>
+                    {getMonthName(rescheduleCurrentMonth)} {rescheduleCurrentYear}
+                  </Text>
+                  
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (rescheduleCurrentMonth === 11) {
+                        setRescheduleCurrentMonth(0);
+                        setRescheduleCurrentYear(rescheduleCurrentYear + 1);
+                      } else {
+                        setRescheduleCurrentMonth(rescheduleCurrentMonth + 1);
+                      }
+                    }}
+                    style={styles.rescheduleMonthButton}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="chevron-forward" size={18} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Calendar Days - Smaller */}
+                <View style={styles.rescheduleCalendarGrid}>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                    <View key={index} style={styles.rescheduleCalendarDayHeader}>
+                      <Text style={[styles.rescheduleCalendarDayHeaderText, { color: colors.textSecondary }]}>{day}</Text>
+                    </View>
+                  ))}
+                  {generateRescheduleCalendarDays().map((dayData, index) => {
+                    const isDisabled = !dayData.isCurrentMonth || dayData.isPast || dayData.isWeekoff;
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.rescheduleCalendarDay,
+                          dayData.isSelected && [styles.rescheduleCalendarDaySelected, { backgroundColor: BLUE_COLOR }],
+                          !dayData.isCurrentMonth && styles.rescheduleCalendarDayInactive,
+                          dayData.isPast && styles.rescheduleCalendarDayPast,
+                          dayData.isWeekoff && styles.rescheduleCalendarDayWeekoff,
+                        ]}
+                        onPress={() => handleRescheduleDateSelect(dayData.day, dayData.isPast, dayData.isWeekoff)}
+                        disabled={isDisabled}
+                      >
+                        <Text style={[
+                          styles.rescheduleCalendarDayText,
+                          { color: colors.text },
+                          dayData.isSelected && [styles.rescheduleCalendarDayTextSelected, { color: '#FFFFFF' }],
+                          !dayData.isCurrentMonth && { color: colors.textSecondary },
+                          dayData.isPast && { color: colors.textSecondary },
+                          dayData.isWeekoff && { color: colors.textSecondary },
+                        ]}>
+                          {dayData.day}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Time Slots Section - Dropdown Style */}
+              {rescheduleSelectedDate && (
+                <View style={styles.rescheduleTimeSlotsSection}>
+                  <Text style={[styles.rescheduleTimeSlotLabel, { color: colors.text }]}>Select Time Slot</Text>
+                  
+                  {loadingRescheduleTimeSlots ? (
+                    <View style={styles.rescheduleLoadingContainer}>
+                      <ActivityIndicator size="small" color={BLUE_COLOR} />
+                      <Text style={[styles.rescheduleLoadingText, { color: colors.textSecondary }]}>Loading time slots...</Text>
+                    </View>
+                  ) : rescheduleTimeSlots.length > 0 ? (
+                    <View style={styles.rescheduleDropdownContainer}>
+                      <TouchableOpacity
+                        style={[
+                          styles.rescheduleDropdownButton, 
+                          { 
+                            borderColor: showTimeSlotDropdown ? BLUE_COLOR : '#D1D5DB',
+                            backgroundColor: '#FFFFFF'
+                          }
+                        ]}
+                        onPress={() => setShowTimeSlotDropdown(!showTimeSlotDropdown)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[
+                          styles.rescheduleDropdownButtonText,
+                          { color: rescheduleSelectedTime ? colors.text : colors.textSecondary }
+                        ]}>
+                          {rescheduleSelectedTime || 'Select time slot'}
+                          {rescheduleSelectedTime && rescheduleTimeSlots.find(s => s.id === rescheduleSelectedTimeSlotId) && 
+                            ` (${rescheduleTimeSlots.find(s => s.id === rescheduleSelectedTimeSlotId)?.available || 0} left)`
+                          }
+                        </Text>
+                        <Ionicons 
+                          name={showTimeSlotDropdown ? "chevron-up" : "chevron-down"} 
+                          size={20} 
+                          color={showTimeSlotDropdown ? BLUE_COLOR : '#6B7280'} 
+                        />
+                      </TouchableOpacity>
+
+                      {showTimeSlotDropdown && (
+                        <View style={[styles.rescheduleDropdownList, { 
+                          backgroundColor: colors.card,
+                          borderColor: colors.border 
+                        }]}>
+                          <ScrollView 
+                            style={styles.rescheduleDropdownScroll}
+                            nestedScrollEnabled={true}
+                            showsVerticalScrollIndicator={true}
+                          >
+                            {rescheduleTimeSlots.map((timeSlot, index) => {
+                              const isSelected = rescheduleSelectedTimeSlotId === timeSlot.id;
+                              
+                              return (
+                                <TouchableOpacity
+                                  key={`${timeSlot.id}-${index}`}
+                                  style={[
+                                    styles.rescheduleDropdownItem,
+                                    isSelected && { 
+                                      backgroundColor: BLUE_COLOR + '10',
+                                      borderLeftWidth: 3,
+                                      borderLeftColor: BLUE_COLOR,
+                                    },
+                                    { borderBottomColor: '#F3F4F6' }
+                                  ]}
+                                  onPress={() => {
+                                    handleRescheduleTimeSelect(timeSlot);
+                                    setShowTimeSlotDropdown(false);
+                                  }}
+                                  activeOpacity={0.6}
+                                >
+                                  <Text style={[
+                                    styles.rescheduleDropdownItemText,
+                                    { color: isSelected ? BLUE_COLOR : '#374151' },
+                                    isSelected && { fontWeight: '600', fontFamily: FONTS.INTER_SEMIBOLD }
+                                  ]}>
+                                    {timeSlot.name} ({timeSlot.available || 0} left)
+                                  </Text>
+                                  {isSelected && (
+                                    <View style={styles.rescheduleDropdownCheckmark}>
+                                      <Ionicons name="checkmark-circle" size={22} color={BLUE_COLOR} />
+                                    </View>
+                                  )}
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
+                  ) : (
+                    <View style={styles.rescheduleNoSlotsContainer}>
+                      <Ionicons name="time-outline" size={32} color={colors.textSecondary} />
+                      <Text style={[styles.rescheduleNoSlotsText, { color: colors.textSecondary }]}>
+                        No available time slots
+                      </Text>
+                      <Text style={[styles.rescheduleNoSlotsSubtext, { color: colors.textSecondary }]}>
+                        Please select another date
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Confirm Button */}
+              <TouchableOpacity
+                style={[
+                  styles.rescheduleConfirmButton,
+                  { backgroundColor: BLUE_COLOR },
+                  (!rescheduleSelectedDate || !rescheduleSelectedTimeSlotId) && styles.rescheduleConfirmButtonDisabled
+                ]}
+                onPress={handleRescheduleConfirm}
+                disabled={!rescheduleSelectedDate || !rescheduleSelectedTimeSlotId || isRescheduling}
+                activeOpacity={0.8}
+              >
+                {isRescheduling ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.rescheduleConfirmButtonText}>Confirm Reschedule</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+          </TouchableOpacity>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
+};
+
+const getMonthName = (month: number) => {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return months[month];
 };
 
 const styles = StyleSheet.create({
@@ -985,6 +1481,344 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontWeight: '400',
     color: '#666',
+    textAlign: 'center',
+  },
+  // Reschedule Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalOverlayTouchable: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  rescheduleModalContent: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    flex: 1,
+    maxHeight: '90%',
+    paddingBottom: 0,
+  },
+  rescheduleModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  rescheduleModalTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
+    letterSpacing: -0.3,
+  },
+  rescheduleModalCloseButton: {
+    padding: 4,
+  },
+  rescheduleModalScroll: {
+    flex: 1,
+  },
+  rescheduleModalScrollContent: {
+    paddingBottom: 20,
+    flexGrow: 1,
+  },
+  rescheduleCalendarSection: {
+    padding: 20,
+    paddingBottom: 16,
+    backgroundColor: '#F9FAFB',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  rescheduleSectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    marginBottom: 14,
+    color: '#111827',
+    letterSpacing: 0.2,
+  },
+  rescheduleMonthNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 4,
+  },
+  rescheduleMonthButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  rescheduleMonthText: {
+    fontSize: 17,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
+    color: '#111827',
+    letterSpacing: -0.2,
+  },
+  rescheduleCalendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  rescheduleCalendarDayHeader: {
+    width: '13%',
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  rescheduleCalendarDayHeaderText: {
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  rescheduleCalendarDay: {
+    width: '13%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    marginBottom: 4,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  rescheduleCalendarDaySelected: {
+    backgroundColor: BLUE_COLOR,
+    borderColor: BLUE_COLOR,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  rescheduleCalendarDayInactive: {
+    opacity: 0.25,
+    backgroundColor: '#F3F4F6',
+  },
+  rescheduleCalendarDayPast: {
+    opacity: 0.4,
+    backgroundColor: '#F9FAFB',
+  },
+  rescheduleCalendarDayWeekoff: {
+    opacity: 0.4,
+    backgroundColor: '#FEF2F2',
+  },
+  rescheduleCalendarDayText: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#374151',
+  },
+  rescheduleCalendarDayTextSelected: {
+    color: '#FFFFFF',
+  },
+  rescheduleTimeSlotsSection: {
+    padding: 20,
+    paddingTop: 16,
+  },
+  rescheduleTimeSlotLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    marginBottom: 12,
+    color: '#111827',
+    letterSpacing: 0.2,
+  },
+  rescheduleDropdownContainer: {
+    position: 'relative',
+    zIndex: 10,
+  },
+  rescheduleDropdownButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderRadius: 14,
+    borderWidth: 2,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  rescheduleDropdownButtonText: {
+    fontSize: 16,
+    fontFamily: FONTS.INTER_MEDIUM,
+    flex: 1,
+    color: '#111827',
+    fontWeight: '500',
+  },
+  rescheduleDropdownList: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 6,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    maxHeight: 250,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
+    zIndex: 1000,
+    overflow: 'hidden',
+  },
+  rescheduleDropdownScroll: {
+    maxHeight: 250,
+  },
+  rescheduleDropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 0,
+  },
+  rescheduleDropdownItemText: {
+    fontSize: 15,
+    fontFamily: FONTS.INTER_MEDIUM,
+    flex: 1,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  rescheduleDropdownCheckmark: {
+    marginLeft: 8,
+  },
+  rescheduleLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 8,
+  },
+  rescheduleLoadingText: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_REGULAR,
+  },
+  rescheduleTimeSlotsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  rescheduleTimeSlotButton: {
+    borderRadius: 12,
+    width: '46%',
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    position: 'relative',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  rescheduleTimeSlotButtonSelectedAvailable: {
+    backgroundColor: '#D1FAE5',
+    borderColor: '#10B981',
+  },
+  rescheduleTimeSlotButtonAvailable: {
+    backgroundColor: '#D1FAE5',
+    borderColor: '#10B981',
+  },
+  rescheduleTimeSlotButtonUnavailable: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#D1D5DB',
+  },
+  rescheduleTimeSlotText: {
+    fontSize: 15,
+    fontFamily: FONTS.INTER_MEDIUM,
+    letterSpacing: 0.2,
+    textAlign: 'center',
+  },
+  rescheduleTimeSlotTextSelectedAvailable: {
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  rescheduleTimeSlotTextAvailable: {
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  rescheduleTimeSlotTextUnavailable: {
+    color: '#6B7280',
+    fontWeight: '400',
+  },
+  rescheduleTimeSlotCheckmark: {
+    position: 'absolute',
+    top: '50%',
+    right: 10,
+    marginTop: -9,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rescheduleConfirmButton: {
+    marginHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 20,
+    paddingVertical: 18,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  rescheduleConfirmButtonDisabled: {
+    opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  rescheduleConfirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
+    letterSpacing: 0.3,
+  },
+  rescheduleNoSlotsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  rescheduleNoSlotsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  rescheduleNoSlotsSubtext: {
+    fontSize: 14,
+    fontFamily: FONTS.INTER_REGULAR,
     textAlign: 'center',
   },
 });
