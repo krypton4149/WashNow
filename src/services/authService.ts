@@ -1518,7 +1518,7 @@ class AuthService {
               'Accept': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
-          }, 30000).then(async (response) => {
+          }, 60000).then(async (response) => {
             try {
               const data = await response.json();
               if (response.ok && data.success) {
@@ -1571,14 +1571,14 @@ class AuthService {
         }
       }
 
-      // Use longer timeout for owner bookings API (30 seconds) as it may take longer to process
+      // Use longer timeout for owner bookings API (60 seconds) as it may take longer to process
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/bookings`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-      }, 30000); // 30 seconds timeout for owner bookings
+      }, 60000); // 60 seconds timeout for owner bookings (increased for slow networks)
 
       const data = await response.json();
 
@@ -1634,9 +1634,11 @@ class AuthService {
         };
       }
     } catch (error: any) {
-      // Try to return cached data on network error
+      // Try to return cached data on network error (including timeout)
       const cached = await this.getCachedDataImmediate(CACHE_KEYS.OWNER_BOOKINGS);
-      if (cached) {
+      if (cached && (cached?.bookings?.length > 0 || (Array.isArray(cached) && cached.length > 0))) {
+        // Return cached data with success=true to prevent error modal from showing
+        console.log('[authService.getOwnerBookings] Returning cached data due to error:', error.message);
         return {
           success: true,
           bookings: cached?.bookings || cached || [],
@@ -1645,9 +1647,13 @@ class AuthService {
       }
       console.error('[authService.getOwnerBookings] Error:', error);
       
+      // Only return error if no cached data is available
+      const errorMessage = error.message || 'Network error. Please check your internet connection and try again.';
       return {
         success: false,
-        error: error.message || 'Network error. Please check your internet connection and try again.'
+        error: errorMessage.includes('timeout') 
+          ? 'Request timeout. The server is taking too long to respond. Please check your internet connection and try again.'
+          : errorMessage
       };
     }
   }
@@ -1961,7 +1967,20 @@ class AuthService {
     }
   }
 
-  async editOwnerProfile(name: string, phone: string): Promise<{ success: boolean; message?: string; user?: any; error?: string; validationErrors?: any; isAuthError?: boolean }> {
+  async editOwnerProfile(
+    name: string, 
+    phone: string,
+    address?: string,
+    city?: string,
+    zip?: string,
+    latitude?: number | null,
+    longitude?: number | null,
+    is_24h_open?: boolean,
+    open_time?: string,
+    close_time?: string,
+    weekoff_days?: string[],
+    businessName?: string
+  ): Promise<{ success: boolean; message?: string; user?: any; error?: string; validationErrors?: any; isAuthError?: boolean }> {
     try {
       const token = await this.getToken();
       if (!token) {
@@ -1975,6 +1994,45 @@ class AuthService {
       const formData = new FormData();
       formData.append('name', trimmedName);
       formData.append('phone', phoneDigits);
+      
+      // Address and location (clat/clong from Use Current Location or manual)
+      if (address !== undefined && address !== null && address.trim()) {
+        formData.append('address', address.trim());
+      }
+      if (city !== undefined && city !== null && city.trim()) {
+        formData.append('city', city.trim());
+      }
+      if (zip !== undefined && zip !== null && zip.trim()) {
+        formData.append('zip', zip.trim());
+        formData.append('zipcode', zip.trim());
+        formData.append('postal_code', zip.trim());
+      }
+      if (latitude !== undefined && latitude !== null) {
+        formData.append('clat', latitude.toString());
+      }
+      if (longitude !== undefined && longitude !== null) {
+        formData.append('clong', longitude.toString());
+      }
+
+      // Working hours: is_24h_open (1 Yes, 0 No), open_time/close_time H:i
+      formData.append('is_24h_open', is_24h_open === true ? '1' : '0');
+      if (open_time !== undefined && open_time !== null && open_time.trim()) {
+        formData.append('open_time', open_time.trim());
+      }
+      if (close_time !== undefined && close_time !== null && close_time.trim()) {
+        formData.append('close_time', close_time.trim());
+      }
+      if (weekoff_days !== undefined && Array.isArray(weekoff_days) && weekoff_days.length > 0) {
+        weekoff_days.forEach((day) => {
+          const d = (day || '').trim();
+          if (d) formData.append('weekoff_days[]', d);
+        });
+      }
+
+      const trimmedBusinessName = (businessName ?? '').trim();
+      if (trimmedBusinessName.length > 0) {
+        formData.append('business_name', trimmedBusinessName);
+      }
 
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/editprofile`, {
         method: 'POST',
@@ -1983,7 +2041,7 @@ class AuthService {
           'Authorization': `Bearer ${token}`,
         },
         body: formData as any,
-      });
+      }, 45000); // 45 seconds - profile update can be slow (address, hours, weekoff)
 
       let data: any = null;
       try {
@@ -1994,6 +2052,11 @@ class AuthService {
 
       if (response.ok && data?.success !== false) {
         const currentUser = await this.getUser();
+        const existingServiceCentre = currentUser?.rawUserData?.service_centre || currentUser?.userData?.service_centre || {};
+        const updatedServiceCentre = {
+          ...existingServiceCentre,
+          ...(trimmedBusinessName.length > 0 ? { name: trimmedBusinessName } : {}),
+        };
         const updatedRawUser = {
           ...(currentUser?.rawUserData || {}),
           ownerName: trimmedName,
@@ -2004,6 +2067,8 @@ class AuthService {
           phone: phoneDigits,
           phoneNumber: phoneDigits,
           phone_number: phoneDigits,
+          ...(trimmedBusinessName.length > 0 ? { businessName: trimmedBusinessName, business_name: trimmedBusinessName } : {}),
+          service_centre: updatedServiceCentre,
         };
 
         const updatedUserData = {
@@ -2016,6 +2081,8 @@ class AuthService {
           phone: phoneDigits,
           phoneNumber: phoneDigits,
           phone_number: phoneDigits,
+          ...(trimmedBusinessName.length > 0 ? { businessName: trimmedBusinessName, business_name: trimmedBusinessName } : {}),
+          service_centre: updatedServiceCentre,
         };
 
         const updatedUser = {
@@ -2027,6 +2094,7 @@ class AuthService {
           phone: phoneDigits,
           phoneNumber: phoneDigits,
           phone_number: phoneDigits,
+          ...(trimmedBusinessName.length > 0 ? { businessName: trimmedBusinessName, business_name: trimmedBusinessName } : {}),
           rawUserData: updatedRawUser,
           userData: updatedUserData,
         };

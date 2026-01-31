@@ -8,12 +8,23 @@ import {
   ActivityIndicator,
   ImageBackground,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import axios from 'axios';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
+const SUPPORT_EMAIL = 'support@washnow.com';
+const CONTACT_POINTS = [
+  '24/7 support team available',
+  'Quick response within 24 hours',
+  'Email or chat – choose what works for you',
+  'Dedicated help for bookings and payments',
+];
 
 interface Props {
   onBack?: () => void;
@@ -123,7 +134,7 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
     if (isLoading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
+          <ActivityIndicator size="large" color={BLUE_COLOR} />
           <Text style={styles.loadingText}>Loading FAQs...</Text>
         </View>
       );
@@ -191,8 +202,8 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
               <Text style={styles.faqQuestion}>{faq.question}</Text>
               <Ionicons
                 name={faq.isExpanded ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#000000"
+                size={22}
+                color={BLUE_COLOR}
               />
             </View>
             {faq.isExpanded && (
@@ -206,13 +217,47 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
     );
   };
 
+  const handleEmailPress = () => {
+    Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => {});
+  };
+
   const renderContact = () => (
     <View style={styles.contactContainer}>
       <View style={styles.contactCard}>
+        <View style={styles.contactIconWrapper}>
+          <Ionicons name="headset" size={28} color={BLUE_COLOR} />
+        </View>
         <Text style={styles.contactTitle}>Still need help?</Text>
-        <Text style={styles.contactSubtitle}>Our support team is available 24/7</Text>
-        <TouchableOpacity style={styles.contactButton} onPress={onContactSupport}>
-          <Ionicons name="chatbubble-outline" size={20} color="#FFFFFF" />
+        <Text style={styles.contactSubtitle}>Our support team is available 24/7. Get in touch and we’ll get back to you quickly.</Text>
+
+        {/* Contact points */}
+        <View style={styles.contactPointsList}>
+          {CONTACT_POINTS.map((point, index) => (
+            <View key={index} style={styles.contactPointRow}>
+              <View style={styles.contactPointBullet} />
+              <Text style={styles.contactPointText}>{point}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Contact email */}
+        <TouchableOpacity
+          style={styles.emailRow}
+          onPress={handleEmailPress}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="mail-outline" size={22} color={BLUE_COLOR} />
+          <Text style={styles.emailLabel}>Email us</Text>
+          <Text style={styles.emailValue}>{SUPPORT_EMAIL}</Text>
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.contactButton}
+          onPress={onContactSupport}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="chatbubble-ellipses" size={20} color="#FFFFFF" />
           <Text style={styles.contactButtonText}>Chat with Support</Text>
         </TouchableOpacity>
       </View>
@@ -223,10 +268,10 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.title}>Help & Support</Text>
-        <View style={{ width: 24 }} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <View style={styles.tabsContainer}>
@@ -268,54 +313,67 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 28,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingVertical: 14,
     backgroundColor: '#FFFFFF',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerSpacer: {
+    width: 40,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
     fontWeight: '600',
-    color: '#000000',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#111827',
+    letterSpacing: -0.3,
   },
   tabsContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 2,
+    paddingVertical: 14,
+    borderBottomWidth: 3,
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#000000',
+    borderBottomColor: BLUE_COLOR,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#9CA3AF',
   },
   activeTabText: {
-    color: '#000000',
-    fontWeight: '700',
+    color: BLUE_COLOR,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
+    paddingTop: 24,
   },
   faqsContainer: {
     flex: 1,
@@ -373,35 +431,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: FONT_SIZES.HEADING_LARGE,
     fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#FFFFFF',
-    opacity: 0.9,
+    opacity: 0.95,
     textAlign: 'center',
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 16,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#111827',
+    marginBottom: 18,
   },
   faqCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
   faqHeader: {
     flexDirection: 'row',
@@ -409,59 +472,143 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   faqQuestion: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
     fontWeight: '600',
-    color: '#000000',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#111827',
     flex: 1,
     marginRight: 12,
+    lineHeight: 22,
   },
   faqAnswer: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 14,
+    paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
   faqAnswerText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
-    lineHeight: 20,
+    lineHeight: 22,
   },
   contactContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingVertical: 32,
   },
   contactCard: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 24,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  contactIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   contactTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  contactSubtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 24,
+    fontSize: FONT_SIZES.HEADING_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#111827',
+    marginBottom: 10,
     textAlign: 'center',
   },
-  contactButton: {
-    backgroundColor: '#000',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+  contactSubtitle: {
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    color: '#6B7280',
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 8,
+  },
+  contactPointsList: {
+    alignSelf: 'stretch',
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  contactPointRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 10,
+  },
+  contactPointBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: BLUE_COLOR,
+    marginRight: 12,
+  },
+  contactPointText: {
+    flex: 1,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    color: '#374151',
+    lineHeight: 20,
+  },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 10,
+  },
+  emailLabel: {
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  emailValue: {
+    flex: 1,
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    color: BLUE_COLOR,
+  },
+  contactButton: {
+    backgroundColor: BLUE_COLOR,
+    borderRadius: 28,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 200,
+    justifyContent: 'center',
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   contactButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   loadingContainer: {
     flex: 1,
@@ -471,7 +618,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
   errorContainer: {
@@ -479,12 +627,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   errorText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#EF4444',
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#DC2626',
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -493,27 +642,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   emptyText: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: FONT_SIZES.BODY_MEDIUM,
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#9CA3AF',
     textAlign: 'center',
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#000',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    backgroundColor: BLUE_COLOR,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
     minWidth: 120,
     alignItems: 'center',
   },
   retryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_MEDIUM,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
 });
 

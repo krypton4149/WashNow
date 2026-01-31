@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, StatusBar, ImageBackground } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import OwnerEditProfileScreen from './OwnerEditProfileScreen';
@@ -138,6 +138,21 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
     return fallback;
   };
 
+  // Service centre from owner login API (data.userData.service_centre)
+  const serviceCentre = profile?.service_centre || storedOwnerData?.userData?.service_centre || storedOwnerData?.service_centre;
+
+  // Format time from API "09:30:00" -> "09:30 AM"
+  const formatTimeForDisplay = (timeStr: string | undefined): string => {
+    if (!timeStr || typeof timeStr !== 'string') return '';
+    const parts = timeStr.trim().split(':');
+    const hour = parseInt(parts[0], 10);
+    const min = parts[1] ? parseInt(parts[1], 10) : 0;
+    if (Number.isNaN(hour)) return timeStr;
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return min > 0 ? `${hour12}:${String(min).padStart(2, '0')} ${ampm}` : `${hour12} ${ampm}`;
+  };
+
   const business = {
     name: getString('Premium Auto Wash',
       profile?.businessName,
@@ -146,6 +161,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       profile?.company_name,
       profile?.shopName,
       profile?.shop_name,
+      serviceCentre?.name,
       profile?.name,
       storedOwnerData?.businessName,
       storedOwnerData?.companyName,
@@ -164,6 +180,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
     ),
     totalBookings: totalBookings,
     phone: getString('Not provided',
+      serviceCentre?.phone,
       profile?.phone,
       profile?.phoneNumber,
       profile?.phone_number,
@@ -174,6 +191,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       storedOwnerData?.phone_number
     ),
     email: getString('Not provided',
+      serviceCentre?.email,
       profile?.email,
       profile?.contactEmail,
       profile?.contact_email,
@@ -184,6 +202,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       storedOwnerData?.contact_email
     ),
     address: getString('Not provided',
+      serviceCentre?.address,
       profile?.address,
       profile?.businessAddress,
       profile?.business_address,
@@ -195,11 +214,15 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       storedOwnerData?.business_address
     ),
     status: getString('Not provided',
+      serviceCentre?.status,
       profile?.status,
       profile?.accountStatus,
       storedOwnerData?.status
     ),
     weekOffDays: (() => {
+      if (Array.isArray(serviceCentre?.weekoff_days) && serviceCentre.weekoff_days.length > 0) {
+        return serviceCentre.weekoff_days.filter(Boolean).join(', ');
+      }
       if (Array.isArray(profile?.weekoff_days) && profile.weekoff_days.length > 0) {
         return profile.weekoff_days.filter(Boolean).join(', ');
       }
@@ -214,12 +237,24 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       );
       return fallback;
     })(),
-    hours: profile?.hours || storedOwnerData?.hours || {
-      days: 'Monday - Saturday',
-      open: '09:00 AM',
-      close: '06:00 PM',
-    },
-    services: profile?.services || storedOwnerData?.services || ['Exterior Wash', 'Interior Clean', 'Waxing', 'Detailing', 'Polish'],
+    hours: (() => {
+      // Prefer service_centre open_time / close_time / is_24h_open from login API
+      if (serviceCentre) {
+        const is24h = serviceCentre.is_24h_open === true || serviceCentre.is_24h_open === '1';
+        if (is24h) {
+          return { days: 'Every day', open: '12:00 AM', close: '11:59 PM', is24h: true };
+        }
+        const open = formatTimeForDisplay(serviceCentre.open_time) || '09:00 AM';
+        const close = formatTimeForDisplay(serviceCentre.close_time) || '06:00 PM';
+        return { days: 'Monday - Saturday', open, close, is24h: false };
+      }
+      return profile?.hours || storedOwnerData?.hours || {
+        days: 'Monday - Saturday',
+        open: '09:00 AM',
+        close: '06:00 PM',
+        is24h: false,
+      };
+    })(),
   };
 
   console.log('[OwnerAccountScreen] resolved profile data:', { profile, business });
@@ -227,21 +262,24 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   const contactDetails = [
     {
       id: 'phone',
-      icon: 'call-outline',
+      icon: 'call-outline' as const,
       label: 'Phone',
       value: business.phone,
+      iconBgColor: BLUE_COLOR,
     },
     {
       id: 'email',
-      icon: 'mail-outline',
+      icon: 'mail-outline' as const,
       label: 'Email',
       value: business.email,
+      iconBgColor: '#8B5CF6',
     },
     {
       id: 'address',
-      icon: 'location-outline',
+      icon: 'location-outline' as const,
       label: 'Address',
       value: business.address,
+      iconBgColor: '#10B981',
     },
   ];
 
@@ -249,9 +287,10 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   if (business.weekOffDays && business.weekOffDays !== 'Not provided') {
     contactDetails.push({
       id: 'weekoff',
-      icon: 'calendar-outline',
+      icon: 'calendar-outline' as const,
       label: 'Week Off Days',
       value: business.weekOffDays,
+      iconBgColor: YELLOW_COLOR,
     });
   }
 
@@ -278,8 +317,16 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
-      {/* Blue Gradient Header */}
+      {/* Header with image background (like user account screen) */}
       <View style={styles.headerGradient}>
+        <ImageBackground
+          source={require('../../assets/images/Profile.png')}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+          imageStyle={{ opacity: 1.0 }}
+        >
+          <View style={styles.headerOverlay} />
+        </ImageBackground>
         <View style={styles.headerNav}>
           <View style={styles.headerLeftPlaceholder} />
           <Text style={styles.headerTitle}>Profile</Text>
@@ -289,7 +336,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
             activeOpacity={0.8}
           >
             <View style={styles.editButtonCircle}>
-              <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+              <Ionicons name="create-outline" size={20} color={BLUE_COLOR} />
             </View>
           </TouchableOpacity>
         </View>
@@ -301,10 +348,8 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           </View>
         ) : (
           <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Ionicons name="storefront" size={60} color="#FFFFFF" />
-              </View>
+            <View style={styles.centerIconContainer}>
+              <Ionicons name="storefront" size={64} color="#FFFFFF" />
             </View>
             <Text style={styles.businessName}>{business.name}</Text>
             <Text style={styles.ownerName}>{business.ownerName}</Text>
@@ -321,12 +366,12 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
       >
-        {/* Contact Information Card */}
+        {/* Contact Information Card - colored icons like user account screen */}
         <View style={styles.sectionCard}>
           {contactDetails.map((detail, index) => (
             <View key={detail.id}>
               <View style={styles.infoRow}>
-                <View style={styles.infoIcon}>
+                <View style={[styles.infoIcon, { backgroundColor: detail.iconBgColor || BLUE_COLOR }]}>
                   <Ionicons name={detail.icon} size={20} color="#FFFFFF" />
                 </View>
                 <View style={styles.infoTextContainer}>
@@ -339,11 +384,11 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           ))}
         </View>
 
-        {/* Account Status Card */}
+        {/* Account Status Card - colored icon */}
         {business.status && business.status !== 'Not provided' && (
           <View style={styles.sectionCard}>
             <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
+              <View style={[styles.infoIcon, { backgroundColor: '#10B981' }]}>
                 <Ionicons name="shield-checkmark" size={20} color="#FFFFFF" />
               </View>
               <View style={styles.infoTextContainer}>
@@ -354,7 +399,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           </View>
         )}
 
-        {/* Working Hours Card */}
+        {/* Working Hours Card - colored icon */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
@@ -369,24 +414,9 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
           </View>
           <View style={styles.hoursRow}>
             <Text style={styles.hoursDays}>{business.hours.days}</Text>
-            <Text style={styles.hoursTime}>{`${business.hours.open} - ${business.hours.close}`}</Text>
-          </View>
-        </View>
-
-        {/* Services Offered Card */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionIcon}>
-              <Ionicons name="briefcase-outline" size={18} color={BLUE_COLOR} />
-            </View>
-            <Text style={styles.sectionTitle}>Services Offered</Text>
-          </View>
-          <View style={styles.servicesContainer}>
-            {business.services.map((service: string) => (
-              <View key={service} style={styles.serviceChip}>
-                <Text style={styles.serviceText}>{service}</Text>
-              </View>
-            ))}
+            <Text style={styles.hoursTime}>
+              {business.hours.is24h ? 'Open 24 hours' : `${business.hours.open} - ${business.hours.close}`}
+            </Text>
           </View>
         </View>
 
@@ -435,11 +465,17 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   headerGradient: {
+    position: 'relative',
+    overflow: 'hidden',
     backgroundColor: BLUE_COLOR,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
     paddingBottom: 30,
     paddingHorizontal: 16,
     marginTop: 0,
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(3, 88, 168, 0.35)',
   },
   headerNav: {
     flexDirection: 'row',
@@ -486,7 +522,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#5BA3F5',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -510,14 +546,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  avatarContainer: {
+  centerIconContainer: {
     marginBottom: 16,
     marginTop: 8,
-  },
-  avatar: {
     width: 140,
     height: 140,
     borderRadius: 70,
+    overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderWidth: 4,
     borderColor: '#FFFFFF',
@@ -586,8 +621,7 @@ const styles = StyleSheet.create({
   infoIcon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: BLUE_COLOR,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -677,27 +711,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
-    color: '#111827',
-  },
-  servicesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-  },
-  serviceChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    marginRight: 10,
-    marginBottom: 10,
-  },
-  serviceText: {
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
     color: '#111827',
   },
   actionCard: {

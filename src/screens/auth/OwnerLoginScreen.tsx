@@ -67,9 +67,9 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
     setIsLoading(true);
 
     // Use the same pattern as authService - API_URL + endpoint path
-    // Add timeout handling for better network error handling
+    // Add timeout handling for better network error handling (longer timeout for slow networks)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
 
     try {
       // Use FormData instead of JSON (as per API requirements)
@@ -215,13 +215,16 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
       await Promise.resolve(maybePromise);
     } catch (error: any) {
       clearTimeout(timeoutId); // Ensure timeout is cleared on error
-      console.error('Owner login error:', error);
+      const isAbort = error?.name === 'AbortError' || error?.message === 'Aborted';
+      if (!isAbort) {
+        console.error('Owner login error:', error);
+      }
       // Provide more specific error messages
       let errorMessage = 'Unable to reach the server. Please try again.';
       
-      // Handle timeout errors
-      if (error?.name === 'AbortError') {
-        errorMessage = 'Request timeout. Please check your internet connection and try again.';
+      // Handle timeout / abort errors (user-friendly message, no stack in alert)
+      if (isAbort) {
+        errorMessage = 'Request timeout. The server is taking too long to respond. Please check your internet connection and try again.';
       } else if (error?.message) {
         if (error.message.includes('Network') || error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
           errorMessage = 'Network request failed. Please check your internet connection and try again.';

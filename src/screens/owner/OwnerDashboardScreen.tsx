@@ -112,6 +112,9 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
                    businessName || 
                    'Owner';
 
+  // Show only first two words of centre name (e.g. "Harrow Hand" not "Harrow Hand Car Centre")
+  const displayCentreName = fullName.trim().split(/\s+/).slice(0, 2).join(' ') || fullName;
+
   // Format date and time for display: "24 Jan 2026 09AM-09:30AM"
   const formatDateTimeRange = (bookingDate: string, bookingTime: string): string => {
     try {
@@ -494,7 +497,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         <View style={styles.headerTop}>
           <View style={{ flex: 1 }}>
             <Text style={styles.welcomeText}>Welcome to Kwik Wash,</Text>
-            <Text style={styles.userNameText}>{fullName}</Text>
+            <Text style={styles.userNameText} numberOfLines={1} ellipsizeMode="tail">{displayCentreName}</Text>
           </View>
           <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={25} color="#fff" />
@@ -666,12 +669,13 @@ const styles = StyleSheet.create({
   },
   userNameText: {
     color: '#fff',
-    fontSize: 26,
-    fontWeight: '700',
-    fontFamily: 'Montserrat-Bold',
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: 'Montserrat-SemiBold',
     letterSpacing: -0.5,
     includeFontPadding: false,
     marginTop: 2,
+    flex: 1,
   },
   iconButton: {
     padding: 6,

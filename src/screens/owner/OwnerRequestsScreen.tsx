@@ -575,7 +575,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
               });
               setRawBookings(sortedCached);
               hasHydratedCacheRef.current = true;
-              // Don't show error if we have cached data
+              // Don't show error if we have cached data - silently use cache
               setError(null);
               return; // Exit early if we have cached data
             }
@@ -584,9 +584,20 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
           }
         }
         
-        // Only show error if we don't have cached data
-        if (!result.success) {
-          setError(result.error || 'Failed to load booking requests. Please try again.');
+        // Only show error if we don't have cached data AND result was not successful
+        // If result.success is false but we have bookings (from cache), don't show error
+        if (!result.success && (!result.bookings || result.bookings.length === 0)) {
+          // Check if error is timeout - if so, try to use cached data silently
+          const isTimeout = result.error?.toLowerCase().includes('timeout');
+          if (isTimeout && cached) {
+            // Timeout occurred but we have cache - use it silently
+            setError(null);
+          } else {
+            setError(result.error || 'Failed to load booking requests. Please try again.');
+          }
+        } else if (result.bookings && result.bookings.length > 0) {
+          // We have bookings (likely from cache) - clear any error
+          setError(null);
         }
       }
     } catch (fetchError: any) {
@@ -627,8 +638,15 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
         } catch (clearError) {
           console.error('[OwnerRequestsScreen] failed to clear auth data', clearError);
         }
-      } else if (!hasHydratedCacheRef.current) {
-        setError(fetchError?.message || 'Failed to load booking requests. Please check your internet connection and try again.');
+      } else {
+        // Check if it's a timeout error and we have cached data
+        const isTimeout = fetchError?.message?.toLowerCase().includes('timeout');
+        if (isTimeout && hasHydratedCacheRef.current) {
+          // Timeout occurred but we have cached data - don't show error
+          setError(null);
+        } else if (!hasHydratedCacheRef.current) {
+          setError(fetchError?.message || 'Failed to load booking requests. Please check your internet connection and try again.');
+        }
       }
       
       if (!hasHydratedCacheRef.current) {
@@ -821,7 +839,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
       ]}>
         <View style={styles.placeholder} />
         <View style={styles.headerTextGroup}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>New Requests</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">New Requests</Text>
           <Text style={styles.headerSubtitle}>{headerSubtitle}</Text>
         </View>
         <TouchableOpacity 
@@ -1032,9 +1050,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 23, // 22-24px, Weight: 600 (Semi-Bold) - Page Heading
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: 20,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     letterSpacing: -0.3,
     textAlign: 'center',
     includeFontPadding: false,
