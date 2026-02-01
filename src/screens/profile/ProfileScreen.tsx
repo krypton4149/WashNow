@@ -20,7 +20,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import BottomTabBar from '../../components/BottomTabBar';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -679,11 +679,9 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   profileInitials: {
-    fontSize: 28,
-    fontWeight: '700',
+    ...TEXT_STYLES.screenTitleBold,
     letterSpacing: 1,
     color: '#FFFFFF',
-    fontFamily: FONTS.INTER_BOLD,
   },
   onlineDot: {
     position: 'absolute',
@@ -710,12 +708,11 @@ const styles = StyleSheet.create({
     width: '100%', // Full width to ensure proper centering
   },
   userNameWhite: {
-    fontSize: 26, // Increased from 22px to 26px
-    fontWeight: '700',
+    ...TEXT_STYLES.screenTitleBold,
+    fontSize: FONT_SIZES.SCREEN_TITLE_LARGE,
     marginRight: 8,
     letterSpacing: 0.3,
-    color: '#FFFFFF', // White color
-    fontFamily: FONTS.MONTserrat_BOLD,
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   verifiedBadgeBlue: {
@@ -732,23 +729,19 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   userEmailLight: {
-    fontSize: 16, // Increased from 14px to 16px
+    ...TEXT_STYLES.sectionHeadingMedium,
     letterSpacing: 0.2,
-    color: '#FFFFFF', // White color
-    fontFamily: FONTS.INTER_MEDIUM, // Changed to MEDIUM for better visibility
-    fontWeight: '500', // Increased from 400 to 500
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   section: {
-    marginBottom: 20, // Reduced from 28
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '700',
+    ...TEXT_STYLES.sectionHeading,
     marginBottom: 16,
     letterSpacing: 0.3,
     color: '#000000',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   contactCard: {
     flexDirection: 'row',
@@ -913,19 +906,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactLabel: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Contact label
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondaryLarge,
     color: '#6B7280',
     marginBottom: 2,
     letterSpacing: 0.2,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   contactValue: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Contact value
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: '#000000',
     letterSpacing: 0.2,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   quickActionsRow: {
     flexDirection: 'row',
@@ -971,12 +960,9 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   quickActionText: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Quick action text
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondaryLarge,
     textAlign: 'center',
-    lineHeight: 16,
     color: '#000000',
-    fontFamily: FONTS.INTER_REGULAR,
   },
   editProfileButton: {
     flexDirection: 'row',
@@ -994,11 +980,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   editProfileButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '500',
+    ...TEXT_STYLES.buttonProduction,
     marginLeft: 8,
     letterSpacing: 0.3,
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   loadingContainer: {
     flex: 1,
@@ -1006,9 +990,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
   },
   modalOverlay: {
     flex: 1,
@@ -1031,9 +1013,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
   },
   modalCloseButton: {
     padding: 4,
@@ -1042,18 +1023,17 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalLabel: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...TEXT_STYLES.label,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     marginBottom: 8,
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   modalInput: {
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.input,
+    fontSize: FONT_SIZES.BODY_PRIMARY_LARGE,
   },
   modalFooter: {
     flexDirection: 'row',
@@ -1072,9 +1052,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalCancelText: {
-    fontSize: 16,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.buttonProduction,
   },
   modalSaveButton: {
     flex: 1,
@@ -1084,10 +1062,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalSaveText: {
+    ...TEXT_STYLES.buttonSemiBold,
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
 });
 

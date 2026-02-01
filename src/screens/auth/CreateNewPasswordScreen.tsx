@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import BackButton from '../../components/ui/BackButton';
 import { platformEdges } from '../../utils/responsive';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 interface CreateNewPasswordScreenProps {
   onBack: () => void;
@@ -261,30 +262,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkmark: {
-    fontSize: 40,
+    fontSize: FONT_SIZES.SCREEN_TITLE_LARGE,
     color: '#059669',
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontFamily: FONTS.INTER_BOLD,
   },
   header: {
     alignItems: 'center',
     marginBottom: 32,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    ...TEXT_STYLES.screenTitleBold,
     color: '#000000',
     marginBottom: 8,
-    fontFamily: 'System',
     letterSpacing: -0.5,
-    lineHeight: 36,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666666',
-    fontWeight: '400',
-    fontFamily: 'System',
-    lineHeight: 22,
     textAlign: 'center',
   },
   requirementsContainer: {
@@ -294,11 +290,9 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   requirementsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#000000',
     marginBottom: 12,
-    fontFamily: 'System',
   },
   requirementsList: {
     gap: 8,
@@ -308,13 +302,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   requirementText: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666666',
-    fontFamily: 'System',
   },
   requirementTextValid: {
     color: '#059669',
-    fontWeight: '500',
+    ...TEXT_STYLES.cardTitle,
   },
   inputContainer: {
     marginBottom: 32,
@@ -332,13 +325,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   iconText: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.SECTION_HEADING,
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    ...TEXT_STYLES.input,
     color: '#000000',
-    fontFamily: 'System',
   },
   eyeIcon: {
     marginLeft: 12,
@@ -355,10 +347,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#CCCCCC',
   },
   resetButtonText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'System',
   },
 });
 

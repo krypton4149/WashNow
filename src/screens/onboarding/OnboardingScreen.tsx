@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { platformEdges } from '../../utils/responsive';
 import { useTheme } from '../../context/ThemeContext';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const { width, height } = Dimensions.get('window');
 
@@ -153,28 +153,20 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_LARGE + 2,
-    fontWeight: '800',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.screenTitleBold,
+    fontSize: FONT_SIZES.SCREEN_TITLE_LARGE,
     color: BLUE_COLOR,
     textAlign: 'center',
     marginBottom: 12,
     letterSpacing: -0.5,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
   description: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeading,
     color: '#374151',
     textAlign: 'center',
-    lineHeight: 24,
     paddingHorizontal: 20,
     flexShrink: 0,
-    fontWeight: '600',
     letterSpacing: 0.1,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
   bottomSection: {
     paddingBottom: Platform.select({ ios: 40, android: 32 }),
@@ -233,12 +225,8 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   navButtonText: {
-    fontSize: FONT_SIZES.BUTTON_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
 });
 

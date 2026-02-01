@@ -18,7 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { validateRegistrationForm, FormErrors } from '../../utils/validation';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const UK_COUNTRY_CODE = '+44';
@@ -691,24 +691,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_LARGE + 2,
-    fontWeight: '800',
+    ...TEXT_STYLES.screenTitleBold,
     color: BLUE_COLOR,
     marginBottom: 6,
     textAlign: 'center',
-    fontFamily: FONTS.MONTserrat_BOLD,
     letterSpacing: -0.5,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
   subtitle: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    ...TEXT_STYLES.sectionHeading,
     color: '#374151',
-    fontWeight: '600',
     textAlign: 'center',
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
     letterSpacing: 0.1,
   },
   inputsContainer: {
@@ -718,13 +710,12 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   inputLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '700', // Increased from 600 to 700 for sharper text
-    color: '#111827', // Darker for better contrast
+    ...TEXT_STYLES.label,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#111827',
     marginBottom: 8,
-    fontFamily: FONTS.INTER_SEMIBOLD, // Changed to SEMIBOLD for sharper appearance
-    includeFontPadding: false, // Remove extra padding for sharper text
-    textAlignVertical: 'center',
   },
   inputField: {
     flexDirection: 'row',
@@ -749,35 +740,31 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   countryCode: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    ...TEXT_STYLES.bodyPrimaryLarge,
     color: '#1A1A1A',
-    fontFamily: FONTS.INTER_REGULAR,
     marginRight: 8,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   textInput: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_LARGE,
-    color: '#111827', // Darker for better contrast
-    fontFamily: FONTS.INTER_MEDIUM, // Changed to MEDIUM for sharper appearance
-    includeFontPadding: false, // Remove extra padding for sharper text
-    textAlignVertical: 'center',
+    ...TEXT_STYLES.input,
+    fontSize: FONT_SIZES.BODY_PRIMARY_LARGE,
+    color: '#111827',
   },
   helperText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
+    ...TEXT_STYLES.bodySecondary,
     color: '#6B7280',
     marginTop: 4,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   eyeButton: {
     padding: 4,
     marginLeft: 8,
   },
   errorText: {
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    ...TEXT_STYLES.bodySecondary,
     color: '#EF4444',
     marginTop: 6,
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   termsContainer: {
     marginBottom: 20,
@@ -803,15 +790,12 @@ const styles = StyleSheet.create({
   },
   termsText: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666666',
-    lineHeight: 20,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   termsLink: {
+    ...TEXT_STYLES.buttonSemiBold,
     color: BLUE_COLOR,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   createAccountButton: {
     backgroundColor: BLUE_COLOR,
@@ -833,12 +817,8 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   createAccountButtonText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BUTTON_LARGE,
-    fontWeight: '700', // Increased from 600 to 700 for sharper text
-    fontFamily: FONTS.INTER_BOLD, // Changed to BOLD for sharper appearance
-    includeFontPadding: false, // Remove extra padding for sharper text
-    textAlignVertical: 'center',
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -853,10 +833,8 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginHorizontal: 16,
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#9CA3AF',
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   loginContainer: {
     flexDirection: 'row',
@@ -865,18 +843,12 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   loginQuestion: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    ...TEXT_STYLES.bodyPrimaryLarge,
     color: '#666666',
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
   },
   loginLink: {
-    fontSize: FONT_SIZES.BUTTON_SMALL,
+    ...TEXT_STYLES.buttonSemiBold,
     color: BLUE_COLOR,
-    fontWeight: '700', // Increased from 600 to 700 for sharper text
-    fontFamily: FONTS.INTER_BOLD, // Changed to BOLD for sharper appearance
-    includeFontPadding: false, // Remove extra padding for sharper text
-    textAlignVertical: 'center',
   },
   securityContainer: {
     flexDirection: 'row',
@@ -896,10 +868,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   securityText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
+    ...TEXT_STYLES.bodySecondary,
     color: '#6B7280',
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   overlay: {
     position: 'absolute',
@@ -925,9 +895,8 @@ const styles = StyleSheet.create({
   },
   overlayText: {
     marginTop: 10,
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#111827',
-    fontFamily: FONTS.INTER_REGULAR,
   },
 });
 

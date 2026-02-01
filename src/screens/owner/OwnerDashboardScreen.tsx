@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
+import { FONTS, FONT_SIZES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -28,6 +29,7 @@ interface OwnerDashboardScreenProps {
   onLogout?: () => void;
   onBookingRequestPress?: () => void;
   businessName?: string;
+  userData?: any;
 }
 
 interface Activity {
@@ -88,6 +90,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   onLogout,
   onBookingRequestPress,
   businessName,
+  userData: userDataProp,
 }) => {
   const { colors } = useTheme();
   
@@ -96,17 +99,24 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   const [bookingStatusTotals, setBookingStatusTotals] = useState<BookingStatusTotals | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userData, setUserData] = useState<any>(null);
+  const [userDataLocal, setUserDataLocal] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Load owner data for welcome message
+  // Use prop when available (real-time from App after profile update), otherwise load from storage
+  const userData = userDataProp ?? userDataLocal;
+
+  // Load owner data for welcome message when not passed from parent
   useEffect(() => {
+    if (userDataProp != null) {
+      setUserDataLocal(userDataProp);
+      return;
+    }
     const loadUserData = async () => {
       const user = await authService.getUser();
-      setUserData(user);
+      setUserDataLocal(user);
     };
     loadUserData();
-  }, []);
+  }, [userDataProp]);
 
   // Get owner's full name for welcome message
   const fullName = userData?.fullName || 
@@ -507,9 +517,9 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         <View style={styles.decorativeDot5} />
         
         <View style={styles.headerTop}>
-          <View style={{ flex: 1 }}>
+          <View style={styles.headerTitleBlock}>
             <Text style={styles.welcomeText}>Welcome to Kwik Wash,</Text>
-            <Text style={styles.userNameText} numberOfLines={1} ellipsizeMode="tail">{fullName}</Text>
+            <Text style={styles.userNameText} numberOfLines={2} ellipsizeMode="tail">{fullName}</Text>
           </View>
           <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={25} color="#fff" />
@@ -629,18 +639,25 @@ const styles = StyleSheet.create({
   headerSection: {
     backgroundColor: BLUE_COLOR,
     paddingHorizontal: 20,
-    paddingBottom: 20, // Add bottom padding for stats cards
-    borderBottomLeftRadius: 0, // No curve - straight edge
-    borderBottomRightRadius: 0, // No curve - straight edge
-    overflow: 'visible', // Allow yellow card to overlap
+    paddingBottom: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'visible',
     position: 'relative',
     zIndex: 1,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12, // Reduced margin
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  headerTitleBlock: {
+    flex: 1,
+    minHeight: 56,
+    justifyContent: 'center',
+    paddingRight: 12,
+    overflow: 'visible',
   },
   decorativeDot1: {
     position: 'absolute',
@@ -689,20 +706,21 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     color: 'rgba(255,255,255,0.95)',
-    fontSize: 15,
-    fontFamily: 'Inter-Medium',
-    fontWeight: '500',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    fontWeight: '400',
+    lineHeight: 12 * 1.5,
     includeFontPadding: false,
   },
   userNameText: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: -0.5,
+    lineHeight: 22 * 1.5,
     includeFontPadding: false,
-    marginTop: 2,
-    flex: 1,
+    marginTop: 4,
   },
   iconButton: {
     padding: 6,
@@ -750,25 +768,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statValueBlue: {
-    fontSize: 20,
+    fontSize: FONT_SIZES.NUMBER_SMALL,
     fontWeight: '700',
-    fontFamily: 'Inter-Bold',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#FFFFFF',
     marginBottom: 2,
+    lineHeight: 20 * 1.5,
     includeFontPadding: false,
   },
   statLabelBlue: {
-    fontSize: 11,
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 12 * 1.5,
     includeFontPadding: false,
   },
   yellowBanner: {
-    marginHorizontal: 20, // Increased margin for better width
-    marginTop: -25, // Increased overlap to cover blue background
+    marginHorizontal: 20,
+    marginTop: -20,
     backgroundColor: YELLOW_COLOR,
-    paddingVertical: 16, // Adjusted vertical padding for better height
+    paddingVertical: 12, // Reduced height
     paddingHorizontal: 20, // Keep horizontal padding
     borderRadius: 20, // Slightly reduced border radius
     marginBottom: 0, // Remove bottom margin to eliminate blue gap
@@ -796,26 +816,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   yellowBannerTitle: {
-    fontSize: 18, // Further reduced
+    fontSize: 16,
     fontWeight: '500',
-    fontFamily: 'Inter-Medium',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 2,
+    lineHeight: 16 * 1.5,
     includeFontPadding: false,
   },
   yellowBannerSubtitle: {
-    fontSize: 12, // Further reduced
-    fontFamily: 'Inter-Regular',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     color: '#374151',
+    lineHeight: 12 * 1.5,
     includeFontPadding: false,
   },
   bookNowButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEF08A', // Soft, light yellow color
-    paddingHorizontal: 22, // Increased width
-    paddingVertical: 8, // Reduced height
+    paddingHorizontal: 22,
+    paddingVertical: 6,
     borderRadius: 24,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.8)', // More visible white border
@@ -826,10 +848,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   bookNowText: {
-    fontSize: 13,
-    fontWeight: '600', // Increased to Semi-Bold
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 15,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
+    lineHeight: 15 * 1.5,
     includeFontPadding: false,
   },
   sectionHeader: {
@@ -841,10 +864,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 18, // 18px
-    fontWeight: '600', // Semi-Bold
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
+    lineHeight: 16 * 1.5,
     includeFontPadding: false,
   },
   seeAllBtn: {
@@ -852,11 +876,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   seeAllText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - See all text
+    fontSize: FONT_SIZES.BODY_SMALL,
     fontWeight: '400',
-    fontFamily: 'Inter-Regular',
+    fontFamily: FONTS.INTER_REGULAR,
     color: BLUE_COLOR,
     marginRight: 4,
+    lineHeight: 14 * 1.5,
   },
   activityItem: {
     marginHorizontal: 20,
@@ -890,19 +915,21 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   serviceName: { 
-    fontSize: 17,
-    fontWeight: '600', // Semi-Bold
+    fontSize: 16,
+    fontWeight: '600',
     flex: 1,
-    fontFamily: 'Inter-SemiBold',
-    color: BLUE_COLOR, // Blue color for center name
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: BLUE_COLOR,
+    lineHeight: 16 * 1.5,
     includeFontPadding: false,
     marginBottom: 0,
   },
   activityService: { 
-    fontSize: 13, 
+    fontSize: FONT_SIZES.CAPTION_MEDIUM, 
     marginBottom: 4,
-    fontFamily: 'Inter-Regular',
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#666666',
+    lineHeight: 13 * 1.5,
   },
   serviceTypeRow: {
     flexDirection: 'row',
@@ -914,16 +941,18 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   serviceTypeText: {
-    fontSize: 13,
-    fontWeight: '500', // Medium
-    fontFamily: 'Inter-Medium',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
     color: '#374151',
+    lineHeight: 12 * 1.5,
   },
   inProgressText: {
-    fontSize: 13,
-    fontWeight: '600', // Semi-Bold (increased from Medium)
-    fontFamily: 'Inter-SemiBold',
-    color: '#10B981', // Green color
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#10B981',
+    lineHeight: 12 * 1.5,
   },
   metaInfoRow: {
     flexDirection: 'row',
@@ -935,10 +964,11 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   metaInfoText: {
-    fontSize: 13,
-    fontWeight: '400', // Regular
-    fontFamily: 'Inter-Regular',
-    color: '#6B7280', // Darker gray for better readability
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontWeight: '400',
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#6B7280',
+    lineHeight: 12 * 1.5,
   },
   bookingNumberRow: {
     flexDirection: 'row',
@@ -953,17 +983,18 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   bookingNumberLabel: {
-    fontSize: 12,
-    fontWeight: '400',
-    fontFamily: 'Inter-Regular',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#6B7280',
+    lineHeight: 12 * 1.5,
   },
   bookingNumberValue: {
-    fontSize: 16,
-    fontWeight: '600', // Reduced from 700 to 600
-    fontFamily: 'Inter-SemiBold',
-    color: '#111827', // Dark blue/black
-    lineHeight: 20.8, // 1.3 line height (16 * 1.3)
+    fontSize: FONT_SIZES.BODY_LARGE,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#111827',
+    lineHeight: 16 * 1.5,
   },
   cancelButton: {
     marginTop: 6,
@@ -983,39 +1014,43 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cancelButtonText: {
-    color: '#991B1B', // Darker red text for contrast on light background
-    fontWeight: '600', // Semi-Bold
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
+    color: '#991B1B',
+    fontWeight: '500',
+    fontSize: 15,
+    fontFamily: FONTS.INTER_MEDIUM,
+    lineHeight: 15 * 1.5,
   },
   loadingContainer: {
     padding: 20,
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
-    fontFamily: 'Inter-Regular',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     color: '#666',
     marginTop: 12,
+    lineHeight: 14 * 1.5,
   },
   emptyContainer: {
     padding: 20,
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Empty text
-    fontFamily: 'Inter-Regular',
+    fontSize: FONT_SIZES.BODY_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     color: '#666',
     marginBottom: 8,
+    lineHeight: 14 * 1.5,
   },
   emptySubtext: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Empty subtext
-    fontFamily: 'Inter-Regular',
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     color: '#666',
     textAlign: 'center',
+    lineHeight: 12 * 1.5,
   },
 });
 

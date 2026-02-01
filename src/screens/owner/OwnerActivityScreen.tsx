@@ -14,7 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 import { platformEdges } from '../../utils/responsive';
 
 const BLUE_COLOR = '#0358a8';
@@ -406,20 +406,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.screenTitle,
     letterSpacing: -0.5,
-    includeFontPadding: false,
     textAlign: 'center',
   },
   headerSubtitle: {
+    ...TEXT_STYLES.bodySecondary,
     marginTop: Platform.select({ ios: 2, android: 2 }),
-    fontSize: FONT_SIZES.CAPTION_MEDIUM + 1,
-    fontFamily: FONTS.INTER_MEDIUM,
-    fontWeight: '500',
     textAlign: 'center',
-    includeFontPadding: false,
   },
   markAllButton: {
     padding: 4,
@@ -428,10 +422,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   markAllReadText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    includeFontPadding: false,
+    ...TEXT_STYLES.cardTitleSemiBold,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
   },
   scrollView: {
     flex: 1,
@@ -483,26 +475,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notificationTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     flex: 1,
     marginBottom: 4,
     color: '#111827',
-    includeFontPadding: false,
   },
   notificationMessage: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    lineHeight: 22,
+    ...TEXT_STYLES.bodyPrimary,
     marginBottom: 6,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
     color: '#374151',
-    includeFontPadding: false,
   },
   notificationTime: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.caption,
     color: '#9CA3AF',
   },
   notificationDot: {
@@ -519,9 +503,8 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   loadingText: {
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 12,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
   errorContainer: {
@@ -532,10 +515,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   errorText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
+    ...TEXT_STYLES.bodyPrimary,
     textAlign: 'center',
     paddingHorizontal: 32,
-    fontFamily: FONTS.INTER_REGULAR,
     color: '#000000',
   },
   retryButton: {
@@ -546,9 +528,7 @@ const styles = StyleSheet.create({
     backgroundColor: BLUE_COLOR,
   },
   retryButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
   },
   emptyContainer: {
@@ -559,18 +539,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyText: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeading,
     marginTop: 16,
     marginBottom: 8,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     color: '#6B7280',
   },
   emptySubtext: {
-    fontSize: FONT_SIZES.BODY_LARGE,
+    ...TEXT_STYLES.bodyPrimary,
     textAlign: 'center',
-    lineHeight: 24,
-    fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
   },
 });

@@ -15,7 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 import authService from '../../services/authService';
 import { API_URL, STORAGE_BASE_URL } from '../../config/env';
 
@@ -410,16 +410,13 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   title: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Center name
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     letterSpacing: -0.2,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Address
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 2,
     textAlign: 'center',
   },
@@ -427,12 +424,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: CARD_MARGIN,
     paddingTop: 20,
-    paddingBottom: 100, // Add padding at bottom to prevent content from being hidden behind fixed footer
+    paddingBottom: 100,
   },
   sectionTitle: {
-    fontSize: 22, // font-size: 22px, font-weight: 700 (Bold) - Section title
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.screenTitle,
     letterSpacing: -0.4,
     marginBottom: 20,
   },
@@ -516,20 +511,17 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   bestDealText: {
-    color: '#FFFFFF',
-    fontSize: 11, // Slightly smaller for better fit
+    ...TEXT_STYLES.caption,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#FFFFFF',
   },
   serviceInfo: {
-    padding: 14, // Increased padding for better spacing
+    padding: 14,
   },
   serviceName: {
-    fontSize: 17, // font-size: 17px, font-weight: 700 (Bold) - Service name
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     marginBottom: 10,
-    lineHeight: 22, // Better line height for readability
   },
   priceContainer: {
     flexDirection: 'row',
@@ -539,21 +531,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   originalPrice: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Original price (strikethrough)
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondaryLarge,
     textDecorationLine: 'line-through',
   },
   discountedPrice: {
-    fontSize: 16, // Increased font size for offered price
-    fontWeight: '700', // Increased font weight (Bold)
+    ...TEXT_STYLES.sectionHeading,
+    fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
   },
   serviceDescription: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Description
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
-    lineHeight: 18,
+    ...TEXT_STYLES.bodySecondaryLarge,
     marginTop: 0,
   },
   loadingContainer: {
@@ -563,8 +550,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   loadingText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 12,
   },
   emptyContainer: {
@@ -574,8 +560,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 12,
     textAlign: 'center',
   },
@@ -608,22 +593,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedServiceLabel: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Label
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondaryLarge,
     marginBottom: 4,
   },
   selectedServiceName: {
-    fontSize: 17, // font-size: 17px, font-weight: 700 (Bold) - Selected service name
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
   },
   selectedServiceRight: {
     alignItems: 'flex-end',
   },
   selectedServicePrice: {
-    fontSize: 18, // Increased font size for better visibility
-    fontWeight: '700', // Bold weight for better visibility
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
+    fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
   },
   continueButton: {
@@ -637,10 +619,8 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   continueButtonText: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Button text
-    fontWeight: '600',
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.5,
   },
 });

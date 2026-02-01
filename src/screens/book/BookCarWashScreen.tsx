@@ -6,7 +6,7 @@ import Geolocation from '@react-native-community/geolocation';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 import { STORAGE_BASE_URL } from '../../config/env';
 
 const BLUE_COLOR = '#0358a8';
@@ -858,9 +858,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold)
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.screenTitle,
     letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',
@@ -891,13 +889,10 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 15, // font-size: 15px, font-weight: 400 (Regular) for placeholder
+    ...TEXT_STYLES.input,
     paddingVertical: 8,
     paddingHorizontal: 0,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
     minHeight: 40,
-    lineHeight: 20,
   },
   centersList: {
     marginBottom: 20,
@@ -920,15 +915,11 @@ const styles = StyleSheet.create({
     flexShrink: 0, // Prevent tabs from shrinking
   },
   serviceTabText: {
-    fontSize: 15, // font-size: 15px, font-weight: 500 (Medium)
-    fontFamily: FONTS.INTER_MEDIUM,
-    fontWeight: '500',
+    ...TEXT_STYLES.cardTitle,
   },
   sectionTitle: {
-    fontSize: 22, // font-size: 22px, font-weight: 700 (Bold)
-    fontWeight: '700',
+    ...TEXT_STYLES.sectionHeadingMedium,
     marginBottom: Platform.select({ ios: 20, android: 14 }),
-    fontFamily: FONTS.MONTserrat_BOLD,
     letterSpacing: -0.4,
   },
   centerCard: {
@@ -981,19 +972,17 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   centerCardName: {
-    fontSize: 18, // Slightly larger for better emphasis
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
-    color: BLUE_COLOR, // Blue color for center name
-    marginBottom: 3, // Reduced from 4
+    fontFamily: FONTS.INTER_BOLD,
+    color: BLUE_COLOR,
+    marginBottom: 3,
     letterSpacing: -0.2,
   },
   centerCardAddress: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular)
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
-    marginBottom: 6, // Reduced from 8
-    lineHeight: 18,
+    ...TEXT_STYLES.bodyPrimary,
+    marginBottom: 6,
   },
   centerCardDetails: {
     gap: 5, // Reduced from 6
@@ -1016,24 +1005,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   centerCardDetailLabel: {
-    fontSize: 12, // Slightly reduced for more compact layout
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondary,
   },
   centerCardDetailText: {
-    fontSize: 13, // Slightly reduced for more compact layout
-    fontFamily: FONTS.INTER_MEDIUM,
-    fontWeight: '500',
+    ...TEXT_STYLES.bodySecondaryLarge,
   },
   centerCardPriceText: {
-    fontSize: 16, // Increased from 13
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    fontWeight: '600', // Bolder
+    ...TEXT_STYLES.sectionHeading,
   },
   centerCardAvailabilityText: {
-    fontSize: 16, // Increased from 13
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    fontWeight: '600', // Bolder
+    ...TEXT_STYLES.sectionHeading,
   },
   centerRow: {
     flexDirection: 'row',
@@ -1070,11 +1051,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   centerName: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
+    ...TEXT_STYLES.cardTitle,
     flex: 1,
-    fontFamily: FONTS.INTER_MEDIUM,
-    lineHeight: 20,
   },
   priceBadge: {
     paddingHorizontal: 10,
@@ -1083,15 +1061,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   minPrice: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.cardTitle,
   },
   centerAddress: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 18,
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 2,
   },
   weekoffContainer: {
@@ -1101,13 +1074,11 @@ const styles = StyleSheet.create({
     gap: Platform.select({ ios: 6, android: 4 }),
   },
   weekoffText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     flex: 1,
   },
   centerDistance: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666666',
     marginTop: 4,
   },
@@ -1124,14 +1095,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   instantBookingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#3B82F6',
   },
   instantBookingDescription: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#6B7280',
-    lineHeight: 20,
   },
   bottomContainer: {
     padding: 16,
@@ -1152,18 +1121,14 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   confirmButtonText: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold)
-    fontWeight: '600',
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.5,
   },
   bottomText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#000000',
     textAlign: 'center',
-    fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 18,
     marginTop: 4,
   },
   loadingContainer: {
@@ -1174,20 +1139,18 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#000000',
-    fontFamily: FONTS.INTER_REGULAR,
   },
   errorContainer: {
     alignItems: 'center',
     paddingVertical: 20,
   },
   errorText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#000000',
     textAlign: 'center',
     marginBottom: 10,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   retryButton: {
     backgroundColor: BLUE_COLOR,
@@ -1196,10 +1159,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   retryButtonText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BUTTON_SMALL,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -1255,9 +1216,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalTitle: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Center name
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     marginLeft: 8,
     flex: 1,
   },
@@ -1301,9 +1261,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   serviceModalName: {
-    fontSize: 17, // font-size: 17px, font-weight: 700 (Bold) - Service name
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     flex: 1,
   },
   bestDealBadgeSmall: {
@@ -1312,10 +1270,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   bestDealTextSmall: {
+    ...TEXT_STYLES.label,
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   serviceModalPriceRow: {
     flexDirection: 'row',
@@ -1324,21 +1280,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   serviceModalOriginalPrice: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Original price (strikethrough)
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondaryLarge,
     textDecorationLine: 'line-through',
   },
   serviceModalPrice: {
-    fontSize: 16, // Increased font size for offered price
-    fontWeight: '700', // Increased font weight (Bold)
+    ...TEXT_STYLES.sectionHeading,
+    fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
   },
   serviceModalDescription: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Description
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
-    lineHeight: 18,
+    ...TEXT_STYLES.bodySecondaryLarge,
   },
   modalLoadingContainer: {
     flexDirection: 'row',
@@ -1348,16 +1299,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   modalLoadingText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
   },
   modalEmptyContainer: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   modalEmptyText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 12,
   },
 });

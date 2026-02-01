@@ -18,7 +18,7 @@ import authService from '../../services/authService';
 import apiClient from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 
@@ -941,7 +941,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                           <ActivityIndicator size="small" color="#DC2626" />
                         ) : (
                           <>
-                            <Ionicons name="close-circle" size={16} color="#DC2626" />
+                            <Ionicons name="close-circle" size={14} color="#DC2626" />
                             <Text style={styles.cancelButtonText}>Cancel booking</Text>
                           </>
                         )}
@@ -985,21 +985,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.screenTitle,
     letterSpacing: -0.3,
     textAlign: 'center',
-    includeFontPadding: false,
   },
   headerSubtitle: {
+    ...TEXT_STYLES.bodySecondary,
     marginTop: Platform.select({ ios: 2, android: 2 }),
-    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
     textAlign: 'center',
-    color: '#6B7280', // Muted gray
-    includeFontPadding: false,
+    color: '#6B7280',
   },
   placeholder: {
     width: 40,
@@ -1024,113 +1018,103 @@ const styles = StyleSheet.create({
   },
   requestCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: 16,
+    padding: 12,
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    marginBottom: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 12,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   customerInfo: {
     flex: 1,
   },
   customerName: {
-    fontSize: 18, // 17-18px, Weight: 600 (Semi-Bold) - Service Name
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    color: BLUE_COLOR, // Blue color for customer name
-    includeFontPadding: false,
+    ...TEXT_STYLES.cardTitleSemiBold,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
+    color: BLUE_COLOR,
   },
   timeAgo: {
-    marginTop: 4,
-    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
-    color: '#6B7280', // Muted gray
-    includeFontPadding: false,
+    ...TEXT_STYLES.bodySecondary,
+    marginTop: 2,
+    color: '#6B7280',
   },
   statusBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    minWidth: 80,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+    minWidth: 72,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statusBadgeText: {
-    fontSize: 12.5, // 12-13px, Weight: 500, Letter spacing: 0.2px - Status Badge
+    ...TEXT_STYLES.bodySecondary,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     letterSpacing: 0.2,
-    includeFontPadding: false,
   },
   vehicleSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 10,
+    paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
   vehicleIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     backgroundColor: '#F0F9FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   vehicleInfo: {
     flex: 1,
   },
   vehicleLabel: {
-    fontSize: 11,
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.caption,
     fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#9CA3AF',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginBottom: 4,
-    includeFontPadding: false,
+    marginBottom: 2,
   },
   vehicleNumber: {
-    fontSize: 18, // Reduced font size - Booking Number/Vehicle
-    fontWeight: '700', // Bold
-    fontFamily: FONTS.INTER_BOLD,
-    color: BLUE_COLOR, // Blue color
-    marginBottom: 2,
-    includeFontPadding: false,
+    ...TEXT_STYLES.cardTitleSemiBold,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: BLUE_COLOR,
+    marginBottom: 0,
   },
   vehicleModel: {
-    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
-    color: '#6B7280', // Muted gray
-    marginTop: 2,
-    includeFontPadding: false,
+    ...TEXT_STYLES.bodySecondary,
+    marginTop: 1,
+    color: '#6B7280',
   },
   metaRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 10,
   },
   metaPill: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -1138,55 +1122,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   metaLabel: {
-    fontSize: 12, // 12-13px, Weight: 500 - Status Badge / Label
-    fontFamily: FONTS.INTER_MEDIUM,
-    fontWeight: '500',
+    ...TEXT_STYLES.label,
     color: '#9CA3AF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    includeFontPadding: false,
   },
   metaValue: {
-    marginTop: 4,
-    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
-    color: '#6B7280', // Muted gray
-    includeFontPadding: false,
+    ...TEXT_STYLES.bodyPrimary,
+    marginTop: 2,
+    color: '#6B7280',
   },
   notesContainer: {
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#DBEAFE',
     backgroundColor: '#EFF6FF',
-    padding: 14,
-    marginBottom: 16,
-    gap: 6,
+    padding: 10,
+    marginBottom: 10,
+    gap: 4,
   },
   notesLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     color: '#1E40AF',
-    marginBottom: 4,
-    includeFontPadding: false,
+    marginBottom: 2,
   },
   notesValue: {
-    fontSize: 13.5,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: '#1E3A8A',
-    lineHeight: 20,
-    includeFontPadding: false,
   },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 16,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
@@ -1194,32 +1166,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   amountLabel: {
-    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.label,
     color: '#9CA3AF',
-    marginBottom: 4,
-    includeFontPadding: false,
+    marginBottom: 2,
   },
   amountValue: {
-    fontSize: 20, // Increased font size - Total Amount
-    fontWeight: '700', // Increased font weight (Bold)
-    fontFamily: FONTS.INTER_BOLD,
-    color: '#10B981', // Green color
-    includeFontPadding: false,
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#10B981',
   },
   footerActions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     alignItems: 'center',
   },
   declineButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 25,
+    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1.5,
     borderColor: BLUE_COLOR,
     backgroundColor: '#EFF6FF',
@@ -1230,19 +1199,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   declineButtonText: {
-    fontSize: 14.5, // 14-15px, Weight: 600 (Semi-Bold) - Button Text
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
     color: BLUE_COLOR,
-    includeFontPadding: false,
   },
   acceptButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    borderRadius: 25,
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: '#111827',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
@@ -1251,11 +1217,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   acceptButtonText: {
-    fontSize: 14.5, // 14-15px, Weight: 600 (Semi-Bold) - Button Text
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    includeFontPadding: false,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -1263,10 +1226,10 @@ const styles = StyleSheet.create({
   cancelButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    borderRadius: 25,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderColor: '#DC2626',
     backgroundColor: '#FEE2E2',
@@ -1275,13 +1238,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
+    minHeight: 36,
   },
   cancelButtonText: {
-    fontSize: 14.5, // 14-15px, Weight: 600 (Semi-Bold) - Button Text
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
+    fontSize: FONT_SIZES.BUTTON,
     color: '#DC2626',
-    includeFontPadding: false,
   },
   stateContainer: {
     flex: 1,
@@ -1294,20 +1256,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   stateTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeading,
     color: '#111827',
     textAlign: 'center',
   },
   stateDescription: {
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 6,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
   },
   retryButton: {
     marginTop: 18,
@@ -1320,9 +1277,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   retryButtonText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
   },
 });

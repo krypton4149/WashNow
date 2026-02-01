@@ -3,9 +3,7 @@ import { Alert } from 'react-native';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
-import VerificationScreen from '../screens/auth/VerificationScreen';
 import CreateNewPasswordScreen from '../screens/auth/CreateNewPasswordScreen';
-import PhoneOTPVerificationScreen from '../screens/auth/PhoneOTPVerificationScreen';
 import authService from '../services/authService';
 
 interface AuthNavigatorProps {
@@ -13,7 +11,7 @@ interface AuthNavigatorProps {
   onBackToUserChoice?: () => void;
 }
 
-type AuthScreen = 'login' | 'register' | 'forgot-password' | 'verification' | 'create-new-password' | 'phone-otp-verification';
+type AuthScreen = 'login' | 'register' | 'forgot-password' | 'create-new-password';
 
 const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUserChoice }) => {
   const [currentScreen, setCurrentScreen] = useState<AuthScreen>('login');
@@ -21,10 +19,6 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
     emailOrPhone: string;
     method: 'email' | 'phone';
   } | null>(null);
-  const [phoneOTPData, setPhoneOTPData] = useState<{
-    phoneNumber: string;
-  } | null>(null);
-
   const handleLogin = async (emailOrPhone: string, password: string, loginType: 'email' | 'phone') => {
     try {
       // Call the auth service to handle login
@@ -135,52 +129,13 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
           {
             text: 'Continue',
             onPress: () => {
-              setCurrentScreen('verification');
+              setCurrentScreen('create-new-password');
             }
           }
         ]
       );
     } catch (error) {
       console.error('Send code error:', error);
-      Alert.alert(
-        'Failed to Send Code',
-        'There was an error sending the verification code. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
-  const handleVerify = (code: string) => {
-    console.log('Verification code:', code);
-    
-    // Show success message
-    Alert.alert(
-      'Code Verified!',
-      'Your verification code has been confirmed successfully.',
-      [
-        {
-          text: 'Continue',
-          onPress: () => {
-            setCurrentScreen('create-new-password');
-          }
-        }
-      ]
-    );
-  };
-
-  const handleResendCode = async () => {
-    try {
-      console.log('Resending code to:', forgotPasswordData?.emailOrPhone);
-      // Here you would typically call your resend code API
-      
-      // Show success message
-      Alert.alert(
-        'Code Sent!',
-        'A new verification code has been sent to your email/phone.',
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Resend code error:', error);
       Alert.alert(
         'Failed to Send Code',
         'There was an error sending the verification code. Please try again.',
@@ -220,25 +175,9 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
 
   const handleSendOTP = async (phoneNumber: string) => {
     try {
-      setPhoneOTPData({ phoneNumber });
-      
-      // Call the real API to request OTP
       const result = await authService.requestOTP(phoneNumber);
-      
       if (result.success) {
-        // Show success message
-        Alert.alert(
-          'OTP Sent!',
-          `A verification code has been sent to ${phoneNumber}.`,
-          [
-            {
-              text: 'Continue',
-              onPress: () => {
-                setCurrentScreen('phone-otp-verification');
-              }
-            }
-          ]
-        );
+        Alert.alert('OTP Sent!', `A verification code has been sent to ${phoneNumber}.`, [{ text: 'OK' }]);
       } else {
         Alert.alert(
           'Failed to Send OTP',
@@ -248,68 +187,9 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
       }
     } catch (error: any) {
       console.error('Send OTP error:', error);
-      const errorMessage = error?.message || error?.error || 'There was an error sending the verification code. Please try again.';
       Alert.alert(
         'Failed to Send OTP',
-        errorMessage,
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
-  const handlePhoneOTPVerify = async (otp: string) => {
-    try {
-      console.log('Phone OTP verification:', { phoneNumber: phoneOTPData?.phoneNumber, otp });
-      
-      // Call the real API to verify OTP
-      const result = await authService.verifyOTP(phoneOTPData?.phoneNumber || '', otp);
-      
-      if (result.success) {
-        Alert.alert(
-          'Login Successful!',
-          'Welcome back! You have been signed in successfully.',
-          [{ text: 'Continue', onPress: onAuthSuccess }]
-        );
-      } else {
-        Alert.alert('Verification Failed', result.error || 'Invalid OTP. Please try again.', [{ text: 'OK' }]);
-      }
-    } catch (error: any) {
-      console.error('Phone OTP verification error:', error);
-      const errorMessage = error?.message || error?.error || 'There was an error verifying the code. Please try again.';
-      Alert.alert(
-        'Verification Failed',
-        errorMessage,
-        [{ text: 'OK' }]
-      );
-    }
-  };
-
-  const handleResendPhoneOTP = async () => {
-    try {
-      console.log('Resending OTP to:', phoneOTPData?.phoneNumber);
-      
-      // Call the real API to resend OTP
-      const result = await authService.resendOTP(phoneOTPData?.phoneNumber || '');
-      
-      if (result.success) {
-        Alert.alert(
-          'OTP Sent!',
-          'A new verification code has been sent to your phone number.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert(
-          'Failed to Send OTP',
-          result.error || 'There was an error sending the verification code. Please try again.',
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error: any) {
-      console.error('Resend OTP error:', error);
-      const errorMessage = error?.message || error?.error || 'There was an error sending the verification code. Please try again.';
-      Alert.alert(
-        'Failed to Send OTP',
-        errorMessage,
+        error?.message || error?.error || 'There was an error sending the verification code. Please try again.',
         [{ text: 'OK' }]
       );
     }
@@ -342,31 +222,12 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
             onSendCode={handleSendCode}
           />
         );
-      case 'verification':
-        return (
-          <VerificationScreen
-            onBack={() => setCurrentScreen('forgot-password')}
-            onVerify={handleVerify}
-            onResendCode={handleResendCode}
-            emailOrPhone={forgotPasswordData?.emailOrPhone || ''}
-            method={forgotPasswordData?.method || 'email'}
-          />
-        );
       case 'create-new-password':
         return (
           <CreateNewPasswordScreen
-            onBack={() => setCurrentScreen('verification')}
+            onBack={() => setCurrentScreen('forgot-password')}
             onResetPassword={handleResetPassword}
             emailOrPhone={forgotPasswordData?.emailOrPhone || ''}
-          />
-        );
-      case 'phone-otp-verification':
-        return (
-          <PhoneOTPVerificationScreen
-            onBack={() => setCurrentScreen('login')}
-            onVerify={handlePhoneOTPVerify}
-            onResendCode={handleResendPhoneOTP}
-            phoneNumber={phoneOTPData?.phoneNumber || ''}
           />
         );
       default:

@@ -15,7 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import BottomTabBar from '../../components/BottomTabBar';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 import { platformEdges } from '../../utils/responsive';
 
 const BLUE_COLOR = '#0358a8';
@@ -563,10 +563,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
+    ...TEXT_STYLES.sectionHeadingMedium,
     letterSpacing: -0.2,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
     textAlign: 'center',
   },
   content: {
@@ -594,10 +592,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profilePhotoInitials: {
-    fontSize: FONT_SIZES.NUMBER_LARGE,
-    fontWeight: '700',
+    ...TEXT_STYLES.screenTitleBold,
     letterSpacing: 1,
-    fontFamily: FONTS.INTER_BOLD,
   },
   inputSection: {
     paddingTop: 0,
@@ -608,11 +604,9 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   fieldLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
+    ...TEXT_STYLES.label,
     marginBottom: 8,
     letterSpacing: 0.2,
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -631,13 +625,11 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   textInput: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '400',
+    ...TEXT_STYLES.input,
     flex: 1,
     paddingVertical: 0,
     paddingLeft: 48,
     letterSpacing: 0.2,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   accountInfoSection: {
     marginTop: 32,
@@ -646,11 +638,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
+    ...TEXT_STYLES.sectionHeadingMedium,
     marginBottom: 16,
     letterSpacing: -0.2,
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   infoRow: {
     flexDirection: 'row',
@@ -659,28 +649,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   infoLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     letterSpacing: 0.2,
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   infoValue: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     letterSpacing: 0.2,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   verifiedContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   verifiedText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: '#10B981',
     marginLeft: 8,
     letterSpacing: 0.2,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   bottomContainer: {
     paddingHorizontal: 24,
@@ -705,14 +689,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   saveButtonText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
     letterSpacing: -0.2,
-    fontFamily: FONTS.INTER_MEDIUM,
     textAlign: 'center',
-    lineHeight: Platform.select({ ios: 24, android: 22 }),
-    includeFontPadding: false,
   },
   saveButtonDisabled: {
     opacity: 0.6,

@@ -2079,12 +2079,23 @@ class AuthService {
         data = null;
       }
 
-      if (response.ok && data?.success !== false) {
+      // Treat 200 OK or 201 Created as success (API returns 201 on profile update)
+      const isSuccess = (response.ok || response.status === 201) && data?.success !== false;
+      if (isSuccess) {
         const currentUser = await this.getUser();
         const existingServiceCentre = currentUser?.rawUserData?.service_centre || currentUser?.userData?.service_centre || {};
         const updatedServiceCentre = {
           ...existingServiceCentre,
           ...(trimmedBusinessName.length > 0 ? { name: trimmedBusinessName } : {}),
+          ...(address !== undefined && address !== null ? { address: address.trim() } : {}),
+          ...(city !== undefined && city !== null ? { city: city.trim() } : {}),
+          ...(zip !== undefined && zip !== null ? { zip: zip.trim(), zipcode: zip.trim(), postal_code: zip.trim() } : {}),
+          ...(latitude !== undefined && latitude !== null ? { clat: latitude } : {}),
+          ...(longitude !== undefined && longitude !== null ? { clong: longitude } : {}),
+          is_24h_open: is_24h_open === true ? 1 : 0,
+          ...(open_time !== undefined && open_time !== null ? { open_time: open_time.trim() } : {}),
+          ...(close_time !== undefined && close_time !== null ? { close_time: close_time.trim() } : {}),
+          ...(weekoff_days !== undefined && Array.isArray(weekoff_days) ? { weekoff_days } : {}),
         };
         const updatedRawUser = {
           ...(currentUser?.rawUserData || {}),
@@ -2098,6 +2109,15 @@ class AuthService {
           phone_number: phoneDigits,
           ...(trimmedBusinessName.length > 0 ? { businessName: trimmedBusinessName, business_name: trimmedBusinessName } : {}),
           service_centre: updatedServiceCentre,
+          ...(address !== undefined && address !== null ? { address: address.trim() } : {}),
+          ...(city !== undefined && city !== null ? { city: city.trim() } : {}),
+          ...(zip !== undefined && zip !== null ? { zip: zip.trim() } : {}),
+          ...(latitude !== undefined && latitude !== null ? { clat: latitude } : {}),
+          ...(longitude !== undefined && longitude !== null ? { clong: longitude } : {}),
+          is_24h_open: is_24h_open === true ? 1 : 0,
+          open_time: open_time?.trim(),
+          close_time: close_time?.trim(),
+          weekoff_days: weekoff_days ?? [],
         };
 
         const updatedUserData = {
@@ -2112,6 +2132,15 @@ class AuthService {
           phone_number: phoneDigits,
           ...(trimmedBusinessName.length > 0 ? { businessName: trimmedBusinessName, business_name: trimmedBusinessName } : {}),
           service_centre: updatedServiceCentre,
+          address: address?.trim(),
+          city: city?.trim(),
+          zip: zip?.trim(),
+          clat: latitude ?? undefined,
+          clong: longitude ?? undefined,
+          is_24h_open: is_24h_open === true ? 1 : 0,
+          open_time: open_time?.trim(),
+          close_time: close_time?.trim(),
+          weekoff_days: weekoff_days ?? [],
         };
 
         const updatedUser = {
@@ -2126,6 +2155,15 @@ class AuthService {
           ...(trimmedBusinessName.length > 0 ? { businessName: trimmedBusinessName, business_name: trimmedBusinessName } : {}),
           rawUserData: updatedRawUser,
           userData: updatedUserData,
+          address: address?.trim(),
+          city: city?.trim(),
+          zip: zip?.trim(),
+          clat: latitude ?? undefined,
+          clong: longitude ?? undefined,
+          is_24h_open: is_24h_open === true ? 1 : 0,
+          open_time: open_time?.trim(),
+          close_time: close_time?.trim(),
+          weekoff_days: weekoff_days ?? [],
         };
 
         await this.setUser(updatedUser);

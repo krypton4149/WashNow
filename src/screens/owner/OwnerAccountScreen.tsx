@@ -4,7 +4,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import OwnerEditProfileScreen from './OwnerEditProfileScreen';
 import { useTheme } from '../../context/ThemeContext';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -22,6 +22,14 @@ function parseWeekOffDays(weekOffStr: string | undefined): Set<string> {
     if (WEEKDAYS_ORDER.includes(normalized)) set.add(normalized);
   }
   return set;
+}
+
+/** Normalize weekoff_days from API (array or string) to display string. Use for real-time login + edit. */
+function normalizeWeekoffDaysToDisplay(value: any): string {
+  if (value == null) return '';
+  if (Array.isArray(value)) return value.filter(Boolean).map((s: any) => String(s).trim()).filter(Boolean).join(', ');
+  if (typeof value === 'string') return value.split(/[,&]/).map((s: string) => s.trim()).filter(Boolean).join(', ');
+  return '';
 }
 
 /** Get working days label by excluding week-off days (e.g. "Friday - Saturday" when Mon–Thu are off) */
@@ -44,6 +52,7 @@ interface OwnerAccountScreenProps {
   onEditProfile?: () => void;
   onOpenSettings?: () => void;
   onOpenSupport?: () => void;
+  onOwnerProfileUpdated?: (user: any) => void;
 }
 
 const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
@@ -52,6 +61,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   onEditProfile,
   onOpenSettings,
   onOpenSupport,
+  onOwnerProfileUpdated,
 }) => {
   const { colors } = useTheme();
   const [storedOwnerData, setStoredOwnerData] = useState<any | null>(userData ?? null);
@@ -248,15 +258,13 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
       storedOwnerData?.status
     ),
     weekOffDays: (() => {
-      if (Array.isArray(serviceCentre?.weekoff_days) && serviceCentre.weekoff_days.length > 0) {
-        return serviceCentre.weekoff_days.filter(Boolean).join(', ');
-      }
-      if (Array.isArray(profile?.weekoff_days) && profile.weekoff_days.length > 0) {
-        return profile.weekoff_days.filter(Boolean).join(', ');
-      }
-      if (Array.isArray(storedOwnerData?.weekoff_days) && storedOwnerData.weekoff_days.length > 0) {
-        return storedOwnerData.weekoff_days.filter(Boolean).join(', ');
-      }
+      // Prefer service_centre.weekoff_days (login + edit) so login data updates in real time
+      const fromServiceCentre = normalizeWeekoffDaysToDisplay(serviceCentre?.weekoff_days);
+      if (fromServiceCentre) return fromServiceCentre;
+      const fromProfile = normalizeWeekoffDaysToDisplay(profile?.weekoff_days);
+      if (fromProfile) return fromProfile;
+      const fromStored = normalizeWeekoffDaysToDisplay(storedOwnerData?.weekoff_days);
+      if (fromStored) return fromStored;
       const fallback = getString('Not provided',
         profile?.weekOffDays,
         profile?.weekoffDays,
@@ -330,6 +338,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   const handleProfileSaved = (updatedOwner: any) => {
     setStoredOwnerData(updatedOwner);
     setIsEditingProfile(false);
+    onOwnerProfileUpdated?.(updatedOwner);
   };
 
   if (isEditingProfile) {
@@ -377,7 +386,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
         ) : (
           <View style={styles.profileHeader}>
             <View style={styles.centerIconContainer}>
-              <Ionicons name="storefront" size={64} color="#FFFFFF" />
+              <Ionicons name="storefront" size={48} color="#FFFFFF" />
             </View>
             <Text style={styles.businessName}>{business.name}</Text>
             <Text style={styles.ownerName}>{business.ownerName}</Text>
@@ -440,12 +449,12 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
               <Text style={styles.activeText}>Active</Text>
             </View>
           </View>
-          <View style={styles.hoursRow}>
-            <Text style={styles.hoursDays}>
+          <View style={styles.hoursContent}>
+            <Text style={styles.hoursDays} numberOfLines={2}>
               {getWorkingDaysLabel(business.weekOffDays, business.hours.days)}
             </Text>
-            <Text style={styles.hoursTime}>
-              {business.hours.is24h ? 'Open 24 hours' : `${business.hours.open} - ${business.hours.close}`}
+            <Text style={styles.hoursTime} numberOfLines={1}>
+              {business.hours.is24h ? 'Open 24 hours' : `${business.hours.open} – ${business.hours.close}`}
             </Text>
           </View>
         </View>
@@ -499,7 +508,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: BLUE_COLOR,
     paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
-    paddingBottom: 30,
+    paddingBottom: 14,
     paddingHorizontal: 16,
     marginTop: 0,
   },
@@ -511,7 +520,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 10,
     zIndex: 1,
   },
   headerLeftPlaceholder: {
@@ -533,14 +542,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
+    ...TEXT_STYLES.screenTitle,
     flex: 1,
-    fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: -0.5,
-    includeFontPadding: false,
   },
   editButton: {
     width: 40,
@@ -567,9 +573,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   loadingText: {
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 8,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
     color: '#FFFFFF',
   },
   profileHeader: {
@@ -577,11 +582,11 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   centerIconContainer: {
-    marginBottom: 16,
-    marginTop: 8,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    marginBottom: 8,
+    marginTop: 0,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     overflow: 'hidden',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderWidth: 4,
@@ -590,21 +595,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   businessName: {
-    fontSize: FONT_SIZES.HEADING_LARGE + 2,
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#FFFFFF',
-    marginBottom: 6,
+    marginBottom: 4,
     letterSpacing: -0.5,
-    includeFontPadding: false,
   },
   ownerName: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    ...TEXT_STYLES.bodyPrimary,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     color: 'rgba(255,255,255,0.9)',
-    marginBottom: 12,
-    includeFontPadding: false,
+    marginBottom: 6,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -612,9 +616,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bookingCount: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodySecondary,
     color: '#FFFFFF',
   },
   scrollView: {
@@ -660,18 +662,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.label,
     color: '#6B7280',
     marginBottom: 4,
   },
   infoValue: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#111827',
-    includeFontPadding: false,
   },
   divider: {
     height: 1,
@@ -707,12 +704,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE + 1,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     color: '#111827',
     letterSpacing: -0.3,
-    includeFontPadding: false,
   },
   activePill: {
     paddingHorizontal: 10,
@@ -721,27 +716,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   activeText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
+    ...TEXT_STYLES.caption,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#6B7280',
   },
-  hoursRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  hoursContent: {
+    flexDirection: 'column',
   },
   hoursDays: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
-    color: '#6B7280',
-  },
-  hoursTime: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
+    marginBottom: 6,
+  },
+  hoursTime: {
+    ...TEXT_STYLES.bodySecondary,
+    color: '#6B7280',
   },
   actionCard: {
     backgroundColor: '#FFFFFF',
@@ -787,11 +779,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   actionLabel: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#111827',
-    includeFontPadding: false,
   },
 });
 

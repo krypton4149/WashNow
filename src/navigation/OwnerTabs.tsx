@@ -18,6 +18,7 @@ interface OwnerTabsProps {
   onLogout?: () => void;
   onViewAllActivity?: () => void;
   onBookingRequestPress?: () => void;
+  onOwnerProfileUpdated?: (user: any) => void;
 }
 
 const OwnerTabs: React.FC<OwnerTabsProps> = ({
@@ -25,6 +26,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
   onLogout,
   onViewAllActivity,
   onBookingRequestPress,
+  onOwnerProfileUpdated,
 }) => {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -40,7 +42,8 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
             onViewAll={() => setActiveTab('requests')}
             onViewAllActivity={() => setActiveTab('activity')}
             onBookingRequestPress={() => setActiveTab('requests')}
-            businessName={userData?.businessName || 'Premium Auto Wash'}
+            businessName={userData?.businessName || userData?.business_name || 'Premium Auto Wash'}
+            userData={userData}
           />
         );
       case 'requests':
@@ -85,9 +88,10 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
               <OwnerAccountScreen
                 onBack={() => setActiveTab('home')}
                 userData={userData}
-                onEditProfile={() => console.log('Edit profile')}
+                onEditProfile={undefined}
                 onOpenSettings={() => setAccountSubView('settings')}
                 onOpenSupport={() => setAccountSubView('support')}
+                onOwnerProfileUpdated={onOwnerProfileUpdated}
               />
             );
         }

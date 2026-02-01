@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 import authService from '../../services/authService';
 
 const BLUE_COLOR = '#0358a8';
@@ -322,19 +322,16 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(12),
   },
   confirmationTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '700',
+    ...TEXT_STYLES.screenTitle,
     color: BLUE_COLOR,
     marginBottom: moderateScale(4),
-    fontFamily: FONTS.MONTserrat_BOLD,
     letterSpacing: -0.3,
   },
   confirmationSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666666',
     textAlign: 'center',
     marginBottom: moderateScale(20),
-    fontFamily: FONTS.INTER_REGULAR,
   },
   bookingCard: {
     backgroundColor: '#FFFFFF',
@@ -354,13 +351,13 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(16),
   },
   bookingId: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontWeight: '700',
+    ...TEXT_STYLES.bodySecondary,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     backgroundColor: '#E5E7EB',
     paddingHorizontal: moderateScale(8),
     paddingVertical: moderateScale(4),
     borderRadius: moderateScale(12),
-    fontFamily: FONTS.INTER_BOLD,
   },
   bookingDetails: {
     marginBottom: moderateScale(16),
@@ -380,16 +377,13 @@ const styles = StyleSheet.create({
     marginLeft: moderateScale(12),
   },
   bookingLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.label,
     color: '#666666',
     marginBottom: moderateScale(4),
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   bookingValue: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '600',
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#000',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   dateRow: {
     flexDirection: 'row',
@@ -403,9 +397,8 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
   },
   previewText: {
-    fontSize: moderateScale(10),
+    ...TEXT_STYLES.caption,
     color: '#FFFFFF',
-    fontWeight: '500',
   },
   paymentSummary: {
     backgroundColor: '#F9FAFB',
@@ -419,20 +412,18 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(8),
   },
   paymentLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.label,
     color: '#666666',
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   paymentStatus: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.bodyPrimary,
+    color: '#666666',
   },
   paymentAmount: {
-    fontSize: FONT_SIZES.NUMBER_SMALL,
-    fontWeight: '700',
+    ...TEXT_STYLES.sectionHeading,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#000',
-    fontFamily: FONTS.INTER_BOLD,
   },
   bottomContainer: {
     padding: moderateScale(16),
@@ -447,9 +438,7 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(12),
   },
   viewStatusButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
     letterSpacing: 0.5,
   },
   backToHomeButton: {
@@ -460,9 +449,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backToHomeButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
   },
 });
 

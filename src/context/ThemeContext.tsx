@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FONT_SIZES, TEXT_STYLES } from '../utils/fonts';
 
 interface ThemeContextType {
   isDarkMode: boolean;
@@ -19,6 +20,9 @@ interface ThemeContextType {
     success: string;
     warning: string;
   };
+  /** Global Inter typography (responsive). Use for Screen Title, Section Heading, Card Title, Body, Button, etc. */
+  typography: typeof TEXT_STYLES;
+  fontSizes: typeof FONT_SIZES;
 }
 
 const lightColors = {
@@ -91,6 +95,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isDarkMode,
     toggleDarkMode,
     colors,
+    typography: TEXT_STYLES,
+    fontSizes: FONT_SIZES,
   };
 
   return (

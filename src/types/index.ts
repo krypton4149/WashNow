@@ -6,7 +6,6 @@ export type ScreenType =
   | 'service-owner'
   | 'book-wash'
   | 'available-now'
-  | 'booking-confirmed'
   | 'payment'
   | 'payment-confirmed'
   | 'location-selection'

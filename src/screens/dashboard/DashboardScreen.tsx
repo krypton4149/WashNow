@@ -17,7 +17,7 @@ import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
-import { FONTS } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -1096,19 +1096,15 @@ const styles = StyleSheet.create({
     marginBottom: 12, // Reduced margin
   },
   welcomeText: {
+    ...TEXT_STYLES.bodyPrimaryLarge,
     color: 'rgba(255,255,255,0.95)',
-    fontSize: 15,
-    fontFamily: 'Inter-Medium',
+    fontFamily: FONTS.INTER_MEDIUM,
     fontWeight: '500',
-    includeFontPadding: false,
   },
   userNameText: {
+    ...TEXT_STYLES.screenTitleBold,
     color: '#fff',
-    fontSize: 26,
-    fontWeight: '700',
-    fontFamily: 'Montserrat-Bold',
     letterSpacing: -0.5,
-    includeFontPadding: false,
     marginTop: 2,
   },
   iconButton: {
@@ -1202,25 +1198,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statValueBlue: {
-    fontSize: 20,
+    ...TEXT_STYLES.sectionHeadingLarge,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     fontWeight: '700',
-    fontFamily: 'Inter-Bold',
+    fontFamily: FONTS.INTER_BOLD,
     color: '#FFFFFF',
     marginBottom: 2,
-    includeFontPadding: false,
   },
   statLabelBlue: {
-    fontSize: 11,
+    ...TEXT_STYLES.caption,
     fontWeight: '500',
-    fontFamily: 'Inter-Medium',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: 'rgba(255, 255, 255, 0.9)',
-    includeFontPadding: false,
   },
   yellowBanner: {
     marginHorizontal: 20, // Increased margin for better width
     marginTop: -25, // Increased overlap to cover blue background
     backgroundColor: YELLOW_COLOR,
-    paddingVertical: 16, // Adjusted vertical padding for better height
+    paddingVertical: 12, // Reduced height
     paddingHorizontal: 20, // Keep horizontal padding
     borderRadius: 20, // Slightly reduced border radius
     marginBottom: 0, // Remove bottom margin to eliminate blue gap
@@ -1248,29 +1243,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   yellowBannerTitle: {
-    fontSize: 18, // Further reduced
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#111827',
-    marginBottom: 4,
-    includeFontPadding: false,
+    marginBottom: 2,
   },
   yellowBannerSubtitle: {
-    fontSize: 12, // Further reduced
-    fontFamily: 'Inter-Regular',
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondary,
     color: '#374151',
-    includeFontPadding: false,
   },
   bookNowButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF08A', // Soft, light yellow color
-    paddingHorizontal: 22, // Increased width
-    paddingVertical: 8, // Reduced height
+    justifyContent: 'center',
+    backgroundColor: '#FEF08A',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    minHeight: 40,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.8)', // More visible white border
+    borderColor: 'rgba(255, 255, 255, 0.8)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.15,
@@ -1278,11 +1269,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   bookNowText: {
-    fontSize: 13,
-    fontWeight: '600', // Increased to Semi-Bold
-    fontFamily: 'Inter-SemiBold',
+    ...TEXT_STYLES.buttonProduction,
     color: '#111827',
-    includeFontPadding: false,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1293,20 +1281,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 18, // 18px
-    fontWeight: '600', // Semi-Bold
-    fontFamily: 'Inter-SemiBold',
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#111827',
-    includeFontPadding: false,
   },
   seeAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   seeAllText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - See all text
-    fontWeight: '400',
-    fontFamily: 'Inter-Regular',
+    ...TEXT_STYLES.bodyPrimary,
     color: BLUE_COLOR,
     marginRight: 4,
   },
@@ -1342,18 +1325,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   serviceName: { 
-    fontSize: 17,
-    fontWeight: '600', // Semi-Bold
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     flex: 1,
-    fontFamily: 'Inter-SemiBold',
-    color: BLUE_COLOR, // Blue color for center name
-    includeFontPadding: false,
+    color: BLUE_COLOR,
     marginBottom: 0,
   },
   activityService: { 
-    fontSize: 13, 
+    ...TEXT_STYLES.bodySecondaryLarge,
     marginBottom: 4,
-    fontFamily: 'Inter-Regular',
     color: '#666666',
   },
   serviceTypeRow: {
@@ -1366,16 +1346,16 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   serviceTypeText: {
-    fontSize: 13,
-    fontWeight: '500', // Medium
-    fontFamily: 'Inter-Medium',
+    ...TEXT_STYLES.bodySecondaryLarge,
+    fontWeight: '500',
+    fontFamily: FONTS.INTER_MEDIUM,
     color: '#374151',
   },
   inProgressText: {
-    fontSize: 13,
-    fontWeight: '600', // Semi-Bold (increased from Medium)
-    fontFamily: 'Inter-SemiBold',
-    color: '#10B981', // Green color
+    ...TEXT_STYLES.bodySecondaryLarge,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#10B981',
   },
   metaInfoRow: {
     flexDirection: 'row',
@@ -1387,10 +1367,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   metaInfoText: {
-    fontSize: 13,
-    fontWeight: '400', // Regular
-    fontFamily: 'Inter-Regular',
-    color: '#6B7280', // Darker gray for better readability
+    ...TEXT_STYLES.bodySecondaryLarge,
+    color: '#6B7280',
   },
   bookingNumberRow: {
     flexDirection: 'row',
@@ -1405,23 +1383,19 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   bookingNumberLabel: {
-    fontSize: 12,
-    fontWeight: '400',
-    fontFamily: 'Inter-Regular',
+    ...TEXT_STYLES.bodySecondary,
     color: '#6B7280',
   },
   bookingNumberValue: {
-    fontSize: 16,
-    fontWeight: '600', // Reduced from 700 to 600
-    fontFamily: 'Inter-SemiBold',
-    color: '#111827', // Dark blue/black
-    lineHeight: 20.8, // 1.3 line height (16 * 1.3)
+    ...TEXT_STYLES.cardTitleSemiBold,
+    color: '#111827',
   },
   actionButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
-    gap: 8,
+    marginTop: 4,
+    gap: 6,
+    paddingHorizontal: 12,
   },
   statusBadgeGreen: {
     flexDirection: 'row',
@@ -1432,10 +1406,8 @@ const styles = StyleSheet.create({
     borderRadius: 20, // Pill shape
   },
   statusBadgeText: {
+    ...TEXT_STYLES.label,
     color: '#FFFFFF',
-    fontSize: 12.5, // 12-13px, using 12.5px
-    fontWeight: '500', // Medium
-    fontFamily: 'Inter-Medium',
     letterSpacing: 0.2,
   },
   statusTagCompleted: {
@@ -1445,10 +1417,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   statusTextCompleted: {
+    ...TEXT_STYLES.bodySecondaryLarge,
     color: '#FFFFFF',
-    fontSize: 13, // font-size: 13px, font-weight: 500 (Medium) - Status text
     fontWeight: '500',
-    fontFamily: 'Inter-Medium',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   statusTagCanceled: {
     backgroundColor: '#FEE2E2',
@@ -1457,19 +1429,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   statusTextCanceled: {
+    ...TEXT_STYLES.bodySecondaryLarge,
     color: '#DC2626',
-    fontSize: 13, // font-size: 13px, font-weight: 500 (Medium) - Status text
     fontWeight: '500',
-    fontFamily: 'Inter-Medium',
+    fontFamily: FONTS.INTER_MEDIUM,
   },
   cancelButton: {
     flex: 1,
-    borderWidth: 1.5, // Add border line
-    borderColor: '#9CA3AF', // Gray border color
-    backgroundColor: '#FCA5A5', // Lighter red filled color
-    paddingHorizontal: 8, // Further reduced width
-    paddingVertical: 10,
-    borderRadius: 25, // Cylindrical/pill shape
+    borderWidth: 1.5,
+    borderColor: '#9CA3AF',
+    backgroundColor: '#FCA5A5',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    minHeight: 28,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#FCA5A5',
@@ -1479,19 +1452,19 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cancelButtonText: {
-    color: '#991B1B', // Darker red text for contrast on light background
-    fontWeight: '600', // Semi-Bold
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
+    ...TEXT_STYLES.buttonProduction,
+    fontSize: FONT_SIZES.BUTTON,
+    color: '#991B1B',
   },
   rescheduleButton: {
     flex: 1,
-    borderWidth: 1.5, // Add border line
-    borderColor: '#9CA3AF', // Gray border color
-    backgroundColor: '#93C5FD', // Lighter blue filled color
-    paddingHorizontal: 8, // Further reduced width
-    paddingVertical: 10,
-    borderRadius: 25, // Cylindrical/pill shape
+    borderWidth: 1.5,
+    borderColor: '#9CA3AF',
+    backgroundColor: '#93C5FD',
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    minHeight: 28,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#93C5FD',
@@ -1501,19 +1474,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   rescheduleButtonText: {
-    color: '#1E40AF', // Darker blue text for contrast on light background
-    fontWeight: '600', // Semi-Bold
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
+    ...TEXT_STYLES.buttonProduction,
+    fontSize: FONT_SIZES.BUTTON,
+    color: '#1E40AF',
   },
   loadingContainer: {
     padding: 20,
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
-    fontFamily: 'Inter-Regular',
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666',
     marginTop: 12,
   },
@@ -1522,16 +1492,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Empty text
-    fontFamily: 'Inter-Regular',
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666',
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Empty subtext
-    fontFamily: 'Inter-Regular',
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondaryLarge,
     color: '#666',
     textAlign: 'center',
   },
@@ -1564,9 +1530,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   rescheduleModalTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.screenTitleBold,
     letterSpacing: -0.3,
   },
   rescheduleModalCloseButton: {
@@ -1590,9 +1554,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   rescheduleSectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     marginBottom: 14,
     color: '#111827',
     letterSpacing: 0.2,
@@ -1612,7 +1574,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   rescheduleMonthText: {
-    fontSize: 17,
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
     color: '#111827',
@@ -1630,7 +1593,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   rescheduleCalendarDayHeaderText: {
-    fontSize: 11,
+    ...TEXT_STYLES.caption,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#6B7280',
@@ -1670,7 +1633,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
   },
   rescheduleCalendarDayText: {
-    fontSize: 13,
+    ...TEXT_STYLES.bodySecondaryLarge,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#374151',
@@ -1683,9 +1646,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   rescheduleTimeSlotLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     marginBottom: 12,
     color: '#111827',
     letterSpacing: 0.2,
@@ -1710,11 +1671,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   rescheduleDropdownButtonText: {
-    fontSize: 16,
+    ...TEXT_STYLES.cardTitle,
     fontFamily: FONTS.INTER_MEDIUM,
     flex: 1,
     color: '#111827',
-    fontWeight: '500',
   },
   rescheduleDropdownList: {
     position: 'absolute',
@@ -1750,11 +1710,10 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
   },
   rescheduleDropdownItemText: {
-    fontSize: 15,
+    ...TEXT_STYLES.bodyPrimaryLarge,
     fontFamily: FONTS.INTER_MEDIUM,
     flex: 1,
     color: '#374151',
-    fontWeight: '500',
   },
   rescheduleDropdownCheckmark: {
     marginLeft: 8,
@@ -1767,8 +1726,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rescheduleLoadingText: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
   },
   rescheduleTimeSlotsGrid: {
     flexDirection: 'row',
@@ -1800,8 +1758,7 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
   },
   rescheduleTimeSlotText: {
-    fontSize: 15,
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.bodyPrimaryLarge,
     letterSpacing: 0.2,
     textAlign: 'center',
   },
@@ -1849,10 +1806,8 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   rescheduleConfirmButtonText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
     letterSpacing: 0.3,
   },
   rescheduleNoSlotsContainer: {
@@ -1862,15 +1817,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   rescheduleNoSlotsText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     marginTop: 16,
     marginBottom: 8,
   },
   rescheduleNoSlotsSubtext: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     textAlign: 'center',
   },
 });

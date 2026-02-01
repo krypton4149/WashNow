@@ -15,7 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -366,17 +366,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.screenTitle,
     letterSpacing: -0.2,
     textAlign: 'center',
   },
   unreadCount: {
     marginTop: Platform.select({ ios: 2, android: 2 }),
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondary,
     textAlign: 'center',
   },
   markAllButton: {
@@ -386,9 +382,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   markAllText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.cardTitle,
   },
   content: {
     flex: 1,
@@ -409,8 +403,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
   },
   notificationItem: {
     backgroundColor: '#FFFFFF',
@@ -447,23 +440,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notificationTitle: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Notification title
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     flex: 1,
     marginBottom: 4,
   },
   notificationDescription: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Description
-    lineHeight: 20,
+    ...TEXT_STYLES.bodyPrimary,
     marginBottom: 6,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
   },
   notificationTimestamp: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Timestamp
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondaryLarge,
   },
   unreadDot: {
     width: 8,
@@ -484,18 +470,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Empty title
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeading,
     marginTop: 16,
     marginBottom: 8,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   emptyDescription: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Empty description
+    ...TEXT_STYLES.bodyPrimary,
     textAlign: 'center',
-    lineHeight: 20,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
   },
 });
 

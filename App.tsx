@@ -38,7 +38,6 @@ import OwnerAuthNavigator from './src/navigation/OwnerAuthNavigator';
 import DashboardScreen from './src/screens/dashboard/DashboardScreen';
 import OwnerTabs from './src/navigation/OwnerTabs';
 import BookCarWashScreen from './src/screens/book/BookCarWashScreen';
-import BookingConfirmedScreen from './src/screens/book/BookingConfirmedScreen';
 import PaymentScreen from './src/screens/book/PaymentScreen';
 import PaymentConfirmedScreen from './src/screens/book/PaymentConfirmedScreen';
 import ScheduleBookingConfirmedScreen from './src/screens/book/ScheduleBookingConfirmedScreen';
@@ -309,7 +308,6 @@ const AppContent: React.FC = () => {
   };
 
   const handleInstantBooking = (centersToBroadcast: any[] = []) => {
-    // Skip FindingCarWashScreen - go directly to payment with first center
     if (centersToBroadcast.length > 0) {
       const firstCenter = centersToBroadcast[0];
       setSelectedCenter(firstCenter);
@@ -327,7 +325,6 @@ const AppContent: React.FC = () => {
   };
 
   const handleSendRequestToCenters = () => {
-    // Skip FindingCarWashScreen - go directly to payment
     const now = new Date();
     setBookingData({
       date: now.toISOString(),
@@ -335,11 +332,6 @@ const AppContent: React.FC = () => {
       center: selectedCenter,
     });
     setCurrentScreen('payment');
-  };
-
-  const handleBookingConfirmed = (center: any) => {
-    setSelectedCenter(center);
-    setCurrentScreen('booking-confirmed');
   };
 
   const handleProceedToPayment = (instantBookingData?: { date: string; time: string }) => {
@@ -527,6 +519,9 @@ const AppContent: React.FC = () => {
           <OwnerTabs
             userData={userData}
             onLogout={handleLogout}
+            onOwnerProfileUpdated={(user) => {
+              if (user) setUserData(user);
+            }}
           />
         );
       case 'book-wash':
@@ -538,14 +533,6 @@ const AppContent: React.FC = () => {
             onConfirmBooking={handleInstantBooking}
             onCenterSelect={handleCenterSelect}
             onServiceSelect={handleServiceSelect}
-          />
-        );
-      case 'booking-confirmed':
-        return (
-          <BookingConfirmedScreen 
-            onBack={() => setCurrentScreen('book-wash')}
-            onProceedToPayment={handleProceedToPayment}
-            acceptedCenter={selectedCenter}
           />
         );
       case 'payment':

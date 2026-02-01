@@ -10,14 +10,18 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
-
-const { width, height } = Dimensions.get('window');
+import { platformEdges, moderateScale, verticalScale } from '../../utils/responsive';
+import { TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
+
+// Layout scaling (global typography from fonts.ts handles text sizes)
+const scaledLogoSize = moderateScale(130);
+const scaledCardMinHeight = verticalScale(280);
+const scaledCardImageHeight = verticalScale(180);
+const scaledCardContentPaddingH = moderateScale(20);
+const scaledCardContentPaddingV = moderateScale(16);
 
 interface UserChoiceScreenProps {
   onCustomerPress: () => void;
@@ -45,7 +49,14 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             style={styles.logoImage}
             resizeMode="contain"
           />
-          <Text style={styles.subtitle}>Choose how you want to continue</Text>
+          <Text
+            style={styles.subtitle}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+          >
+            Choose how you want to continue
+          </Text>
         </View>
 
         {/* User Choice Cards */}
@@ -73,10 +84,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             {/* Card Content */}
             <View style={styles.cardContent}>
               <View style={styles.cardTitleContainer}>
-                <Text style={styles.cardTitle}>I'm a Customer</Text>
-                <View style={[styles.cardIconOverlay, { borderColor: BLUE_COLOR }]}>
-                  <Ionicons name="person" size={22} color={BLUE_COLOR} />
-                </View>
+                <Text style={[styles.cardTitle, { color: BLUE_COLOR }]}>I'm a Customer</Text>
               </View>
               <Text style={styles.cardDescription}>
                 Book premium car wash services near you
@@ -107,10 +115,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
             {/* Card Content */}
             <View style={styles.cardContent}>
               <View style={styles.cardTitleContainer}>
-                <Text style={styles.cardTitle}>I'm a Service Owner</Text>
-                <View style={[styles.cardIconOverlay, { borderColor: YELLOW_COLOR }]}>
-                  <Ionicons name="storefront" size={22} color={YELLOW_COLOR} />
-                </View>
+                <Text style={[styles.cardTitle, { color: BLUE_COLOR }]}>I'm a Service Owner</Text>
               </View>
               <Text style={styles.cardDescription}>
                 Manage your car wash center and bookings
@@ -152,22 +157,20 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logoImage: {
-    width: 130,
-    height: 130,
+    width: scaledLogoSize,
+    height: scaledLogoSize,
     borderRadius: 24,
     marginBottom: 8,
     backgroundColor: 'transparent',
   },
   subtitle: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    ...TEXT_STYLES.screenTitle,
     color: '#374151',
     textAlign: 'center',
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    letterSpacing: 0.1,
     marginTop: 0,
-    includeFontPadding: false,
     textAlignVertical: 'center',
+    width: '100%',
+    letterSpacing: 0.1,
   },
   choicesContainer: {
     flex: 1,
@@ -194,7 +197,7 @@ const styles = StyleSheet.create({
     elevation: 6,
     transform: [{ scale: 1 }],
     width: '100%',
-    minHeight: 280,
+    minHeight: scaledCardMinHeight,
   },
   choiceCardHovered: {
     borderColor: BLUE_COLOR,
@@ -214,7 +217,7 @@ const styles = StyleSheet.create({
   },
   cardImageContainer: {
     width: '100%',
-    height: 180,
+    height: scaledCardImageHeight,
     position: 'relative',
     backgroundColor: '#F0F4F8',
     flex: 0,
@@ -240,56 +243,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F0F0F0',
   },
-  cardIconOverlay: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 4,
-    borderWidth: 2.5,
-    marginLeft: 10,
-  },
   cardContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: scaledCardContentPaddingH,
+    paddingVertical: scaledCardContentPaddingV,
     paddingTop: 14,
     paddingBottom: 18,
   },
   cardTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 0,
   },
   cardTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE + 2,
-    fontWeight: '800',
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: BLUE_COLOR,
-    fontFamily: FONTS.MONTserrat_BOLD,
-    letterSpacing: -0.5,
-    includeFontPadding: false,
     textAlignVertical: 'center',
+    letterSpacing: -0.3,
   },
   sparkleIcon: {
     marginLeft: 8,
   },
   cardDescription: {
-    fontSize: FONT_SIZES.BODY_MEDIUM + 1,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#374151',
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
-    lineHeight: 22,
     letterSpacing: 0.1,
-    marginTop: 2,
-    includeFontPadding: false,
+    marginTop: 0,
   },
   footer: {
     paddingVertical: 16,
@@ -299,14 +275,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   footerText: {
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
+    ...TEXT_STYLES.bodySecondary,
     color: '#718096',
     textAlign: 'center',
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 20,
     letterSpacing: 0.1,
-    includeFontPadding: false,
   },
 });
 

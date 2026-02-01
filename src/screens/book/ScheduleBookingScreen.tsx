@@ -4,7 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 import authService from '../../services/authService';
 import { STORAGE_BASE_URL } from '../../config/env';
 
@@ -606,7 +606,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
               />
             </View>
             <View style={styles.serviceCenterInfo}>
-              <Text style={[styles.serviceCenterName, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>{selectedCenter.name}</Text>
+              <Text style={[styles.serviceCenterName, { color: BLUE_COLOR }]}>{selectedCenter.name}</Text>
               <View style={styles.addressRow}>
                 <Ionicons name="location" size={Platform.select({ ios: 14, android: 12 })} color={BLUE_COLOR} />
                 <Text style={[styles.serviceCenterAddress, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -748,9 +748,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Header title
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.screenTitle,
     letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',
@@ -842,9 +840,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   timeSlotCount: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: '#6B7280',
     flexShrink: 0,
     marginLeft: 8,
@@ -873,9 +869,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1D5DB', // Light gray
   },
   legendText: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
   },
   iconContainer: {
     width: 40,
@@ -889,16 +883,13 @@ const styles = StyleSheet.create({
     paddingTop: 2,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     letterSpacing: -0.3,
     color: '#111827',
   },
   cardSubtitle: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     opacity: 0.7,
   },
   serviceCenterRow: {
@@ -940,10 +931,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   serviceCenterName: {
-    fontSize: 17,
-    fontWeight: '600',
+    ...TEXT_STYLES.cardTitleSemiBold,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     marginBottom: Platform.select({ ios: 8, android: 6 }),
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   addressRow: {
     flexDirection: 'row',
@@ -951,8 +941,7 @@ const styles = StyleSheet.create({
     gap: Platform.select({ ios: 6, android: 4 }),
   },
   serviceCenterAddress: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     flex: 1,
   },
   servicesList: {
@@ -980,14 +969,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   serviceIconText: {
-    fontSize: 20,
+    ...TEXT_STYLES.bodyPrimaryLarge,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
   },
   serviceInfo: {
     flex: 1,
   },
   serviceName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#000000',
     marginBottom: 2,
   },
@@ -995,7 +984,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   serviceDescription: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666666',
   },
   checkmark: {
@@ -1007,9 +996,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkmarkText: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -1025,9 +1015,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calendarMonth: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Month name
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
   },
   calendarDaysHeader: {
     flexDirection: 'row',
@@ -1036,11 +1025,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   calendarDayHeaderText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodySecondary,
     width: '14.28%',
     textAlign: 'center',
-    fontFamily: FONTS.INTER_REGULAR,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -1063,13 +1050,10 @@ const styles = StyleSheet.create({
     opacity: 0.2,
   },
   calendarDayText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Calendar day
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
   },
   calendarDayTextSelected: {
-    fontWeight: '600', // Changed to semibold for consistency
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
   },
   calendarDayPast: {
     opacity: 0.25,
@@ -1121,23 +1105,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   timeSlotText: {
-    fontSize: 15,
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.button,
     letterSpacing: 0.2,
     textAlign: 'center',
-    lineHeight: 20,
   },
   timeSlotTextSelectedAvailable: {
-    color: '#10B981', // Vibrant green text
-    fontWeight: '500',
+    color: '#10B981',
   },
   timeSlotTextAvailable: {
-    color: '#10B981', // Vibrant green text
-    fontWeight: '500',
+    color: '#10B981',
   },
   timeSlotTextUnavailable: {
-    color: '#6B7280', // Darker grey text
-    fontWeight: '400',
+    color: '#6B7280',
   },
   timeSlotCheckmark: {
     position: 'absolute',
@@ -1194,9 +1173,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   continueButtonText: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Button text
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
     letterSpacing: 0.5,
   },
   timeSlotsLoadingContainer: {
@@ -1207,9 +1184,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   timeSlotsLoadingText: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
   },
   timeSlotsErrorContainer: {
     alignItems: 'center',
@@ -1217,12 +1192,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   timeSlotsErrorText: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     textAlign: 'center',
     paddingHorizontal: 20,
-    lineHeight: 20,
   },
   retryButton: {
     paddingHorizontal: 20,
@@ -1232,9 +1204,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   retryButtonText: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    fontWeight: '600',
+    ...TEXT_STYLES.cardTitleSemiBold,
   },
   timeSlotsEmptyContainer: {
     alignItems: 'center',
@@ -1242,12 +1212,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   timeSlotsEmptyText: {
-    fontSize: 14,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     textAlign: 'center',
     paddingHorizontal: 20,
-    lineHeight: 20,
   },
 });
 

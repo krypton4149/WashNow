@@ -11,6 +11,7 @@ import {
   Switch,
   Platform,
   PermissionsAndroid,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -471,11 +472,12 @@ const OwnerEditProfileScreen: React.FC<OwnerEditProfileScreenProps> = ({
         return;
       }
 
-      const updatedOwner = result.user || storedOwner;
+      // Use latest user from storage so login response / stored user is single source of truth everywhere
+      const latestUser = await authService.getUser();
+      const updatedOwner = latestUser ?? result.user ?? storedOwner;
       setStoredOwner(updatedOwner);
       setOwnerName(trimmedName);
       setPhoneNumber(digits);
-      // Address fields are saved to backend, keep local state as is
 
       Alert.alert('Success', result.message || 'Profile updated successfully.', [
         {

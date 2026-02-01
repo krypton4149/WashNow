@@ -4,10 +4,21 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
-import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { platformEdges, moderateScale } from '../../utils/responsive';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
+
+// Responsive card dimensions (align with dashboard)
+const CARD_RADIUS = moderateScale(16);
+const CARD_PADDING = moderateScale(14);
+const CARD_MARGIN_BOTTOM = moderateScale(12);
+const CARD_HEADER_PADDING_V = moderateScale(12);
+const CARD_HEADER_PADDING_H = moderateScale(16);
+const LIST_PADDING_H = moderateScale(16);
+const LIST_PADDING_TOP = moderateScale(16);
+const LIST_PADDING_BOTTOM = moderateScale(24);
+const BUTTON_MIN_HEIGHT = moderateScale(44);
 
 interface Booking {
   id: number;
@@ -562,7 +573,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.text} />
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your bookings...</Text>
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading your bookings…</Text>
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
@@ -669,7 +680,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                 {booking.serviceId && (
                   <View style={styles.infoRow}>
                     <Ionicons name="pricetag-outline" size={14} color={BLUE_COLOR} />
-                    <Text style={[styles.infoTextBold, { fontSize: 13.5, fontWeight: '400', color: '#6B7280', lineHeight: undefined }]}>
+                    <Text style={[styles.serviceIdText, { color: colors.textSecondary }]}>
                       Service ID: {booking.serviceId}
                     </Text>
                   </View>
@@ -728,67 +739,60 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingBottom: Platform.select({ ios: 16, android: 14 }),
+    paddingHorizontal: moderateScale(20),
+    paddingBottom: moderateScale(14),
     paddingTop: 0,
     borderBottomWidth: 1,
     minHeight: Platform.select({ ios: 50, android: 48 }),
   },
   headerLeftPlaceholder: {
-    width: Platform.select({ ios: 36, android: 32 }),
-    height: Platform.select({ ios: 36, android: 32 }),
+    width: moderateScale(36),
+    height: moderateScale(36),
   },
   backButton: {
-    width: Platform.select({ ios: 36, android: 32 }),
-    height: Platform.select({ ios: 36, android: 32 }),
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
     justifyContent: 'center',
     alignItems: 'center',
   },
   refreshButton: {
-    width: Platform.select({ ios: 36, android: 32 }),
-    height: Platform.select({ ios: 36, android: 32 }),
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Platform.select({ ios: 2, android: 2 }),
+    marginBottom: 2,
   },
   title: {
-    fontSize: 20, // Reduced from 23 - Page Heading
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.screenTitle,
     letterSpacing: -0.3,
     textAlign: 'center',
     flex: 1,
-    includeFontPadding: false,
   },
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: LIST_PADDING_H,
+    paddingTop: moderateScale(12),
     borderBottomWidth: 1,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingBottom: 12,
+    paddingBottom: moderateScale(12),
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 6,
   },
-  activeTab: {
-  },
+  activeTab: {},
   tabText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Tab text
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
   },
   activeTabText: {
-    fontWeight: '600', // font-weight: 600 (Semibold) - Active tab
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeading,
   },
   tabBadge: {
     borderRadius: 10,
@@ -796,23 +800,21 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   tabBadgeText: {
+    ...TEXT_STYLES.label,
     color: '#FFFFFF',
-    fontSize: 12, // font-size: 12px, font-weight: 500 (Medium) - Badge text
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
   },
   bookingsList: {
     flex: 1,
   },
   bookingsListContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingHorizontal: LIST_PADDING_H,
+    paddingTop: LIST_PADDING_TOP,
+    paddingBottom: LIST_PADDING_BOTTOM,
     flexGrow: 1,
   },
   bookingCard: {
-    borderRadius: 16,
-    marginBottom: 16,
+    borderRadius: CARD_RADIUS,
+    marginBottom: CARD_MARGIN_BOTTOM,
     borderWidth: 1,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -822,34 +824,34 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   statusHeaderBar: {
-    backgroundColor: BLUE_COLOR, // Blue color for In Progress
+    backgroundColor: BLUE_COLOR,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    paddingHorizontal: CARD_HEADER_PADDING_H,
+    paddingVertical: CARD_HEADER_PADDING_V,
+    borderTopLeftRadius: CARD_RADIUS,
+    borderTopRightRadius: CARD_RADIUS,
   },
   statusHeaderBarCompleted: {
     backgroundColor: '#4CAF50',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    paddingHorizontal: CARD_HEADER_PADDING_H,
+    paddingVertical: CARD_HEADER_PADDING_V,
+    borderTopLeftRadius: CARD_RADIUS,
+    borderTopRightRadius: CARD_RADIUS,
   },
   statusHeaderBarCanceled: {
     backgroundColor: '#6B7280',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    paddingHorizontal: CARD_HEADER_PADDING_H,
+    paddingVertical: CARD_HEADER_PADDING_V,
+    borderTopLeftRadius: CARD_RADIUS,
+    borderTopRightRadius: CARD_RADIUS,
   },
   statusHeaderRight: {
     flexDirection: 'row',
@@ -868,39 +870,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#E0E8F9',
   },
   statusHeaderText: {
+    ...TEXT_STYLES.label,
     color: '#FFFFFF',
-    fontSize: 12.5, // 12-13px, Weight: 500, Letter spacing: 0.2px - Status Badge
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
     letterSpacing: 0.2,
-    includeFontPadding: false,
   },
   statusHeaderTextCompleted: {
+    ...TEXT_STYLES.label,
     color: '#FFFFFF',
-    fontSize: 12.5, // 12-13px, Weight: 500, Letter spacing: 0.2px - Status Badge
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
     letterSpacing: 0.2,
-    includeFontPadding: false,
   },
   statusHeaderTextCanceled: {
+    ...TEXT_STYLES.label,
     color: '#FFFFFF',
-    fontSize: 12.5, // 12-13px, Weight: 500, Letter spacing: 0.2px - Status Badge
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
     letterSpacing: 0.2,
-    includeFontPadding: false,
   },
   cardContent: {
-    padding: 14, // Reduced from 16
+    padding: CARD_PADDING,
   },
   serviceName: {
-    fontSize: 18, // 17-18px, Weight: 600 (Semi-Bold) - Service Name
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     marginBottom: 8,
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    color: BLUE_COLOR, // Center name in blue color
-    includeFontPadding: false,
+    color: BLUE_COLOR,
   },
   serviceNameRow: {
     flexDirection: 'row',
@@ -909,14 +900,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   serviceNameText: {
-    fontSize: 14, // 14px, Weight: 500 (Medium) - Service Type Line
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.cardTitle,
     flex: 1,
-    includeFontPadding: false,
   },
   serviceType: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodyPrimary,
     marginBottom: 12,
   },
   locationRow: {
@@ -926,26 +914,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   locationText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Location text
+    ...TEXT_STYLES.bodyPrimary,
     flex: 1,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
   },
   dateTimePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: moderateScale(8),
     borderRadius: 20,
     alignSelf: 'flex-start',
   },
   dateTimeText: {
-    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
-    color: '#6B7280', // Muted gray
-    includeFontPadding: false,
+    ...TEXT_STYLES.bodySecondaryLarge,
+    color: '#6B7280',
   },
   infoRow: {
     flexDirection: 'row',
@@ -954,39 +937,34 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   infoText: {
-    fontSize: 13.5, // 13-14px, Weight: 400-500, Color: Muted gray - Meta Info
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
-    color: '#6B7280', // Muted gray
-    includeFontPadding: false,
+    ...TEXT_STYLES.bodySecondaryLarge,
+    color: '#6B7280',
   },
   infoTextBold: {
-    fontSize: 18, // Reduced from 21px - Booking Number
-    fontWeight: '500', // Reduced font weight
-    fontFamily: FONTS.INTER_MEDIUM,
-    lineHeight: 23.4, // 18 * 1.3
-    color: '#111827', // Dark blue/black
-    includeFontPadding: false,
+    ...TEXT_STYLES.cardTitleSemiBold,
+    color: '#111827',
+  },
+  serviceIdText: {
+    ...TEXT_STYLES.bodySecondaryLarge,
+    color: '#6B7280',
   },
   cardDivider: {
     height: 1,
-    marginHorizontal: 16,
+    marginHorizontal: CARD_HEADER_PADDING_H,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 14, // Reduced from 16
-    paddingTop: 10, // Reduced from 12
+    padding: CARD_PADDING,
+    paddingTop: moderateScale(10),
   },
   totalSection: {
     flex: 1,
   },
   cardTotalLabel: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Total label
+    ...TEXT_STYLES.bodySecondaryLarge,
     marginBottom: 4,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
   },
   priceRow: {
     flexDirection: 'row',
@@ -994,30 +972,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTotalPrice: {
-    fontSize: 18, // Increased font size - Total Amount
-    fontWeight: '700', // Increased font weight (Bold)
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
+    fontWeight: '700',
     fontFamily: FONTS.INTER_BOLD,
-    color: '#10B981', // Green color
-    includeFontPadding: false,
+    color: '#10B981',
   },
   originalPrice: {
-    fontSize: 13, // font-size: 13px, font-weight: 400 (Regular) - Original price (strikethrough)
+    ...TEXT_STYLES.bodySecondaryLarge,
     textDecorationLine: 'line-through',
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
   },
   cancelButtonFooter: {
     backgroundColor: '#FEE2E2',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: moderateScale(14),
+    paddingVertical: moderateScale(10),
     borderRadius: 20,
+    minHeight: BUTTON_MIN_HEIGHT,
+    justifyContent: 'center',
   },
   cancelButtonFooterText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#DC2626',
-    fontWeight: '600', // 14-15px, Weight: 600 (Semi-Bold) - Button Text
-    fontSize: 14.5,
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    includeFontPadding: false,
   },
   noBookingsContainer: {
     alignItems: 'center',
@@ -1026,18 +1001,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   noBookingsText: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#666666',
     marginTop: 16,
     marginBottom: 8,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   noBookingsSubtext: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#999999',
     textAlign: 'center',
-    fontFamily: FONTS.INTER_REGULAR,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -1046,11 +1018,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   loadingText: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Loading text
+    ...TEXT_STYLES.bodyPrimary,
     color: '#666666',
     marginTop: 16,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
   },
   errorContainer: {
     alignItems: 'center',
@@ -1059,25 +1029,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   errorText: {
-    fontSize: FONT_SIZES.HEADING_SMALL,
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeading,
     color: '#DC2626',
     marginTop: 16,
     marginBottom: 8,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
   },
   errorSubtext: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodySecondaryLarge,
     color: '#666666',
     textAlign: 'center',
     marginBottom: 20,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   retryButton: {
     backgroundColor: BLUE_COLOR,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: moderateScale(24),
+    paddingVertical: moderateScale(12),
     borderRadius: 8,
+    minHeight: BUTTON_MIN_HEIGHT,
+    justifyContent: 'center',
     shadowColor: BLUE_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -1085,10 +1054,8 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   retryButtonText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Retry button
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
 });
 

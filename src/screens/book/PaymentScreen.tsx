@@ -7,7 +7,7 @@ import { useStripe } from '@stripe/stripe-react-native';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 import { createPaymentIntent } from '../../services/stripeBackend';
 import { createPayPalOrder, capturePayPalPayment } from '../../services/paypalService';
 
@@ -966,7 +966,7 @@ const PaymentScreen: React.FC<Props> = ({
             <View style={[styles.bookingSummaryIconContainer, { backgroundColor: BLUE_COLOR + '20' }]}>
               <Ionicons name="calendar-outline" size={20} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.bookingSummaryTitle, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>Booking Summary</Text>
+            <Text style={[styles.bookingSummaryTitle, { color: BLUE_COLOR }]}>Booking Summary</Text>
           </View>
 
           <View style={styles.bookingSummaryContent}>
@@ -1079,7 +1079,7 @@ const PaymentScreen: React.FC<Props> = ({
             <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
               <Ionicons name="car" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.cardTitle, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>Vehicle Information</Text>
+            <Text style={[styles.cardTitle, { color: BLUE_COLOR }]}>Vehicle Information</Text>
           </View>
           
           <View style={styles.inputWrapper}>
@@ -1183,7 +1183,7 @@ const PaymentScreen: React.FC<Props> = ({
             <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '15' }]}>
               <Ionicons name="card" size={Platform.select({ ios: 22, android: 20 })} color={BLUE_COLOR} />
             </View>
-            <Text style={[styles.cardTitle, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>Payment Method</Text>
+            <Text style={[styles.cardTitle, { color: BLUE_COLOR }]}>Payment Method</Text>
           </View>
           
           <View style={styles.paymentMethodsContainer}>
@@ -1350,7 +1350,7 @@ const PaymentScreen: React.FC<Props> = ({
               <View style={[styles.cardHeaderIcon, { backgroundColor: BLUE_COLOR + '20' }]}>
                 <Ionicons name="receipt" size={20} color={BLUE_COLOR} />
               </View>
-              <Text style={[styles.cardTitle, { color: BLUE_COLOR, fontWeight: '700', fontFamily: FONTS.MONTserrat_BOLD }]}>Payment Summary</Text>
+              <Text style={[styles.cardTitle, { color: BLUE_COLOR }]}>Payment Summary</Text>
             </View>
             
             <View style={styles.summaryRow}>
@@ -1756,9 +1756,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Header title
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeading,
     letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',
@@ -1781,9 +1779,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   paypalTitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.cardTitle,
     letterSpacing: -0.1,
     flex: 1,
     textAlign: 'center',
@@ -1823,15 +1819,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_MEDIUM,
-    fontWeight: '500',
+    ...TEXT_STYLES.label,
     marginBottom: Platform.select({ ios: 6, android: 4 }),
   },
   infoValue: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimaryLarge,
   },
   timeEditContainer: {
     flexDirection: 'row',
@@ -1847,9 +1839,7 @@ const styles = StyleSheet.create({
     marginLeft: Platform.select({ ios: 4, android: 3 }),
   },
   timeInput: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.input,
     padding: 0,
   },
   serviceButton: {
@@ -1876,14 +1866,10 @@ const styles = StyleSheet.create({
     marginRight: Platform.select({ ios: 10, android: 8 }),
   },
   serviceButtonText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimaryLarge,
   },
   serviceButtonPrice: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
   },
   formCard: {
     borderRadius: 14,
@@ -1910,18 +1896,16 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   cardTitle: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Card title
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     flex: 1,
   },
   inputWrapper: {
     marginBottom: Platform.select({ ios: 20, android: 16 }),
   },
   inputLabel: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Input label
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.label,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     marginBottom: 8,
   },
   inputContainer: {
@@ -1936,9 +1920,7 @@ const styles = StyleSheet.create({
     marginRight: Platform.select({ ios: 10, android: 8 }),
   },
   modernInput: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Input text
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.input,
     paddingVertical: 12,
   },
   paymentMethodsContainer: {
@@ -1984,9 +1966,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   paymentCardText: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.BODY_PRIMARY_LARGE,
     marginBottom: Platform.select({ ios: 6, android: 5 }),
     letterSpacing: -0.2,
   },
@@ -2005,18 +1986,15 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   methodBadgeText: {
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
-    fontFamily: FONTS.INTER_MEDIUM,
-    fontWeight: '500',
-    letterSpacing: 0.1,
+    ...TEXT_STYLES.bodySecondary,
   },
   applePayBadgeMain: {
     gap: Platform.select({ ios: 4, android: 3 }),
   },
   applePayBadgeText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.label,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: 0.1,
   },
   applePayBadge: {
@@ -2026,14 +2004,12 @@ const styles = StyleSheet.create({
     borderRadius: Platform.select({ ios: 4, android: 3 }),
   },
   applePayText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.bodySecondary,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   paymentCardSubtext: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Subtext
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 2,
     letterSpacing: 0.1,
   },
@@ -2064,11 +2040,10 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   errorText: {
+    ...TEXT_STYLES.bodySecondary,
     color: '#EF4444',
-    fontSize: FONT_SIZES.CAPTION_SMALL,
     marginTop: 6,
     marginLeft: 4,
-    fontFamily: FONTS.INTER_REGULAR,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -2077,19 +2052,13 @@ const styles = StyleSheet.create({
     marginBottom: Platform.select({ ios: 10, android: 8 }),
   },
   summaryLabel: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Label
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
   },
   summaryValue: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Value
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
   },
   summaryDiscount: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Discount (strikethrough)
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     textDecorationLine: 'line-through',
   },
   summaryDivider: {
@@ -2121,9 +2090,8 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   bookingSummaryTitle: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Card title
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
-    fontWeight: '600',
+    ...TEXT_STYLES.sectionHeading,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     letterSpacing: -0.2,
   },
   bookingSummaryContent: {
@@ -2150,37 +2118,27 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   bookingSummaryItemLabel: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Label
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     flex: 1,
   },
   bookingSummaryItemValue: {
-    fontSize: 14, // font-size: 14px, font-weight: 400 (Regular) - Value
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     textAlign: 'right',
     flexShrink: 0,
     marginLeft: 8,
   },
   bookingSummaryPrice: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Price (green)
-    fontFamily: FONTS.INTER_MEDIUM,
-    fontWeight: '500',
+    ...TEXT_STYLES.cardTitle,
   },
   bookingSummaryDivider: {
     height: 1,
     marginVertical: Platform.select({ ios: 2, android: 1 }),
   },
   summaryTotalLabel: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Total label
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.cardTitle,
   },
   summaryTotalValue: {
-    fontSize: 14, // font-size: 14px, font-weight: 500 (Medium) - Total amount (green)
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.cardTitle,
   },
   bottomContainer: {
     padding: Platform.select({ ios: 20, android: 16 }),
@@ -2201,9 +2159,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   payButtonText: {
-    fontSize: 17, // font-size: 17px, font-weight: 600 (Semibold) - Button text
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
     letterSpacing: 0.3,
   },
   modalOverlay: {
@@ -2226,9 +2182,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5E5',
   },
   modalTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE,
-    fontWeight: '500',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeadingMedium,
   },
   modalItem: {
     flexDirection: 'row',
@@ -2242,14 +2196,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   modalItemTitle: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.cardTitle,
     marginBottom: 4,
   },
   modalItemSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     marginTop: 4,
   },
   emptyState: {
@@ -2257,8 +2208,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyStateText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimaryLarge,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -2266,14 +2216,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   offerPrice: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.cardTitle,
   },
   originalPrice: {
-    fontSize: FONT_SIZES.BODY_SMALL,
+    ...TEXT_STYLES.bodyPrimary,
     textDecorationLine: 'line-through',
-    fontFamily: FONTS.INTER_REGULAR,
   },
   webViewLoading: {
     flex: 1,
@@ -2283,8 +2230,7 @@ const styles = StyleSheet.create({
   },
   webViewLoadingText: {
     marginTop: 12,
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimaryLarge,
   },
 });
 
