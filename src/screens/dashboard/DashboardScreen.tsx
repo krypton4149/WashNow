@@ -10,6 +10,7 @@ import {
   Platform,
   StatusBar,
   Modal,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
@@ -24,6 +25,7 @@ const YELLOW_COLOR = '#f4c901';
 interface UserData {
   id: string;
   fullName: string;
+  name?: string;
   email: string;
   phoneNumber: string;
   type: string;
@@ -81,16 +83,19 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onLogout,
   userData,
 }) => {
-  // Get user's first name for welcome message
-  const firstName = userData?.fullName?.split(' ')[0] || 'User';
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  
+  // Local user data loaded from storage when prop is null (e.g. after app reload)
+  const [localUserData, setLocalUserData] = useState<any>(null);
+  const displayName = userData?.fullName || localUserData?.fullName || localUserData?.name || 'User';
   
   // State for bookings data
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [serviceCenters, setServiceCenters] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Reschedule modal state
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
@@ -219,10 +224,28 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return { backgroundColor: 'rgba(107, 114, 128, 0.15)', color: '#6B7280' };
   };
 
-  // Load bookings data and service centers
+  // Always load user from storage on mount so name and data appear after app reload (when parent userData is not yet set)
+  useEffect(() => {
+    authService.getUser().then((user) => {
+      if (user) setLocalUserData(user);
+    });
+  }, []);
+
+  // Load bookings and service centers; delay slightly so token is ready after reload, then retry up to 2x if token wasn't ready
   useEffect(() => {
     loadServiceCenters();
-    loadBookings();
+    const delays = [300, 800, 2000]; // initial delay 300ms, then retry at 800ms and 2000ms if needed
+    let step = 0;
+    let timeouts: ReturnType<typeof setTimeout>[] = [];
+    const run = async () => {
+      const result = await loadBookings();
+      if (result?.needsRetry && step < delays.length - 1) {
+        step += 1;
+        timeouts.push(setTimeout(run, delays[step]));
+      }
+    };
+    timeouts.push(setTimeout(run, delays[0]));
+    return () => timeouts.forEach((t) => clearTimeout(t));
   }, []);
 
   const loadServiceCenters = async () => {
@@ -249,7 +272,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     return center?.name || `Service Center ${serviceCentreId}`;
   };
 
-  const loadBookings = async () => {
+  const loadBookings = async (): Promise<{ needsRetry?: boolean } | void> => {
     try {
       setIsLoading(true);
       setError(null);
@@ -261,15 +284,24 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       if (result.success && result.bookings) {
         console.log('Bookings loaded successfully for dashboard:', result.bookings.length);
         setBookings(Array.isArray(result.bookings) ? result.bookings : []);
-      } else {
-        console.log('Failed to load bookings for dashboard:', result.error);
-        setError(result.error || 'Failed to load bookings');
-        setBookings([]);
+        return;
       }
-    } catch (error) {
-      console.error('Error loading bookings for dashboard:', error);
+      setError(result.error || 'Failed to load bookings');
+      setBookings([]);
+      // Backend returned "Forbidden: not a visitor" — current token is not a visitor (e.g. owner). Log out so user can sign in with correct account.
+      const isNotVisitor = result.error?.toLowerCase().includes('not a visitor') ?? false;
+      if (isNotVisitor && onLogout) {
+        onLogout();
+        return;
+      }
+      // Retry once after a short delay if token may not have been ready (e.g. after app reload)
+      const isTokenError = result.error?.toLowerCase().includes('login') ?? false;
+      return isTokenError ? { needsRetry: true } : undefined;
+    } catch (err) {
+      console.error('Error loading bookings for dashboard:', err);
       setError('Failed to load bookings');
       setBookings([]);
+      return { needsRetry: true };
     } finally {
       setIsLoading(false);
     }
@@ -686,7 +718,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         <View style={styles.headerTop}>
           <View style={{ flex: 1 }}>
             <Text style={styles.welcomeText}>Welcome to Kwik Wash,</Text>
-            <Text style={styles.userNameText}>{firstName}</Text>
+            <Text style={styles.userNameText}>{displayName}</Text>
           </View>
           <TouchableOpacity style={styles.iconButton} onPress={onLogout}>
             <Ionicons name="log-out-outline" size={25} color="#fff" />
@@ -742,7 +774,27 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       </View>
 
       {/* WHITE CONTENT */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              authService.getUser().then((user) => {
+                if (user) setLocalUserData(user);
+              });
+              loadServiceCenters();
+              await loadBookings();
+              setRefreshing(false);
+            }}
+            colors={[BLUE_COLOR]}
+            tintColor={BLUE_COLOR}
+          />
+        }
+      >
         {/* Recent Activity Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>

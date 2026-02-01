@@ -10,6 +10,34 @@ const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
 const DARK_BLUE = '#0277BD';
 
+const WEEKDAYS_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+/** Parse "Monday, Tuesday, ..." into normalized day names for comparison */
+function parseWeekOffDays(weekOffStr: string | undefined): Set<string> {
+  const set = new Set<string>();
+  if (!weekOffStr || typeof weekOffStr !== 'string' || weekOffStr === 'Not provided') return set;
+  const parts = weekOffStr.split(/[,&]/).map((s) => s.trim()).filter(Boolean);
+  for (const p of parts) {
+    const normalized = p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+    if (WEEKDAYS_ORDER.includes(normalized)) set.add(normalized);
+  }
+  return set;
+}
+
+/** Get working days label by excluding week-off days (e.g. "Friday - Saturday" when Mon–Thu are off) */
+function getWorkingDaysLabel(weekOffDays: string | undefined, fallbackDays: string): string {
+  const offSet = parseWeekOffDays(weekOffDays);
+  if (offSet.size === 0) return fallbackDays;
+  const working = WEEKDAYS_ORDER.filter((d) => !offSet.has(d));
+  if (working.length === 0) return 'Closed';
+  if (working.length === 1) return working[0];
+  const firstIdx = WEEKDAYS_ORDER.indexOf(working[0]);
+  const lastIdx = WEEKDAYS_ORDER.indexOf(working[working.length - 1]);
+  const contiguous = lastIdx - firstIdx + 1 === working.length;
+  if (contiguous) return `${working[0]} - ${working[working.length - 1]}`;
+  return working.join(', ');
+}
+
 interface OwnerAccountScreenProps {
   onBack?: () => void;
   userData?: any;
@@ -413,7 +441,9 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
             </View>
           </View>
           <View style={styles.hoursRow}>
-            <Text style={styles.hoursDays}>{business.hours.days}</Text>
+            <Text style={styles.hoursDays}>
+              {getWorkingDaysLabel(business.weekOffDays, business.hours.days)}
+            </Text>
             <Text style={styles.hoursTime}>
               {business.hours.is24h ? 'Open 24 hours' : `${business.hours.open} - ${business.hours.close}`}
             </Text>

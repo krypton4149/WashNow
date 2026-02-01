@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   StatusBar,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -96,8 +97,9 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userData, setUserData] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Get user's first name for welcome message
+  // Load owner data for welcome message
   useEffect(() => {
     const loadUserData = async () => {
       const user = await authService.getUser();
@@ -106,14 +108,12 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
     loadUserData();
   }, []);
 
+  // Get owner's full name for welcome message
   const fullName = userData?.fullName || 
                    userData?.name || 
                    userData?.ownerName || 
                    businessName || 
                    'Owner';
-
-  // Show only first two words of centre name (e.g. "Harrow Hand" not "Harrow Hand Car Centre")
-  const displayCentreName = fullName.trim().split(/\s+/).slice(0, 2).join(' ') || fullName;
 
   // Format date and time for display: "24 Jan 2026 09AM-09:30AM"
   const formatDateTimeRange = (bookingDate: string, bookingTime: string): string => {
@@ -247,43 +247,55 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
     return { backgroundColor: 'rgba(107, 114, 128, 0.15)', color: '#6B7280' };
   };
 
-  // Load bookings data
-  useEffect(() => {
-    loadBookings();
-  }, []);
-
-  const loadBookings = async () => {
+  const loadBookings = async (forceRefresh: boolean = false, isRetry: boolean = false) => {
     try {
-      setIsLoading(true);
+      if (!isRetry) {
+        setIsLoading(true);
+      }
       setError(null);
-      
-      console.log('Loading owner bookings for dashboard...');
-      const result = await authService.getOwnerBookings();
+
+      console.log('Loading owner bookings for dashboard...', forceRefresh ? '(force refresh)' : '');
+      const result = await authService.getOwnerBookings(forceRefresh);
       console.log('Owner dashboard booking list result:', JSON.stringify(result, null, 2));
-      
+
       if (result.success && result.bookings) {
         console.log('Owner bookings loaded successfully for dashboard:', result.bookings.length);
         setBookings(Array.isArray(result.bookings) ? result.bookings : []);
-        
-        // Set booking status totals if available
         if (result.bookingStatusTotals) {
           setBookingStatusTotals(result.bookingStatusTotals);
         }
       } else {
-        console.log('Failed to load owner bookings for dashboard:', result.error);
-        setError(result.error || 'Failed to load bookings');
+        const errMsg = result.error || 'Failed to load bookings';
+        const isLoginError = errMsg.toLowerCase().includes('login');
+        if (isLoginError && !isRetry) {
+          // Token might not be ready yet after app reload – retry once after short delay
+          setTimeout(() => loadBookings(true, true), 500);
+          return;
+        }
+        console.log('Failed to load owner bookings for dashboard:', errMsg);
+        setError(errMsg);
         setBookings([]);
         setBookingStatusTotals(null);
       }
-    } catch (error) {
-      console.error('Error loading owner bookings for dashboard:', error);
+    } catch (err) {
+      console.error('Error loading owner bookings for dashboard:', err);
+      if (!isRetry) {
+        setTimeout(() => loadBookings(true, true), 500);
+        return;
+      }
       setError('Failed to load bookings');
       setBookings([]);
       setBookingStatusTotals(null);
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
   };
+
+  // Load bookings on mount: force refresh so data loads after app reload (cache may be empty)
+  useEffect(() => {
+    loadBookings(true);
+  }, []);
 
   // Calculate stats from bookings - use booking_status_totals if available, otherwise calculate from bookings
   const totalBookings = bookings.length;
@@ -433,7 +445,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
               if (result.success) {
                 Alert.alert('Success', result.message || 'Booking cancelled successfully');
                 // Reload bookings to show updated status
-                await loadBookings();
+                await loadBookings(true);
               } else {
                 Alert.alert('Error', result.error || 'Failed to cancel booking. Please try again.');
               }
@@ -497,7 +509,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         <View style={styles.headerTop}>
           <View style={{ flex: 1 }}>
             <Text style={styles.welcomeText}>Welcome to Kwik Wash,</Text>
-            <Text style={styles.userNameText} numberOfLines={1} ellipsizeMode="tail">{displayCentreName}</Text>
+            <Text style={styles.userNameText} numberOfLines={1} ellipsizeMode="tail">{fullName}</Text>
           </View>
           <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={25} color="#fff" />
@@ -565,7 +577,22 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
       </View>
 
       {/* WHITE CONTENT */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              loadBookings(true);
+            }}
+            colors={[BLUE_COLOR]}
+            tintColor={BLUE_COLOR}
+          />
+        }
+      >
 
         {/* Recent Activity Section */}
         <View style={styles.sectionHeader}>

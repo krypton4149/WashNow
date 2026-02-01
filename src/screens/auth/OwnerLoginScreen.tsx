@@ -178,8 +178,9 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
           userPayload?.business_address ||
           userPayload?.location ||
           '',
-        type: userPayload?.type || userPayload?.role || 'service-owner',
-        loginType: userPayload?.loginType || payload?.loginType || 'owner',
+        // Always persist owner type so app reload shows owner dashboard (not user/visitor)
+        type: 'service-owner',
+        loginType: 'owner',
         businessName:
           userPayload?.businessName ||
           userPayload?.business_name ||

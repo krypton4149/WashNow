@@ -78,6 +78,35 @@ class AuthService {
     }
   }
 
+  /**
+   * Returns true if the given user object represents an owner (service center).
+   * Used on app reload to show owner vs customer flow. Checks all known API variants.
+   */
+  isOwnerUser(user: any): boolean {
+    if (!user || typeof user !== 'object') return false;
+    const type = (user.type ?? user.role ?? user.userData?.type ?? user.rawUserData?.type ?? '').toString().toLowerCase().replace(/_/g, '-');
+    const loginType = (user.loginType ?? user.userData?.loginType ?? user.rawUserData?.loginType ?? '').toString().toLowerCase();
+    const role = (user.role ?? user.userData?.role ?? '').toString().toLowerCase().replace(/_/g, '-');
+    return (
+      type === 'service-owner' ||
+      type === 'owner' ||
+      loginType === 'owner' ||
+      loginType === 'service-owner' ||
+      role === 'service-owner' ||
+      role === 'owner'
+    );
+  }
+
+  /**
+   * Returns stored user type for routing: 'service-owner' | 'customer' | null.
+   * null when no user stored (e.g. token exists but user was lost).
+   */
+  async getStoredUserType(): Promise<'service-owner' | 'customer' | null> {
+    const user = await this.getUser();
+    if (!user) return null;
+    return this.isOwnerUser(user) ? 'service-owner' : 'customer';
+  }
+
   // Remove user data
   async removeUser(): Promise<void> {
     try {

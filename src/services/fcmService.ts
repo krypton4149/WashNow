@@ -1,17 +1,23 @@
 /**
  * FCM (Firebase Cloud Messaging) Service
  * Handles FCM token retrieval and saving to backend
+ * Uses React Native Firebase v22+ modular API (getApp, getMessaging, getToken).
  */
 
 import { Platform } from 'react-native';
 import authService from './authService';
 
-// Try to import @react-native-firebase/messaging
-let messaging: any = null;
+// Modular API (v22+) - avoid deprecated namespaced firebase.app() / messaging()
+let getApp: (() => any) | null = null;
+let getMessaging: ((app?: any) => any) | null = null;
+let getToken: ((messaging: any, options?: any) => Promise<string>) | null = null;
 try {
-  messaging = require('@react-native-firebase/messaging').default;
+  const firebaseApp = require('@react-native-firebase/app');
+  const firebaseMessaging = require('@react-native-firebase/messaging');
+  getApp = firebaseApp.getApp;
+  getMessaging = firebaseMessaging.getMessaging;
+  getToken = firebaseMessaging.getToken;
 } catch (error) {
-  // Silently handle - only log in dev mode
   if (__DEV__) {
     console.warn('@react-native-firebase/messaging not installed. FCM token will need to be passed from native code.');
   }
@@ -19,23 +25,19 @@ try {
 
 class FCMService {
   /**
-   * Get FCM token from Firebase
+   * Get FCM token from Firebase (modular API)
    * @returns Promise<string | null> - FCM token or null if unavailable
    */
   async getFCMToken(): Promise<string | null> {
     try {
-      if (messaging) {
-        // Using @react-native-firebase/messaging
-        const token = await messaging().getToken();
+      if (getApp && getMessaging && getToken) {
+        const app = getApp();
+        const messaging = getMessaging(app);
+        const token = await getToken(messaging);
         return token;
-      } else {
-        // Native Firebase is set up, but we need token from native code
-        // This will be handled by native modules or passed from App.tsx
-        // Silently return null - only log in dev mode
-        return null;
       }
+      return null;
     } catch (error: any) {
-      // Silently fail - don't log errors that could trigger error overlays
       return null;
     }
   }

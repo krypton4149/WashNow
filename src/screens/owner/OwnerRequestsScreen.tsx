@@ -759,38 +759,8 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
     );
   }, [fetchBookings, setBookingActionLoading]);
 
-  const handleCompleteBooking = useCallback((bookingId: string) => {
-    if (!bookingId) {
-      return;
-    }
-
-    Alert.alert(
-      'Mark as Completed',
-      'Confirm that this booking has been completed?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Completed',
-          onPress: async () => {
-            setBookingActionLoading(bookingId, true);
-            try {
-              const result = await authService.completeOwnerBooking(bookingId);
-              if (!result.success) {
-                Alert.alert('Error', result.error || 'Failed to update booking status.');
-                return;
-              }
-              Alert.alert('Success', result.message || 'Booking marked as completed.');
-              await fetchBookings(true);
-            } catch (completeError: any) {
-              Alert.alert('Error', completeError?.message || 'Failed to update booking status.');
-            } finally {
-              setBookingActionLoading(bookingId, false);
-            }
-          },
-        },
-      ],
-    );
-  }, [fetchBookings, setBookingActionLoading]);
+  // Placeholder to keep hook count stable after removing Accept (bookings are already confirmed)
+  useCallback((_bookingId: string) => {}, []);
 
   const getStatusStyles = (status: StatusTone) => {
     if (status === 'accepted') {
@@ -959,43 +929,8 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                     <Text style={styles.amountValue}>{request.amount}</Text>
                   </View>
                   <View style={styles.footerActions}>
-                    {/* Show Decline and Accept buttons for pending requests */}
-                    {request.status === 'pending' && (
-                      <>
-                        <TouchableOpacity
-                          style={[styles.declineButton, cancellationLoading[request.id] && styles.buttonDisabled]}
-                          disabled={!!cancellationLoading[request.id]}
-                          onPress={() => handleCancelBooking(request.id)}
-                          activeOpacity={0.7}
-                        >
-                          {cancellationLoading[request.id] ? (
-                            <ActivityIndicator size="small" color={BLUE_COLOR} />
-                          ) : (
-                            <>
-                              <Ionicons name="close" size={16} color={BLUE_COLOR} />
-                              <Text style={styles.declineButtonText}>Decline</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.acceptButton, cancellationLoading[request.id] && styles.buttonDisabled]}
-                          disabled={!!cancellationLoading[request.id]}
-                          onPress={() => handleCompleteBooking(request.id)}
-                          activeOpacity={0.7}
-                        >
-                          {cancellationLoading[request.id] ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                          ) : (
-                            <>
-                              <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                              <Text style={styles.acceptButtonText}>Accept</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                      </>
-                    )}
-                    {/* Show Cancel button for accepted requests */}
-                    {request.status === 'accepted' && (
+                    {/* One button only: Cancel booking (bookings are already confirmed when user books) */}
+                    {(request.status === 'pending' || request.status === 'accepted') && (
                       <TouchableOpacity
                         style={[styles.cancelButton, cancellationLoading[request.id] && styles.buttonDisabled]}
                         disabled={!!cancellationLoading[request.id]}
@@ -1007,7 +942,7 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                         ) : (
                           <>
                             <Ionicons name="close-circle" size={16} color="#DC2626" />
-                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                            <Text style={styles.cancelButtonText}>Cancel booking</Text>
                           </>
                         )}
                       </TouchableOpacity>

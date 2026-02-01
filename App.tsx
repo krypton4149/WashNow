@@ -87,17 +87,22 @@ const AppContent: React.FC = () => {
       setIsAuthenticated(isLoggedIn);
       if (isLoggedIn) {
         const user = await authService.getUser();
+        // If token exists but user data is missing (e.g. after reload/corruption), clear auth so we don't show wrong dashboard (e.g. customer with owner token → "Forbidden: not a visitor")
+        if (!user || typeof user !== 'object') {
+          await authService.clearAuth();
+          setIsAuthenticated(false);
+          setUserData(null);
+          setUserType(null);
+          setCurrentScreen('user-choice');
+          return;
+        }
         setUserData(user);
-        // Check user type from stored user data or default to customer
-        const storedUserType = user?.type === 'service-owner' ? 'service-owner' : 'customer';
+        const storedUserType = authService.isOwnerUser(user) ? 'service-owner' : 'customer';
         setUserType(storedUserType);
         setCurrentScreen(storedUserType === 'service-owner' ? 'service-owner' : 'customer');
         
         // Save FCM token when user is already authenticated on app start
-        // Completely silent - errors are handled internally and won't show error dialogs
-        fcmService.getAndSaveFCMToken().catch(() => {
-          // Silently ignore - FCM token saving is not critical
-        });
+        fcmService.getAndSaveFCMToken().catch(() => {});
       }
     } catch (error) {
       console.error('Auth check error:', error);
