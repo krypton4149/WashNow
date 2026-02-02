@@ -128,6 +128,14 @@ export const TEXT_STYLES = {
     lineHeight: Math.round(FONT_SIZES.SCREEN_TITLE_LARGE * LINE_HEIGHT_MULT),
     includeFontPadding: false,
   },
+  // Screen Title (reduced): 18 px / SemiBold – moderate header size
+  screenTitleSmall: {
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
+    fontWeight: '600' as const,
+    lineHeight: Math.round(FONT_SIZES.SECTION_HEADING_LARGE * LINE_HEIGHT_MULT),
+    includeFontPadding: false,
+  },
 
   // Section Heading: 16–18 px / SemiBold
   sectionHeading: {

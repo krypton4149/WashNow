@@ -276,10 +276,6 @@ const AppContent: React.FC = () => {
     setCurrentScreen('booking-history');
   };
 
-  const handleNavigateToScheduleForLater = () => {
-    // Schedule for later - just close modal, user can click on a center to schedule
-    // No separate screen needed
-  };
 
   const handleConfirmBooking = () => {
     // If bookingData exists, it's a scheduled booking - go to payment
@@ -290,7 +286,7 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleSchedulePaymentSuccess = (bookingId?: string, bookingDataResponse?: { date: string; time: string }, totalAmount?: number) => {
+  const handleSchedulePaymentSuccess = (bookingId?: string, bookingDataResponse?: { date: string; time: string }, totalAmount?: number | string) => {
     // Preserve existing bookingData and update with bookingId and any response data
     setBookingData((prev: any) => ({ 
       ...(prev || {}), 
@@ -299,9 +295,10 @@ const AppContent: React.FC = () => {
       date: bookingDataResponse?.date || prev?.date,
       time: bookingDataResponse?.time || prev?.time,
     }));
-    // Store the payment amount
-    if (totalAmount !== undefined) {
-      setPaymentAmount(totalAmount);
+    // Store the payment amount (parse in case API returns string)
+    if (totalAmount !== undefined && totalAmount !== null) {
+      const num = typeof totalAmount === 'number' ? totalAmount : parseFloat(String(totalAmount));
+      setPaymentAmount(!isNaN(num) ? num : undefined);
     }
     setLastBookingId(bookingId);
     setCurrentScreen('schedule-booking-payment-confirmed');
@@ -529,7 +526,6 @@ const AppContent: React.FC = () => {
           <BookCarWashScreen 
             onBack={() => setCurrentScreen('customer')}
             onNavigateToAvailableNow={() => setCurrentScreen('available-now')}
-            onNavigateToScheduleForLater={handleNavigateToScheduleForLater}
             onConfirmBooking={handleInstantBooking}
             onCenterSelect={handleCenterSelect}
             onServiceSelect={handleServiceSelect}

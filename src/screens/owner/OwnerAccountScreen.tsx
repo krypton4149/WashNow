@@ -366,7 +366,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
         </ImageBackground>
         <View style={styles.headerNav}>
           <View style={styles.headerLeftPlaceholder} />
-          <Text style={styles.headerTitle}>Profile</Text>
+          <View style={styles.headerTitlePlaceholder} />
           <TouchableOpacity
             style={styles.editButton}
             onPress={handleEditProfilePress}
@@ -541,12 +541,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    ...TEXT_STYLES.screenTitle,
+  headerTitlePlaceholder: {
     flex: 1,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    letterSpacing: -0.5,
   },
   editButton: {
     width: 40,
@@ -621,7 +617,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -630,7 +626,7 @@ const styles = StyleSheet.create({
       ios: 80,
       android: 70
     }),
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   sectionCard: {
     backgroundColor: '#FFFFFF',
@@ -698,7 +694,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -773,7 +769,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

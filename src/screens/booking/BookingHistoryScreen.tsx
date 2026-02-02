@@ -508,12 +508,12 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
         { 
           backgroundColor: colors.background, 
           borderBottomColor: colors.border,
-          paddingTop: insets.top + Platform.select({ ios: 0.5, android: 0.5 }),
+          paddingTop: insets.top + moderateScale(14),
         }
       ]}>
         <View style={styles.headerLeftPlaceholder} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={[styles.title, { color: colors.text }]}>Booking History ({bookings.length})</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Booking History</Text>
         </View>
         <TouchableOpacity onPress={loadBookings} style={styles.refreshButton} activeOpacity={0.7}>
           <Ionicons name="refresh" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
@@ -740,8 +740,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: moderateScale(20),
-    paddingBottom: moderateScale(14),
-    paddingTop: 0,
+    paddingBottom: moderateScale(6),
+    paddingTop: moderateScale(14),
     borderBottomWidth: 1,
     minHeight: Platform.select({ ios: 50, android: 48 }),
   },
@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   title: {
-    ...TEXT_STYLES.screenTitle,
+    ...TEXT_STYLES.screenTitleSmall,
     letterSpacing: -0.3,
     textAlign: 'center',
     flex: 1,
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: LIST_PADDING_H,
-    paddingTop: moderateScale(12),
+    paddingTop: moderateScale(4),
     borderBottomWidth: 1,
   },
   tab: {

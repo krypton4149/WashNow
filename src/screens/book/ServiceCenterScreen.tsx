@@ -294,8 +294,7 @@ const ServiceCenterScreen: React.FC<Props> = ({ onBack, onServiceSelect, center 
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <View style={styles.titleRow}>
-            <Ionicons name="car" size={20} color={BLUE_COLOR} style={styles.carIcon} />
-            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
               {centerDetails?.name || center?.name || 'Service Center'}
             </Text>
           </View>
@@ -406,13 +405,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  carIcon: {
-    marginRight: 6,
-  },
   title: {
-    ...TEXT_STYLES.sectionHeading,
-    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
+    ...TEXT_STYLES.screenTitleSmall,
     letterSpacing: -0.2,
+    flex: 1,
     textAlign: 'center',
   },
   subtitle: {
@@ -472,7 +468,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 100,
     position: 'relative',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -480,7 +476,7 @@ const styles = StyleSheet.create({
   serviceImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     position: 'absolute',
     top: 0,
     left: 0,

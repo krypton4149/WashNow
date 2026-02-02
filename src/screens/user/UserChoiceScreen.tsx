@@ -139,7 +139,7 @@ const UserChoiceScreen: React.FC<UserChoiceScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: scaledCardImageHeight,
     position: 'relative',
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#FFFFFF',
     flex: 0,
     overflow: 'hidden',
     justifyContent: 'center',
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#FFFFFF',
   },
   cardContent: {
     paddingHorizontal: scaledCardContentPaddingH,

@@ -353,7 +353,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         style={[
           styles.activityItem,
           Platform.OS === 'android' 
-            ? { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' }
+            ? { backgroundColor: '#FFFFFF', borderColor: '#D1D5DB' }
             : { backgroundColor: colors.card, borderColor: colors.border }
         ]}
         onPress={() => onActivityPress?.(activity)}

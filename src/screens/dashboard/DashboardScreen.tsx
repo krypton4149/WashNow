@@ -13,7 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { platformEdges } from '../../utils/responsive';
+import { platformEdges, moderateScale } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
@@ -346,7 +346,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
         style={[
           styles.activityItem,
           Platform.OS === 'android' 
-            ? { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' }
+            ? { backgroundColor: '#FFFFFF', borderColor: '#D1D5DB' }
             : { backgroundColor: colors.card, borderColor: colors.border }
         ]}
         onPress={() => onActivityPress?.(activity)}
@@ -756,10 +756,17 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Yellow Book a Car Wash Card - Only button is clickable */}
       <View style={styles.yellowBanner}>
         <View style={styles.yellowBannerContent}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.yellowBannerTitle}>Book a Car Wash</Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={styles.yellowBannerTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              Book a Car Wash
+            </Text>
             <Text style={styles.yellowBannerSubtitle}>
-              Schedule your next{'\n'}wash in seconds
+              Schedule your next wash in seconds
             </Text>
           </View>
           <TouchableOpacity
@@ -767,7 +774,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
             onPress={onBookWash}
             activeOpacity={0.7}
           >
-            <Ionicons name="car" size={22} color="#111827" style={{ marginRight: 8 }} />
+            <Ionicons name="car" size={moderateScale(16)} color="#111827" style={{ marginRight: 6 }} />
             <Text style={styles.bookNowText}>Book Now</Text>
           </TouchableOpacity>
         </View>
@@ -1244,6 +1251,7 @@ const styles = StyleSheet.create({
   },
   yellowBannerTitle: {
     ...TEXT_STYLES.sectionHeadingMedium,
+    fontSize: moderateScale(15),
     color: '#111827',
     marginBottom: 2,
   },
@@ -1256,10 +1264,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FEF08A',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    minHeight: 40,
-    borderRadius: 24,
+    paddingHorizontal: moderateScale(14),
+    paddingVertical: moderateScale(6),
+    minHeight: moderateScale(34),
+    borderRadius: moderateScale(20),
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.8)',
     shadowColor: '#000',
@@ -1270,6 +1278,7 @@ const styles = StyleSheet.create({
   },
   bookNowText: {
     ...TEXT_STYLES.buttonProduction,
+    fontSize: moderateScale(13),
     color: '#111827',
   },
   sectionHeader: {
@@ -1546,7 +1555,7 @@ const styles = StyleSheet.create({
   rescheduleCalendarSection: {
     padding: 20,
     paddingBottom: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 16,
@@ -1626,7 +1635,7 @@ const styles = StyleSheet.create({
   },
   rescheduleCalendarDayPast: {
     opacity: 0.4,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   rescheduleCalendarDayWeekoff: {
     opacity: 0.4,

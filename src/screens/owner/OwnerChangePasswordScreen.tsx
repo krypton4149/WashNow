@@ -15,7 +15,7 @@ import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import { StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
@@ -289,9 +289,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.MONTserrat_SEMIBOLD,
+    ...TEXT_STYLES.screenTitleSmall,
     color: '#1A1A1A',
   },
   headerSubtitleContainer: {
@@ -320,7 +318,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
@@ -343,7 +341,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 20,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   requirementsTitle: {
     fontSize: FONT_SIZES.BODY_SMALL,

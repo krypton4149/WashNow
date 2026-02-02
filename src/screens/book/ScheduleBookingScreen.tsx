@@ -579,7 +579,7 @@ const ScheduleBookingScreen: React.FC<ScheduleBookingScreenProps> = ({
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Book an Appointment</Text>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>Book an Appointment</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    ...TEXT_STYLES.screenTitle,
+    ...TEXT_STYLES.screenTitleSmall,
     letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',
@@ -905,7 +905,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   serviceIconImage: {
     width: '100%',

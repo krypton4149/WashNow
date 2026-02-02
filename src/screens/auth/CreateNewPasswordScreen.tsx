@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   requirementsContainer: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     marginBottom: 32,
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,

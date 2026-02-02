@@ -218,6 +218,7 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
       case 'forgot-password':
         return (
           <ForgotPasswordScreen
+            key="forgot-password"
             onBack={() => setCurrentScreen('login')}
             onSendCode={handleSendCode}
           />

@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 8,

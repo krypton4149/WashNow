@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    ...TEXT_STYLES.screenTitle,
+    ...TEXT_STYLES.screenTitleSmall,
     letterSpacing: -0.2,
     textAlign: 'center',
   },

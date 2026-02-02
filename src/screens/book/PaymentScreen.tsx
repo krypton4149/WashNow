@@ -951,7 +951,7 @@ const PaymentScreen: React.FC<Props> = ({
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Book an Appointment</Text>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>Book an Appointment</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -1756,7 +1756,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    ...TEXT_STYLES.sectionHeading,
+    ...TEXT_STYLES.screenTitleSmall,
     letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',

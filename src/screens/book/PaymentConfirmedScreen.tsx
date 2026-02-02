@@ -55,20 +55,50 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
     year: 'numeric'
   });
   
-  // Display time: use bookingData time if available (scheduled), otherwise format current time (instant)
-  const formatTimeForDisplay = (timeStr: string): string => {
-    // If time is in 24-hour format (HH:MM), convert to 12-hour format (HH:MM AM/PM)
-    if (timeStr.match(/^\d{2}:\d{2}$/)) {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      const period = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 || 12;
-      return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-    }
-    // If already in AM/PM format or "Now", return as is
-    return timeStr || 'Now';
+  // Format time as full slot with AM/PM e.g. "9:30-10:00 AM" (default 30 min slot)
+  const to12h = (h: number, m: number) => {
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
   };
-  
-  const displayTime = bookingData?.time ? formatTimeForDisplay(bookingData.time) : 'Now';
+  const formatTimeSlotForDisplay = (timeStr: string, slotMinutes: number = 30): string => {
+    if (!timeStr || timeStr === 'Now') return 'Now';
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (match) {
+      let hours = parseInt(match[1], 10);
+      let minutes = parseInt(match[2], 10);
+      const start12 = to12h(hours, minutes);
+      minutes += slotMinutes;
+      if (minutes >= 60) {
+        minutes -= 60;
+        hours += 1;
+      }
+      if (hours >= 24) hours -= 24;
+      const end12 = to12h(hours, minutes);
+      return `${start12}-${end12}`;
+    }
+    const amPmMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (amPmMatch) {
+      let hours = parseInt(amPmMatch[1], 10);
+      const minutes = parseInt(amPmMatch[2], 10);
+      const isPm = (amPmMatch[3] || '').toUpperCase() === 'PM';
+      if (isPm && hours !== 12) hours += 12;
+      if (!isPm && hours === 12) hours = 0;
+      let endM = minutes + slotMinutes;
+      let endH = hours;
+      if (endM >= 60) {
+        endM -= 60;
+        endH += 1;
+      }
+      if (endH >= 24) endH -= 24;
+      return `${to12h(hours, minutes)}-${to12h(endH, endM)}`;
+    }
+    return timeStr;
+  };
+
+  const displayTime = bookingData?.time
+    ? formatTimeSlotForDisplay(bookingData.time)
+    : 'Now';
   const { colors } = useTheme();
 
   // State for booking details from API
@@ -84,9 +114,13 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
       try {
         const result = await authService.getBookingList(true); // Force refresh to get latest data
         if (result.success && result.bookings) {
-          // Find booking by booking_id
+          const idStr = String(bookingId);
           const foundBooking = result.bookings.find(
-            (b: any) => b.booking_id === bookingId || b.id?.toString() === bookingId
+            (b: any) =>
+              String(b.booking_id || '') === idStr ||
+              b.booking_no === bookingId ||
+              b.bookingno === bookingId ||
+              b.id?.toString() === idStr
           );
           if (foundBooking) {
             setBookingDetails(foundBooking);
@@ -102,23 +136,18 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
     fetchBookingDetails();
   }, [bookingId]);
 
-  // Get price from API response or fallback to prop
-  const apiPrice = bookingDetails?.price ? parseFloat(bookingDetails.price) : null;
-  const finalAmount = apiPrice || totalAmount;
-  
-  // Format the total amount - show actual amount paid
-  const formattedAmount = (typeof finalAmount === 'number' && !isNaN(finalAmount)) 
-    ? `$${finalAmount.toFixed(2)}` 
+  // Get price from API response or fallback to prop (support string from API)
+  const apiPrice = bookingDetails?.price != null ? parseFloat(String(bookingDetails.price)) : null;
+  const parsedTotal = totalAmount != null ? (typeof totalAmount === 'number' ? totalAmount : parseFloat(String(totalAmount))) : null;
+  const finalAmount = (apiPrice != null && !isNaN(apiPrice)) ? apiPrice : (parsedTotal != null && !isNaN(parsedTotal) ? parsedTotal : null);
+
+  const formattedAmount = finalAmount != null && !isNaN(finalAmount)
+    ? (bookingDetails?.price != null ? `£${Number(finalAmount).toFixed(2)}` : `$${Number(finalAmount).toFixed(2)}`)
     : '$0.00';
   
-  // Get payment status from API or use prop
-  const apiPaymentStatus = bookingDetails?.payment_status;
-  const finalPaymentStatus = apiPaymentStatus 
-    ? (apiPaymentStatus.toLowerCase() === 'paid' ? 'Paid' : 'Pending')
-    : (paymentStatus === 'Paid' ? 'Paid' : 'Pending');
-  
-  // Determine payment status color
-  const paymentStatusColor = finalPaymentStatus === 'Paid' ? '#059669' : '#F59E0B';
+  // On confirmation screen, show "Confirmed" for payment status (booking is confirmed)
+  const paymentStatusDisplay = 'Confirmed';
+  const paymentStatusColor = '#059669';
 
   return (
     <SafeAreaView style={styles.container} edges={platformEdges as any}>
@@ -134,7 +163,7 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
           </View>
           
           <Text style={styles.confirmationTitle}>Booking Confirmed!</Text>
-          <Text style={styles.confirmationSubtitle}>Your car wash has been succesfully booked</Text>
+          <Text style={styles.confirmationSubtitle}>Your car wash has been successfully booked</Text>
 
           {/* Booking Details Card */}
           <View style={styles.bookingCard}>
@@ -167,9 +196,12 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Service</Text>
                 <Text style={styles.bookingValue}>
-                  {bookingDetails?.service_type || 
-                   bookingDetails?.service?.name || 
-                   bookingDetails?.service_name || 
+                  {bookingDetails?.service_type ||
+                   bookingDetails?.service?.name ||
+                   bookingDetails?.service?.service_name ||
+                   bookingDetails?.service_name ||
+                   acceptedCenter?.selectedService?.name ||
+                   acceptedCenter?.selectedService?.service_name ||
                    'N/A'}
                 </Text>
               </View>
@@ -183,9 +215,14 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Vehicle Details</Text>
                 <Text style={styles.bookingValue}>
-                  {bookingDetails?.vehicle_no || 
-                   bookingDetails?.vehicle_number || 
-                   'N/A'}
+                  {(() => {
+                    const vNo = bookingDetails?.vehicle_no || bookingDetails?.vehicle_number;
+                    const carModel = bookingDetails?.carmodel || bookingDetails?.car_model;
+                    if (vNo && carModel) return `${vNo} (${carModel})`;
+                    if (vNo) return vNo;
+                    if (carModel) return carModel;
+                    return 'N/A';
+                  })()}
                 </Text>
               </View>
             </View>
@@ -224,8 +261,8 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
               <View style={styles.bookingContent}>
                 <Text style={styles.bookingLabel}>Time</Text>
                 <Text style={styles.bookingValue}>
-                  {bookingDetails?.booking_time 
-                    ? formatTimeForDisplay(bookingDetails.booking_time)
+                  {bookingDetails?.booking_time
+                    ? formatTimeSlotForDisplay(bookingDetails.booking_time)
                     : displayTime}
                 </Text>
               </View>
@@ -237,20 +274,15 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Payment Status</Text>
               <Text style={[styles.paymentStatus, { color: paymentStatusColor }]}>
-                {loadingBooking ? 'Loading...' : finalPaymentStatus}
+                {loadingBooking ? 'Loading...' : paymentStatusDisplay}
               </Text>
             </View>
-            {(bookingDetails?.price || finalAmount) && (
-              <View style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>Amount Paid</Text>
-                <Text style={[styles.paymentAmount, { color: '#10B981' }]}>
-                  {loadingBooking ? 'Loading...' : 
-                   bookingDetails?.price 
-                     ? `£${parseFloat(bookingDetails.price).toFixed(2)}`
-                     : formattedAmount}
-                </Text>
-              </View>
-            )}
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Amount Paid</Text>
+              <Text style={[styles.paymentAmount, { color: '#10B981' }]}>
+                {loadingBooking ? 'Loading...' : formattedAmount}
+              </Text>
+            </View>
             {bookingDetails?.payment_method && (
               <View style={styles.paymentRow}>
                 <Text style={styles.paymentLabel}>Payment Method</Text>
@@ -351,9 +383,7 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(16),
   },
   bookingId: {
-    ...TEXT_STYLES.bodySecondary,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     backgroundColor: '#E5E7EB',
     paddingHorizontal: moderateScale(8),
     paddingVertical: moderateScale(4),
@@ -382,7 +412,7 @@ const styles = StyleSheet.create({
     marginBottom: moderateScale(4),
   },
   bookingValue: {
-    ...TEXT_STYLES.cardTitleSemiBold,
+    ...TEXT_STYLES.cardTitle,
     color: '#000',
   },
   dateRow: {
@@ -401,7 +431,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   paymentSummary: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     padding: moderateScale(16),
     borderRadius: moderateScale(8),
   },
@@ -420,7 +450,7 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   paymentAmount: {
-    ...TEXT_STYLES.sectionHeading,
+    ...TEXT_STYLES.sectionHeadingMedium,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#000',

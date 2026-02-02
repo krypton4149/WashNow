@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   contactCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 28,
     alignItems: 'center',

@@ -985,7 +985,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    ...TEXT_STYLES.screenTitle,
+    ...TEXT_STYLES.screenTitleSmall,
     letterSpacing: -0.3,
     textAlign: 'center',
   },
@@ -1111,7 +1111,7 @@ const styles = StyleSheet.create({
   },
   metaPill: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 12,

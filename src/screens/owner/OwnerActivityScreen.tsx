@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    ...TEXT_STYLES.screenTitle,
+    ...TEXT_STYLES.screenTitleSmall,
     letterSpacing: -0.5,
     textAlign: 'center',
   },

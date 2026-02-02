@@ -14,6 +14,7 @@ import BackButton from '../../components/ui/BackButton';
 import authService from '../../services/authService';
 import { platformEdges } from '../../utils/responsive';
 import { useTheme } from '../../context/ThemeContext';
+import { TEXT_STYLES } from '../../utils/fonts';
 
 interface ConfirmBookingScreenProps {
   onBack: () => void;
@@ -333,7 +334,7 @@ const ConfirmBookingScreen: React.FC<ConfirmBookingScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
@@ -349,9 +350,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000000',
+    ...TEXT_STYLES.screenTitleSmall,
+    letterSpacing: -0.2,
+    flex: 1,
+    textAlign: 'center',
   },
   bookingDetailsCard: {
     backgroundColor: '#FFFFFF',

@@ -15,13 +15,12 @@ const PLACEHOLDER_IMAGE = require('../../assets/images/Centre.png');
 interface Props {
   onBack?: () => void;
   onNavigateToAvailableNow?: () => void;
-  onNavigateToScheduleForLater?: () => void;
   onConfirmBooking?: (filteredCenters: any[]) => void;
   onCenterSelect?: (center: any) => void;
   onServiceSelect?: (service: any, center: any) => void;
 }
 
-const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, onNavigateToScheduleForLater, onConfirmBooking, onCenterSelect, onServiceSelect }) => {
+const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, onConfirmBooking, onCenterSelect, onServiceSelect }) => {
   const [searchText, setSearchText] = useState('');
   const [serviceCenters, setServiceCenters] = useState<any[]>([]);
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
@@ -466,7 +465,7 @@ const BookCarWashScreen: React.FC<Props> = ({ onBack, onNavigateToAvailableNow, 
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Book a wash</Text>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>Book a wash</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -858,7 +857,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    ...TEXT_STYLES.screenTitle,
+    ...TEXT_STYLES.screenTitleSmall,
     letterSpacing: -0.2,
     flex: 1,
     textAlign: 'center',
@@ -940,7 +939,7 @@ const styles = StyleSheet.create({
   centerImageContainer: {
     width: '100%',
     height: 140, // Reduced from 180
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
@@ -949,7 +948,7 @@ const styles = StyleSheet.create({
   centerImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     position: 'absolute',
     top: 0,
     left: 0,
@@ -1236,7 +1235,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 12,
     marginRight: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,9 +10,13 @@ import {
   TouchableOpacity,
   TextInput,
   Keyboard,
+  ImageBackground,
 } from 'react-native';
-import BackButton from '../../components/ui/BackButton';
-import { platformEdges } from '../../utils/responsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
+
+const BLUE_COLOR = '#0358a8';
 
 interface ForgotPasswordScreenProps {
   onBack: () => void;
@@ -24,12 +27,12 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
   onBack,
   onSendCode,
 }) => {
-  const [method, setMethod] = useState<'email' | 'phone'>('email');
-  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const insets = useSafeAreaInsets();
+  const [email, setEmail] = useState('');
 
   const handleSendCode = () => {
-    if (emailOrPhone.trim()) {
-      onSendCode(emailOrPhone.trim(), method);
+    if (email.trim()) {
+      onSendCode(email.trim(), 'email');
     }
   };
 
@@ -37,107 +40,93 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
     Keyboard.dismiss();
   };
 
-  const isSendEnabled = emailOrPhone.trim().length > 0;
+  const isSendEnabled = email.trim().length > 0;
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View style={styles.touchableContainer}>
-          <KeyboardAvoidingView 
-            style={styles.keyboardAvoidingView}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View style={[styles.topSection, { paddingTop: insets.top }]}>
+          <ImageBackground
+            source={require('../../assets/images/Car.png')}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+            blurRadius={0}
+            imageStyle={{
+              resizeMode: 'cover',
+              opacity: 1.0,
+            }}
           >
-            <ScrollView 
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+            <View style={styles.gradientOverlay} />
+            <TouchableOpacity
+              style={[styles.backButton, { top: insets.top + 10 }]}
+              onPress={onBack}
             >
-              {/* Back Button */}
-              <BackButton onPress={onBack} />
+              <View style={styles.backButtonCircle}>
+                <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+          </ImageBackground>
+        </View>
 
-              {/* Header */}
+        <ScrollView
+          style={styles.bottomSection}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <TouchableWithoutFeedback onPress={dismissKeyboard}>
+            <View style={styles.formContainer}>
               <View style={styles.header}>
                 <Text style={styles.title}>Forgot password?</Text>
                 <Text style={styles.subtitle}>
-                  Enter your email or phone number and we'll send you a code to reset your password
+                  Enter your email and we'll send you a code to reset your password
                 </Text>
               </View>
 
-              {/* Method Selector */}
-              <View style={styles.methodContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.methodButton,
-                    method === 'email' && styles.methodButtonActive
-                  ]}
-                  onPress={() => setMethod('email')}
-                >
-                  <Text style={[
-                    styles.methodText,
-                    method === 'email' && styles.methodTextActive
-                  ]}>
-                    Email
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.methodButton,
-                    method === 'phone' && styles.methodButtonActive
-                  ]}
-                  onPress={() => setMethod('phone')}
-                >
-                  <Text style={[
-                    styles.methodText,
-                    method === 'phone' && styles.methodTextActive
-                  ]}>
-                    Phone
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Input Field */}
-              <View style={styles.inputField}>
-                <View style={styles.inputIcon}>
-                  <Text style={styles.iconText}>
-                    {method === 'email' ? '✉' : '📱'}
-                  </Text>
+              <View style={styles.inputsContainer}>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputLabel}>Email Address</Text>
+                  <View style={styles.inputField}>
+                    <Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.textInput}
+                      placeholder="Enter your email"
+                      placeholderTextColor="#9CA3AF"
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
                 </View>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder={method === 'email' ? 'Email' : 'Phone Number'}
-                  placeholderTextColor="#999999"
-                  value={emailOrPhone}
-                  onChangeText={setEmailOrPhone}
-                  keyboardType={method === 'email' ? 'email-address' : 'phone-pad'}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
               </View>
 
-              {/* Information Text */}
               <Text style={styles.infoText}>
-                We'll send a verification code to your {method === 'email' ? 'email address' : 'phone number'}
+                We'll send a verification code to your email address
               </Text>
 
-              {/* Send Code Button */}
               <TouchableOpacity
                 style={[styles.sendButton, !isSendEnabled && styles.sendButtonDisabled]}
                 onPress={handleSendCode}
                 disabled={!isSendEnabled}
+                activeOpacity={0.8}
               >
                 <Text style={styles.sendButtonText}>Send Code</Text>
               </TouchableOpacity>
 
-              {/* Back to Login */}
               <TouchableOpacity style={styles.backToLoginContainer} onPress={onBack}>
                 <Text style={styles.backToLoginText}>Back to login</Text>
               </TouchableOpacity>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
-    </SafeAreaView>
+            </View>
+          </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -146,127 +135,140 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  touchableContainer: {
-    flex: 1,
-  },
   keyboardAvoidingView: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
-    paddingBottom: Platform.select({ ios: 20, android: 20 }),
+  topSection: {
+    height: '35%',
+    position: 'relative',
   },
-  header: {
-    marginBottom: Platform.select({ ios: 36, android: 32 }),
-    paddingTop: Platform.select({ ios: 12, android: 8 }),
+  gradientOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(3, 88, 168, 0.15)',
   },
-  title: {
-    fontSize: Platform.select({ ios: 30, android: 28 }),
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 8,
-    fontFamily: 'System',
-    letterSpacing: Platform.select({ ios: -0.6, android: -0.5 }),
-    lineHeight: Platform.select({ ios: 38, android: 36 }),
+  backButton: {
+    position: 'absolute',
+    left: Platform.select({ ios: 22, android: 20 }),
+    zIndex: 10,
   },
-  subtitle: {
-    fontSize: Platform.select({ ios: 17, android: 16 }),
-    color: '#666666',
-    fontWeight: '400',
-    fontFamily: 'System',
-    lineHeight: Platform.select({ ios: 24, android: 22 }),
-  },
-  methodContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
-    borderRadius: Platform.select({ ios: 14, android: 12 }),
-    padding: 4,
-    marginBottom: Platform.select({ ios: 26, android: 24 }),
-  },
-  methodButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+  backButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(156, 163, 175, 0.7)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  methodButtonActive: {
+  bottomSection: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -20,
+    paddingTop: 30,
+    zIndex: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderBottomWidth: 0,
   },
-  methodText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#666666',
-    fontFamily: 'System',
+  scrollContent: {
+    paddingBottom: Platform.select({ ios: 50, android: 40 }),
   },
-  methodTextActive: {
-    color: '#000000',
+  formContainer: {
+    paddingHorizontal: Platform.select({ ios: 26, android: 24 }),
+  },
+  header: {
+    marginBottom: 28,
+    alignItems: 'center',
+  },
+  title: {
+    ...TEXT_STYLES.screenTitleBold,
+    color: BLUE_COLOR,
+    marginBottom: 6,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    ...TEXT_STYLES.sectionHeading,
+    color: '#374151',
+    textAlign: 'center',
+    letterSpacing: 0.1,
+  },
+  inputsContainer: {
+    marginBottom: 18,
+  },
+  inputWrapper: {
+    marginBottom: 18,
+  },
+  inputLabel: {
+    ...TEXT_STYLES.label,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#111827',
+    marginBottom: 8,
   },
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginBottom: 16,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    minHeight: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   inputIcon: {
     marginRight: 12,
   },
-  iconText: {
-    fontSize: 18,
-  },
   textInput: {
     flex: 1,
-    fontSize: 16,
-    color: '#000000',
-    fontFamily: 'System',
+    ...TEXT_STYLES.input,
+    fontSize: FONT_SIZES.BODY_PRIMARY_LARGE,
+    color: '#111827',
   },
   infoText: {
-    fontSize: 14,
-    color: '#666666',
+    ...TEXT_STYLES.bodySecondary,
+    color: '#374151',
     textAlign: 'center',
-    marginBottom: 32,
-    fontFamily: 'System',
-    lineHeight: 20,
-  },
-  sendButton: {
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
     marginBottom: 24,
   },
+  sendButton: {
+    backgroundColor: BLUE_COLOR,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+    minHeight: 56,
+  },
   sendButtonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: '#9CA3AF',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   sendButtonText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'System',
   },
   backToLoginContainer: {
     alignItems: 'center',
   },
   backToLoginText: {
-    fontSize: 14,
-    color: '#666666',
-    textDecorationLine: 'underline',
-    fontFamily: 'System',
+    ...TEXT_STYLES.button,
+    color: BLUE_COLOR,
   },
 });
 
 export default ForgotPasswordScreen;
-
