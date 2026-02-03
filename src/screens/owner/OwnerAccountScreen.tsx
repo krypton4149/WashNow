@@ -52,6 +52,7 @@ interface OwnerAccountScreenProps {
   onEditProfile?: () => void;
   onOpenSettings?: () => void;
   onOpenSupport?: () => void;
+  onOpenServices?: () => void;
   onOwnerProfileUpdated?: (user: any) => void;
 }
 
@@ -61,6 +62,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   onEditProfile,
   onOpenSettings,
   onOpenSupport,
+  onOpenServices,
   onOwnerProfileUpdated,
 }) => {
   const { colors } = useTheme();
@@ -463,6 +465,21 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
         <View style={styles.actionCard}>
           <TouchableOpacity
             style={[styles.actionItem, styles.actionItemTop]}
+            activeOpacity={0.7}
+            onPress={onOpenServices}
+            disabled={!onOpenServices}
+          >
+            <View style={styles.actionItemLeft}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="pricetags-outline" size={18} color={BLUE_COLOR} />
+              </View>
+              <Text style={styles.actionLabel}>Services & Pricing</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+          <View style={styles.actionDivider} />
+          <TouchableOpacity
+            style={styles.actionItem}
             activeOpacity={0.7}
             onPress={onOpenSettings}
             disabled={!onOpenSettings}

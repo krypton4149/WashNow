@@ -28,20 +28,32 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
         // Directly proceed with authentication without showing success message
         onAuthSuccess();
       } else {
+        const msg = result.error || 'Invalid email or password. Please try again.';
+        const isNetworkOrTimeout = /timeout|network|internet|connection|taking too long/i.test(msg);
         Alert.alert(
-          'Login Failed',
-          result.error || 'Invalid email or password. Please try again.',
-          [{ text: 'OK' }]
+          isNetworkOrTimeout ? 'Network Error' : 'Login Failed',
+          msg,
+          isNetworkOrTimeout
+            ? [
+                { text: 'OK', style: 'cancel' },
+                { text: 'Retry', onPress: () => handleLogin(emailOrPhone, password, loginType) },
+              ]
+            : [{ text: 'OK' }]
         );
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      // Display the actual error message if available, otherwise show generic message
       const errorMessage = error?.message || error?.error || 'An error occurred during login. Please try again.';
+      const isNetworkOrTimeout = /timeout|network|internet|connection|taking too long/i.test(errorMessage);
       Alert.alert(
-        'Login Failed',
+        isNetworkOrTimeout ? 'Network Error' : 'Login Failed',
         errorMessage,
-        [{ text: 'OK' }]
+        isNetworkOrTimeout
+          ? [
+              { text: 'OK', style: 'cancel' },
+              { text: 'Retry', onPress: () => handleLogin(emailOrPhone, password, loginType) },
+            ]
+          : [{ text: 'OK' }]
       );
     }
   };
@@ -92,28 +104,38 @@ const AuthNavigator: React.FC<AuthNavigatorProps> = ({ onAuthSuccess, onBackToUs
           throw error;
         } else {
           console.log('❌ NO VALIDATION ERRORS - Showing generic alert');
-          // For non-validation errors, show alert
-        Alert.alert(
-          'Registration Failed',
-          result.error || 'There was an error creating your account. Please try again.',
-          [{ text: 'OK' }]
-        );
-      }
+          const msg = result.error || 'There was an error creating your account. Please try again.';
+          const isNetworkOrTimeout = /timeout|network|internet|connection|taking too long/i.test(msg);
+          Alert.alert(
+            isNetworkOrTimeout ? 'Network Error' : 'Registration Failed',
+            msg,
+            isNetworkOrTimeout
+              ? [
+                  { text: 'OK', style: 'cancel' },
+                  { text: 'Retry', onPress: () => handleRegister(userData) },
+                ]
+              : [{ text: 'OK' }]
+          );
+        }
       }
     } catch (error: any) {
       // Only re-throw if it's a validation error (so RegisterScreen can handle it)
       if (error?.validationErrors) {
-        // Don't log validation errors as errors, just re-throw
         throw error;
       }
-      // For network or other non-validation errors, log and show alert
       console.error('Registration error:', error);
+      const errorMessage = error?.message || 'An error occurred during registration. Please try again.';
+      const isNetworkOrTimeout = /timeout|network|internet|connection|taking too long/i.test(errorMessage);
       Alert.alert(
-        'Registration Failed',
-        error?.message || 'An error occurred during registration. Please try again.',
-        [{ text: 'OK' }]
+        isNetworkOrTimeout ? 'Network Error' : 'Registration Failed',
+        errorMessage,
+        isNetworkOrTimeout
+          ? [
+              { text: 'OK', style: 'cancel' },
+              { text: 'Retry', onPress: () => handleRegister(userData) },
+            ]
+          : [{ text: 'OK' }]
       );
-      // Don't re-throw non-validation errors to prevent unhandled promise rejection
     }
   };
 

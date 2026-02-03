@@ -105,26 +105,37 @@ const PaymentConfirmedScreen: React.FC<Props> = ({
   const [bookingDetails, setBookingDetails] = useState<any>(null);
   const [loadingBooking, setLoadingBooking] = useState(false);
 
-  // Fetch booking details from API using booking_id
+  // Fetch booking details: cache first for fast response, then refresh in background
   useEffect(() => {
+    const findBooking = (bookings: any[]) => {
+      if (!bookings || !bookingId) return null;
+      const idStr = String(bookingId);
+      return bookings.find(
+        (b: any) =>
+          String(b.booking_id || '') === idStr ||
+          b.booking_no === bookingId ||
+          b.bookingno === bookingId ||
+          b.id?.toString() === idStr
+      ) || null;
+    };
+
     const fetchBookingDetails = async () => {
       if (!bookingId) return;
-      
-      setLoadingBooking(true);
       try {
-        const result = await authService.getBookingList(true); // Force refresh to get latest data
-        if (result.success && result.bookings) {
-          const idStr = String(bookingId);
-          const foundBooking = result.bookings.find(
-            (b: any) =>
-              String(b.booking_id || '') === idStr ||
-              b.booking_no === bookingId ||
-              b.bookingno === bookingId ||
-              b.id?.toString() === idStr
-          );
-          if (foundBooking) {
-            setBookingDetails(foundBooking);
+        const cached = await authService.getBookingList(false);
+        let hadCacheHit = false;
+        if (cached.success && cached.bookings?.length) {
+          const found = findBooking(cached.bookings);
+          if (found) {
+            setBookingDetails(found);
+            hadCacheHit = true;
           }
+        }
+        if (!hadCacheHit) setLoadingBooking(true);
+        const result = await authService.getBookingList(true);
+        if (result.success && result.bookings?.length) {
+          const found = findBooking(result.bookings);
+          if (found) setBookingDetails(found);
         }
       } catch (error) {
         console.error('Error fetching booking details:', error);

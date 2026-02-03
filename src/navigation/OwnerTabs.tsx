@@ -9,9 +9,11 @@ import OwnerAccountScreen from '../screens/owner/OwnerAccountScreen';
 import OwnerSettingsScreen from '../screens/owner/OwnerSettingsScreen';
 import OwnerSupportScreen from '../screens/owner/OwnerSupportScreen';
 import OwnerChangePasswordScreen from '../screens/owner/OwnerChangePasswordScreen';
+import OwnerServicesScreen from '../screens/owner/OwnerServicesScreen';
 import { useTheme } from '../context/ThemeContext';
 
 type TabKey = 'home' | 'requests' | 'activity' | 'account';
+type AccountSubView = 'profile' | 'settings' | 'support' | 'password' | 'services';
 
 interface OwnerTabsProps {
   userData: any;
@@ -31,7 +33,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabKey>('home');
-  const [accountSubView, setAccountSubView] = useState<'profile' | 'settings' | 'support' | 'password'>('profile');
+  const [accountSubView, setAccountSubView] = useState<AccountSubView>('profile');
 
   const renderContent = () => {
     switch (activeTab) {
@@ -83,6 +85,13 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
                 onLogout={onLogout}
               />
             );
+          case 'services':
+            return (
+              <OwnerServicesScreen
+                onBack={() => setAccountSubView('profile')}
+                onLogout={onLogout}
+              />
+            );
           default:
             return (
               <OwnerAccountScreen
@@ -91,6 +100,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
                 onEditProfile={undefined}
                 onOpenSettings={() => setAccountSubView('settings')}
                 onOpenSupport={() => setAccountSubView('support')}
+                onOpenServices={() => setAccountSubView('services')}
                 onOwnerProfileUpdated={onOwnerProfileUpdated}
               />
             );

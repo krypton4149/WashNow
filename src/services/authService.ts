@@ -294,7 +294,7 @@ class AuthService {
           email: emailOrPhone,
           password: password,
         }),
-      }, 20000); // Reduced to 20 seconds for faster response
+      }, 60000); // 60 seconds for slow servers (same as owner login)
 
       let data;
       try {
@@ -428,7 +428,7 @@ class AuthService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestPayload),
-      }, 30000); // 30 seconds timeout for registration (increased for reliability)
+      }, 60000); // 60 seconds for slow servers (same as owner login)
 
       const data = await response.json();
 
@@ -532,9 +532,13 @@ class AuthService {
         };
       }
     } catch (error: any) {
+      let errorMessage = error.message || 'Network error. Please check your internet connection and try again.';
+      if (error.message && (error.message.includes('timeout') || error.message.includes('AbortError'))) {
+        errorMessage = 'Request timeout. The server is taking too long to respond. Please check your internet connection and try again.';
+      }
       return {
         success: false,
-        error: error.message || 'Network error. Please check your internet connection and try again.'
+        error: errorMessage
       };
     }
   }
@@ -973,6 +977,323 @@ class AuthService {
     }
   }
 
+  /**
+   * Get owner profile and services.
+   * Method: GET
+   * URL: {{baseURL}}/api/v1/user/profile
+   * Auth: Bearer token (same token stored at login via setToken; read with getToken()).
+   * Headers: Accept: application/json, Authorization: Bearer <token>
+   * No request body. Returns data.user, data.serviceCentre, data.servicesOffered.
+   */
+  async getOwnerProfile(): Promise<{
+    success: boolean;
+    user?: any;
+    serviceCentre?: any;
+    servicesOffered?: any[];
+    error?: string;
+  }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to view profile' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/profile`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }, 15000);
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data?.success !== false) {
+        const payload = data?.data || data;
+        const user = payload?.user;
+        const serviceCentre = payload?.serviceCentre || user?.service_centre;
+
+        const collected: any[] = [];
+        const seenIds = new Set<string | number>();
+
+        const addServices = (list: any) => {
+          if (!Array.isArray(list)) return;
+          for (const s of list) {
+            const id = s?.id ?? s?.service_id;
+            if (id == null || seenIds.has(id)) continue;
+            seenIds.add(id);
+            collected.push(s);
+          }
+        };
+
+        addServices(payload?.servicesOffered);
+        addServices(payload?.services_offered);
+        addServices(serviceCentre?.servicesOffered);
+        addServices(serviceCentre?.services_offered);
+        addServices(user?.servicesOffered);
+        addServices(user?.services_offered);
+
+        const servicesOffered = collected.sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+        return {
+          success: true,
+          user,
+          serviceCentre,
+          servicesOffered,
+        };
+      }
+
+      return {
+        success: false,
+        error: data?.message || data?.error || 'Failed to load profile.',
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Failed to load profile.',
+      };
+    }
+  }
+
+  /**
+   * Offered services List (owner Services & Pricing screen).
+   * API: POST https://carwashapp.shoppypie.in/api/v1/user/services-list
+   * Headers: Accept: application/json, Auth: Bearer Token
+   * Body: {} (optional)
+   * Returns: list of services (id, name, description, price, offer_price, status, display_order, service_centre_id, etc.)
+   */
+  async getOwnerServicesList(): Promise<{ success: boolean; services?: any[]; serviceCentre?: any; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to view services' };
+      }
+
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/services-list`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      }, 15000);
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data?.success !== false) {
+        const payload = data?.data ?? data;
+        const list = Array.isArray(payload?.services)
+          ? payload.services
+          : Array.isArray(payload?.list)
+            ? payload.list
+            : Array.isArray(payload?.servicesOffered)
+              ? payload.servicesOffered
+              : Array.isArray(payload?.services_offered)
+                ? payload.services_offered
+                : Array.isArray(data?.services)
+                  ? data.services
+                  : Array.isArray(data?.list)
+                    ? data.list
+                    : [];
+        const serviceCentre = payload?.serviceCentre ?? payload?.service_centre ?? payload?.centre ?? null;
+        const services = list.sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0));
+        return {
+          success: true,
+          services,
+          serviceCentre,
+        };
+      }
+
+      return {
+        success: false,
+        error: data?.message || data?.error || 'Failed to load services list.',
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Failed to load services list.',
+      };
+    }
+  }
+
+  /**
+   * Get services offered by the owner (for Services & Pricing screen).
+   * Uses POST /api/v1/user/services-list first; falls back to profile + service centres if needed.
+   */
+  async getOwnerServices(forceRefresh: boolean = false): Promise<{ success: boolean; services?: any[]; center?: any; error?: string }> {
+    try {
+      const listResult = await this.getOwnerServicesList();
+      if (listResult.success && listResult.services?.length) {
+        return {
+          success: true,
+          services: listResult.services,
+          center: listResult.serviceCentre ?? null,
+        };
+      }
+
+      if (!listResult.success && listResult.error) {
+        const profileResult = await this.getOwnerProfile();
+        const user = await this.getUser();
+        const serviceCentre = user?.rawUserData?.service_centre || user?.userData?.service_centre || user?.service_centre;
+        const centreId = profileResult.serviceCentre?.id ?? profileResult.serviceCentre?.service_centre_id ?? serviceCentre?.id ?? serviceCentre?.service_centre_id ?? user?.service_centre_id;
+
+        const fromProfile = (profileResult.servicesOffered || []).slice();
+        const seenIds = new Set(fromProfile.map((s: any) => s?.id ?? s?.service_id).filter((id: any) => id != null));
+        let resolvedCenter = profileResult.serviceCentre || null;
+
+        if (centreId) {
+          const centersResult = await this.getServiceCenters(forceRefresh);
+          if (centersResult.success && centersResult.serviceCenters?.length) {
+            const center = centersResult.serviceCenters.find((c: any) => String(c.id) === String(centreId));
+            if (center) {
+              resolvedCenter = center;
+              const fromCenters = center.services_offered || [];
+              for (const s of fromCenters) {
+                const id = s?.id ?? s?.service_id;
+                if (id != null && !seenIds.has(id)) {
+                  seenIds.add(id);
+                  fromProfile.push(s);
+                }
+              }
+            }
+          }
+        }
+
+        const services = fromProfile.sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0));
+        if (services.length > 0) {
+          return { success: true, services, center: resolvedCenter };
+        }
+        return {
+          success: false,
+          error: listResult.error,
+          services: [],
+          center: null,
+        };
+      }
+
+      return {
+        success: true,
+        services: listResult.services ?? [],
+        center: listResult.serviceCentre ?? null,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Failed to load services.',
+        services: [],
+        center: null,
+      };
+    }
+  }
+
+  /**
+   * Offered services Update (price, offer price, status).
+   * API: POST https://carwashapp.shoppypie.in/api/v1/user/update-service
+   * Headers: Accept: application/json, Auth: Bearer Token
+   * Body:
+   *   id (required)
+   *   service_centre_id (required)
+   *   status (optional) - Active | Inactive
+   *   price (optional) - e.g. 10.50, 100.50, 110.30
+   *   offer_price (optional) - e.g. 10.50, 100.50, 110.30
+   *   display_order (optional) - e.g. 1, 2, 3, 5
+   */
+  async updateOwnerService(
+    serviceId: string | number,
+    serviceCentreId: string | number,
+    payload: {
+      price?: number | string;
+      offer_price?: number | string;
+      status?: 'active' | 'inactive';
+      display_order?: number;
+    }
+  ): Promise<{ success: boolean; service?: any; error?: string; isAuthError?: boolean }> {
+    const body: Record<string, string | number | null> = {
+      id: Number(serviceId),
+      service_centre_id: Number(serviceCentreId),
+    };
+    if (payload.price !== undefined && payload.price !== null && payload.price !== '') {
+      body.price = parseFloat(String(payload.price));
+    }
+    if (payload.offer_price !== undefined) {
+      if (payload.offer_price !== null && String(payload.offer_price).trim() !== '') {
+        body.offer_price = parseFloat(String(payload.offer_price));
+      } else {
+        body.offer_price = null;
+      }
+    }
+    if (payload.status !== undefined && payload.status !== null) {
+      body.status = payload.status === 'active' ? 'Active' : 'Inactive';
+    }
+    if (payload.display_order !== undefined && payload.display_order !== null) {
+      body.display_order = Number(payload.display_order);
+    }
+
+    const doRequest = async (authToken: string) => {
+      const response = await this.fetchWithTimeout(
+        `${BASE_URL}/api/v1/user/update-service`,
+        {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        },
+        45000
+      );
+      const data = await response.json().catch(() => ({}));
+      return { response, data };
+    };
+
+    try {
+      let token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to update services' };
+      }
+
+      let { response, data } = await doRequest(token);
+
+      if (response.ok && data?.success !== false) {
+        return { success: true, service: data?.data ?? data?.service ?? null };
+      }
+
+      const isFirst401 = response.status === 401;
+      if (isFirst401) {
+        const user = await this.getUser();
+        const userToken = user?.token ?? user?.rawUserData?.token ?? user?.userData?.token;
+        const retryToken = (userToken && String(userToken).trim() && String(userToken) !== String(token))
+          ? String(userToken).trim()
+          : token;
+        if (retryToken !== token && retryToken) {
+          await this.setToken(retryToken);
+        }
+        const retry = await doRequest(retryToken);
+        if (retry.response.ok && retry.data?.success !== false) {
+          return { success: true, service: retry.data?.data ?? retry.data?.service ?? null };
+        }
+        data = retry.data;
+        response = retry.response;
+      }
+
+      const isAuthError = response.status === 401;
+      return {
+        success: false,
+        error: data?.message || data?.error || 'Failed to update service. Please try again.',
+        isAuthError,
+      };
+    } catch (error: any) {
+      const isAuthError = error?.status === 401 || /unauthorized|401/i.test(String(error?.message || ''));
+      return {
+        success: false,
+        error: error.message || 'Network error. Please try again.',
+        isAuthError,
+      };
+    }
+  }
+
   // Get Time Slots for Centre API
   async getTimeSlotsForCentre(
     centreId: string | number,
@@ -1242,11 +1563,10 @@ class AuthService {
         return { success: false, error: 'Please login to view your bookings' };
       }
 
-      // Always force refresh for faster fresh data - skip cache check
-      // Return cached data only if forceRefresh is false and cache is very fresh (< 10 seconds)
+      // When forceRefresh is false, return cache first for fast UI (up to 2 min old)
       if (!forceRefresh) {
         const cached = await this.getCachedData(CACHE_KEYS.BOOKINGS);
-        if (cached && this.isCacheValid(cached.timestamp, 10000)) { // 10 seconds only
+        if (cached && this.isCacheValid(cached.timestamp, 120000)) { // 2 min for fast display
           return {
             success: true,
             bookings: cached.data,

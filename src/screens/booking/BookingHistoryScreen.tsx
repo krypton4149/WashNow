@@ -39,6 +39,7 @@ interface Booking {
   cancel_by: string | null;
   tenant_id: number;
   created_at: string;
+  createdAt?: string;
   updated_at: string;
   service_centre?: {
     id: number;
@@ -109,17 +110,17 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      console.log('Loading bookings...');
-      const result = await authService.getBookingList();
-      console.log('Booking list result:', JSON.stringify(result, null, 2));
-      
+      // 1) Cache first for fast list display
+      const cached = await authService.getBookingList(false);
+      if (cached.success && cached.bookings?.length) {
+        setBookings(Array.isArray(cached.bookings) ? cached.bookings : []);
+        setIsLoading(false);
+      }
+      // 2) Refresh in background for latest data
+      const result = await authService.getBookingList(true);
       if (result.success && result.bookings) {
-        console.log('Bookings loaded successfully:', result.bookings.length);
-        console.log('First booking in result:', result.bookings[0]);
         setBookings(Array.isArray(result.bookings) ? result.bookings : []);
-      } else {
-        console.log('Failed to load bookings:', result.error);
+      } else if (!cached.success || !cached.bookings?.length) {
         setError(result.error || 'Failed to load bookings');
         setBookings([]);
       }

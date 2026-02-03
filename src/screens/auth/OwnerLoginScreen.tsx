@@ -69,7 +69,7 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
     // Use the same pattern as authService - API_URL + endpoint path
     // Add timeout handling for better network error handling (longer timeout for slow networks)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout for slow servers
 
     try {
       // Use FormData instead of JSON (as per API requirements)
@@ -217,26 +217,30 @@ const OwnerLoginScreen: React.FC<OwnerLoginScreenProps> = ({
     } catch (error: any) {
       clearTimeout(timeoutId); // Ensure timeout is cleared on error
       const isAbort = error?.name === 'AbortError' || error?.message === 'Aborted';
-      if (!isAbort) {
+      const isNetwork = error?.message?.includes('Network') || error?.message?.includes('fetch') || error?.message?.includes('Failed to fetch') || (error?.name === 'TypeError' && error?.message?.includes('Network'));
+      if (!isAbort && !isNetwork) {
         console.error('Owner login error:', error);
+      } else if (__DEV__ && (isAbort || isNetwork)) {
+        console.warn('Owner login:', isAbort ? 'Request timeout' : 'Network request failed');
       }
       // Provide more specific error messages
       let errorMessage = 'Unable to reach the server. Please try again.';
-      
-      // Handle timeout / abort errors (user-friendly message, no stack in alert)
       if (isAbort) {
         errorMessage = 'Request timeout. The server is taking too long to respond. Please check your internet connection and try again.';
-      } else if (error?.message) {
-        if (error.message.includes('Network') || error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-          errorMessage = 'Network request failed. Please check your internet connection and try again.';
-        } else {
-          errorMessage = error.message;
-        }
-      } else if (error?.name === 'TypeError' && error?.message?.includes('Network')) {
+      } else if (isNetwork) {
         errorMessage = 'Network request failed. Please check your internet connection and try again.';
+      } else if (error?.message) {
+        errorMessage = error.message;
       }
       
-      Alert.alert('Network Error', errorMessage);
+      Alert.alert(
+        'Network Error',
+        errorMessage,
+        [
+          { text: 'OK', style: 'cancel' },
+          { text: 'Retry', onPress: () => handleLogin() },
+        ]
+      );
     } finally {
       setIsLoading(false);
     }
