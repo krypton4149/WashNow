@@ -28,7 +28,7 @@ interface OwnerRequestsScreenProps {
   onSessionExpired?: () => void;
 }
 
-type StatusTone = 'pending' | 'accepted' | 'declined';
+type StatusTone = 'pending' | 'accepted' | 'declined' | 'completed';
 
 interface BookingRequestCard {
   id: string;
@@ -89,7 +89,10 @@ const ensureNumber = (fallback: number, ...candidates: any[]): number => {
 
 const normalizeStatus = (status: string | undefined | null): StatusTone => {
   const value = String(status ?? '').trim().toLowerCase();
-  if (['accepted', 'approved', 'confirmed', 'completed', 'success', 'done'].includes(value)) {
+  if (value === 'completed' || value === 'done' || value === 'success') {
+    return 'completed';
+  }
+  if (['accepted', 'approved', 'confirmed'].includes(value)) {
     return 'accepted';
   }
   if (['declined', 'rejected', 'cancelled', 'canceled', 'failed'].includes(value)) {
@@ -533,6 +536,8 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [cancellationLoading, setCancellationLoading] = useState<Record<string, boolean>>({});
+  const [acceptLoading, setAcceptLoading] = useState<Record<string, boolean>>({});
+  const [completeLoading, setCompleteLoading] = useState<Record<string, boolean>>({});
   const hasHydratedCacheRef = useRef<boolean>(false);
 
   const loadCachedBookings = useCallback(async () => {
@@ -583,6 +588,8 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
 
         setRawBookings(sortedBookings);
         setCancellationLoading({});
+        setAcceptLoading({});
+        setCompleteLoading({});
         hasHydratedCacheRef.current = true;
         
         // Cache the sorted bookings
@@ -759,6 +766,64 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
     }));
   }, []);
 
+  const handleAcceptBooking = useCallback((bookingId: string) => {
+    if (!bookingId) return;
+    Alert.alert(
+      'Accept Booking',
+      'Accept this booking request?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Accept',
+          onPress: async () => {
+            setAcceptLoading((prev) => ({ ...prev, [bookingId]: true }));
+            try {
+              const result = await authService.completeOwnerBooking(bookingId);
+              if (!result.success) {
+                Alert.alert('Error', result.error || 'Failed to accept booking.');
+                return;
+              }
+              await fetchBookings(true);
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'Failed to accept booking.');
+            } finally {
+              setAcceptLoading((prev) => ({ ...prev, [bookingId]: false }));
+            }
+          },
+        },
+      ]
+    );
+  }, [fetchBookings]);
+
+  const handleCompleteBooking = useCallback((bookingId: string) => {
+    if (!bookingId) return;
+    Alert.alert(
+      'Complete Booking',
+      'Mark this booking as completed?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Complete',
+          onPress: async () => {
+            setCompleteLoading((prev) => ({ ...prev, [bookingId]: true }));
+            try {
+              const result = await authService.completeOwnerBooking(bookingId);
+              if (!result.success) {
+                Alert.alert('Error', result.error || 'Failed to complete booking.');
+                return;
+              }
+              await fetchBookings(true);
+            } catch (err: any) {
+              Alert.alert('Error', err?.message || 'Failed to complete booking.');
+            } finally {
+              setCompleteLoading((prev) => ({ ...prev, [bookingId]: false }));
+            }
+          },
+        },
+      ]
+    );
+  }, [fetchBookings]);
+
   const handleCancelBooking = useCallback((bookingId: string) => {
     if (!bookingId) {
       return;
@@ -780,7 +845,6 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                 Alert.alert('Error', result.error || 'Failed to cancel booking.');
                 return;
               }
-              Alert.alert('Success', result.message || 'Booking cancelled successfully.');
               await fetchBookings(true);
             } catch (cancelError: any) {
               Alert.alert('Error', cancelError?.message || 'Failed to cancel booking.');
@@ -793,10 +857,10 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
     );
   }, [fetchBookings, setBookingActionLoading]);
 
-  // Placeholder to keep hook count stable after removing Accept (bookings are already confirmed)
-  useCallback((_bookingId: string) => {}, []);
-
   const getStatusStyles = (status: StatusTone) => {
+    if (status === 'completed') {
+      return { bg: '#E5E7EB', text: '#4B5563', label: 'Completed', icon: '#4B5563' };
+    }
     if (status === 'accepted') {
       return { bg: '#DCFCE7', text: '#16A34A', label: 'Accepted', icon: '#16A34A' };
     }
@@ -986,9 +1050,43 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                   </View>
                 </View>
 
-                {/* Cancel action */}
+                {/* Accept / Complete & Cancel actions */}
                 {(request.status === 'pending' || request.status === 'accepted') && (
                   <View style={styles.footerActions}>
+                    {request.status === 'pending' && (
+                      <TouchableOpacity
+                        style={[styles.acceptButton, acceptLoading[request.id] && styles.buttonDisabled]}
+                        disabled={!!acceptLoading[request.id]}
+                        onPress={() => handleAcceptBooking(request.id)}
+                        activeOpacity={0.7}
+                      >
+                        {acceptLoading[request.id] ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark-circle" size={iconScale(14)} color="#FFFFFF" />
+                            <Text style={styles.acceptButtonText}>Complete</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                    {request.status === 'accepted' && (
+                      <TouchableOpacity
+                        style={[styles.completeButton, completeLoading[request.id] && styles.buttonDisabled]}
+                        disabled={!!completeLoading[request.id]}
+                        onPress={() => handleCompleteBooking(request.id)}
+                        activeOpacity={0.7}
+                      >
+                        {completeLoading[request.id] ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark-done" size={iconScale(14)} color="#FFFFFF" />
+                            <Text style={styles.completeButtonText}>Complete</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                       style={[styles.cancelButton, cancellationLoading[request.id] && styles.buttonDisabled]}
                       disabled={!!cancellationLoading[request.id]}
@@ -996,11 +1094,11 @@ const OwnerRequestsScreen: React.FC<OwnerRequestsScreenProps> = ({
                       activeOpacity={0.7}
                     >
                       {cancellationLoading[request.id] ? (
-                        <ActivityIndicator size="small" color="#DC2626" />
+                        <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
                         <>
-                          <Ionicons name="close-circle" size={iconScale(14)} color="#DC2626" />
-                          <Text style={styles.cancelButtonText}>Cancel booking</Text>
+                          <Ionicons name="close-circle" size={iconScale(14)} color="#FFFFFF" />
+                          <Text style={styles.cancelButtonText}>Cancel</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -1307,7 +1405,9 @@ const styles = StyleSheet.create({
   },
   footerActions: {
     flexDirection: 'row',
-    marginTop: 2,
+    alignItems: 'center',
+    gap: moderateScale(10),
+    marginTop: moderateScale(8),
   },
   declineButton: {
     flexDirection: 'row',
@@ -1347,6 +1447,26 @@ const styles = StyleSheet.create({
     ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
   },
+  completeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: moderateScale(4),
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: moderateScale(8),
+    borderRadius: moderateScale(20),
+    backgroundColor: '#16A34A',
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    minHeight: moderateScale(32),
+  },
+  completeButtonText: {
+    ...TEXT_STYLES.buttonProduction,
+    fontSize: FONT_SIZES.BUTTON,
+    color: '#FFFFFF',
+  },
   buttonDisabled: {
     opacity: 0.6,
   },
@@ -1354,23 +1474,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: moderateScale(4),
-    paddingHorizontal: moderateScale(10),
-    paddingVertical: moderateScale(6),
-    borderRadius: moderateScale(12),
-    borderWidth: 1.5,
-    borderColor: '#DC2626',
-    backgroundColor: '#FEE2E2',
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-    minHeight: moderateScale(32),
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: moderateScale(8),
+    borderRadius: moderateScale(20),
+    backgroundColor: '#DC2626',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
   },
   cancelButtonText: {
     ...TEXT_STYLES.buttonProduction,
-    fontSize: FONT_SIZES.BUTTON,
-    color: '#DC2626',
+    color: '#FFFFFF',
   },
   stateContainer: {
     flex: 1,

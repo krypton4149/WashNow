@@ -1219,9 +1219,17 @@ class AuthService {
       display_order?: number;
     }
   ): Promise<{ success: boolean; service?: any; error?: string; isAuthError?: boolean }> {
+    const idNum = Number(serviceId);
+    const centreNum = Number(serviceCentreId);
+    if (Number.isNaN(idNum) || idNum <= 0) {
+      return { success: false, error: 'Invalid service. Please refresh and try again.', isAuthError: false };
+    }
+    if (Number.isNaN(centreNum) || centreNum <= 0) {
+      return { success: false, error: 'Invalid service centre. Please refresh and try again.', isAuthError: false };
+    }
     const body: Record<string, string | number | null> = {
-      id: Number(serviceId),
-      service_centre_id: Number(serviceCentreId),
+      id: idNum,
+      service_centre_id: centreNum,
     };
     const priceStr = payload.price !== undefined && payload.price !== null ? String(payload.price).trim() : '';
     if (priceStr !== '') {
@@ -1286,15 +1294,24 @@ class AuthService {
       if (isFirst401) {
         const user = await this.getUser();
         const userToken = user?.token ?? user?.rawUserData?.token ?? user?.userData?.token;
-        const retryToken = (userToken && String(userToken).trim() && String(userToken) !== String(token))
+        let retryToken = (userToken && String(userToken).trim() && String(userToken) !== String(token))
           ? String(userToken).trim()
           : token;
         if (retryToken !== token && retryToken) {
           await this.setToken(retryToken);
         }
-        const retry = await doRequest(retryToken);
+        let retry = await doRequest(retryToken);
         if (retry.response.ok && retry.data?.success !== false) {
           return { success: true, service: retry.data?.data ?? retry.data?.service ?? null };
+        }
+        if (retry.response.status === 401) {
+          const freshToken = await this.getToken();
+          if (freshToken && String(freshToken).trim() !== String(retryToken).trim()) {
+            retry = await doRequest(freshToken.trim());
+            if (retry.response.ok && retry.data?.success !== false) {
+              return { success: true, service: retry.data?.data ?? retry.data?.service ?? null };
+            }
+          }
         }
         data = retry.data;
         response = retry.response;
@@ -2025,6 +2042,121 @@ class AuthService {
         error: errorMessage.includes('timeout') 
           ? 'Request timeout. The server is taking too long to respond. Please check your internet connection and try again.'
           : errorMessage
+      };
+    }
+  }
+
+  /**
+   * Accept a booking (owner). GET /api/v1/user/accept-booking?booking_id=...
+   * (API supports GET/HEAD only, not POST.)
+   */
+  async acceptOwnerBooking(bookingId: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to accept a booking' };
+      }
+
+      const url = `${BASE_URL}/api/v1/user/accept-booking?booking_id=${encodeURIComponent(bookingId)}`;
+      const response = await this.fetchWithTimeout(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (_) {
+        data = null;
+      }
+
+      if (response.ok && (data?.success !== false)) {
+        await Promise.all([
+          AsyncStorage.removeItem(CACHE_KEYS.BOOKINGS),
+          AsyncStorage.removeItem(CACHE_KEYS.OWNER_BOOKINGS),
+        ]);
+        return {
+          success: true,
+          message: data?.message || 'Booking accepted successfully',
+        };
+      }
+
+      const errorMessage =
+        data?.message ||
+        data?.error ||
+        (data && typeof data === 'object' && JSON.stringify(data)) ||
+        'Failed to accept booking. Please try again.';
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.message || 'Network error. Please check your internet connection and try again.',
+      };
+    }
+  }
+
+  /**
+   * Payment List (owner). POST /api/v1/user/payments-list
+   * Optional: bookingno, reference_no
+   * Uses URL-encoded body for Android compatibility (FormData can cause "Network request failed" on Android).
+   */
+  async getOwnerPaymentsList(params?: { bookingno?: string; reference_no?: string }): Promise<{
+    success: boolean;
+    payments?: any[];
+    data?: any;
+    error?: string;
+  }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { success: false, error: 'Please login to view payments' };
+      }
+
+      const searchParams = new URLSearchParams();
+      if (params?.bookingno != null && String(params.bookingno).trim() !== '') {
+        searchParams.append('bookingno', String(params.bookingno).trim());
+      }
+      if (params?.reference_no != null && String(params.reference_no).trim() !== '') {
+        searchParams.append('reference_no', String(params.reference_no).trim());
+      }
+
+      const response = await this.fetchWithTimeout(
+        `${BASE_URL}/api/v1/user/payments-list`,
+        {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: searchParams.toString(),
+        },
+        60000
+      );
+
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data?.success !== false) {
+        const raw = data?.data?.paymentList ?? data?.data?.payments ?? data?.data ?? data?.payments ?? (Array.isArray(data?.data) ? data.data : []);
+        const list = Array.isArray(raw) ? raw : (raw != null && typeof raw === 'object' ? [raw] : []);
+        return { success: true, payments: list, data: data?.data };
+      }
+      return {
+        success: false,
+        error: data?.message ?? data?.error ?? 'Failed to load payments.',
+      };
+    } catch (error: any) {
+      const msg = error?.message ?? '';
+      const isNetwork = !msg || /network|fetch|failed|timeout|connection/i.test(msg);
+      return {
+        success: false,
+        error: isNetwork ? 'Unable to load payments. Check your connection and try again.' : (msg || 'Something went wrong. Please try again.'),
       };
     }
   }

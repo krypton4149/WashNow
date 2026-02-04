@@ -29,6 +29,7 @@ interface OwnerDashboardScreenProps {
   onLogout?: () => void;
   onSessionExpired?: () => void;
   onBookingRequestPress?: () => void;
+  onPaymentListPress?: () => void;
   businessName?: string;
   userData?: any;
 }
@@ -91,6 +92,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   onLogout,
   onSessionExpired,
   onBookingRequestPress,
+  onPaymentListPress,
   businessName,
   userData: userDataProp,
 }) => {
@@ -477,35 +479,23 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('Logging out owner...');
-              const result = await authService.logoutOwner();
-              
-              if (result.success) {
-                // Call the onLogout callback to handle navigation
-                onLogout?.();
-              } else {
-                Alert.alert('Error', result.error || 'Failed to logout. Please try again.');
-              }
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-              // Even on error, try to call onLogout to clear the session
-              onLogout?.();
-            }
-          },
-        },
-      ]
-    );
+    try {
+      console.log('Logging out owner...');
+      const result = await authService.logoutOwner();
+
+      if (result.success) {
+        Alert.alert('Logged out', 'You have been logged out.', [
+          { text: 'OK', onPress: () => onLogout?.() },
+        ]);
+      } else {
+        Alert.alert('Error', result.error || 'Failed to logout. Please try again.');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Logged out', 'You have been logged out.', [
+        { text: 'OK', onPress: () => onLogout?.() },
+      ]);
+    }
   };
 
   const insets = useSafeAreaInsets();
@@ -592,6 +582,26 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Payment List quick access */}
+      {onPaymentListPress && (
+        <TouchableOpacity
+          style={styles.paymentListCard}
+          onPress={onPaymentListPress}
+          activeOpacity={0.8}
+        >
+          <View style={styles.paymentListCardContent}>
+            <View style={styles.paymentListIconWrap}>
+              <Ionicons name="wallet-outline" size={24} color={BLUE_COLOR} />
+            </View>
+            <View style={styles.paymentListTextWrap}>
+              <Text style={styles.paymentListTitle}>Payment List</Text>
+              <Text style={styles.paymentListSubtitle}>Search & view payment history</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="#6B7280" />
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* WHITE CONTENT */}
       <ScrollView
@@ -821,6 +831,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  paymentListCard: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(3, 88, 168, 0.15)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+    zIndex: 18,
+  },
+  paymentListCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  paymentListIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(3, 88, 168, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  paymentListTextWrap: { flex: 1 },
+  paymentListTitle: {
+    fontSize: FONT_SIZES.SECTION_HEADING,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    color: '#111827',
+    marginBottom: 2,
+  },
+  paymentListSubtitle: {
+    fontSize: FONT_SIZES.CAPTION_SMALL,
+    fontFamily: FONTS.INTER_REGULAR,
+    color: '#6B7280',
   },
   yellowBannerTitle: {
     fontSize: FONT_SIZES.SECTION_HEADING,

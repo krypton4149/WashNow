@@ -65,14 +65,16 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
         return;
       }
       const rawList = result.services || [];
-      const centreId = result.center?.id ?? result.center?.service_centre_id;
+      const centreFromResult = result.center?.id ?? result.center?.service_centre_id;
+      const centreFromFirst = rawList[0]?.service_centre_id ?? rawList[0]?.service_center_id;
+      const centreId = centreFromResult ?? centreFromFirst;
       const list = rawList.map((s: any) => {
         const price = s.price != null ? String(s.price) : '';
         const offerPrice = s.offer_price != null ? String(s.offer_price) : '';
         const statusStr = (s.status ?? s.is_active ?? '').toString().toLowerCase();
         const status: 'active' | 'inactive' =
           statusStr === 'inactive' || s.is_active === 0 || s.is_active === false ? 'inactive' : 'active';
-        const serviceCentreId = s.service_centre_id ?? centreId ?? s.service_center_id;
+        const serviceCentreId = s.service_centre_id ?? centreId ?? s.service_center_id ?? centreFromFirst;
         return {
           id: s.id,
           service_centre_id: serviceCentreId ?? centreId ?? 0,
@@ -112,10 +114,23 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
     const statusChanged = item.status !== orig.status;
     if (!priceChanged && !offerChanged && !statusChanged) return;
 
-    const serviceCentreId = item.service_centre_id;
-    if (!serviceCentreId) {
-      Alert.alert('Error', 'Service centre not found. Please try again.');
+    const serviceCentreId = item.service_centre_id
+      || (services.length > 0 && services[0].service_centre_id)
+      || 0;
+    const validCentreId = Number(serviceCentreId);
+    if (!validCentreId || Number.isNaN(validCentreId)) {
+      Alert.alert('Error', 'Service centre not found. Please refresh the list and try again.');
       return;
+    }
+
+    if (priceChanged || offerChanged) {
+      const currentNum = parseFloat(String(item.price).trim());
+      const offerStr = String(item.offer_price ?? '').trim();
+      const offerNum = offerStr !== '' ? parseFloat(offerStr) : NaN;
+      if (!Number.isNaN(offerNum) && !Number.isNaN(currentNum) && offerNum > currentNum) {
+        Alert.alert('Invalid price', 'Offer price cannot be greater than current price.');
+        return;
+      }
     }
 
     setSavingId(item.id);
@@ -128,7 +143,7 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
       if (statusChanged) payload.status = item.status;
       if (item.display_order != null) payload.display_order = item.display_order;
 
-      const result = await authService.updateOwnerService(item.id, serviceCentreId, payload);
+      const result = await authService.updateOwnerService(item.id, validCentreId, payload);
       if (result.success) {
         updateLocalService(item.id, { _original: { price: item.price, offer_price: item.offer_price, status: item.status } });
         setEditingId(null);
@@ -340,6 +355,15 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
                               />
                             </View>
                           </View>
+                          {(() => {
+                            const curr = parseFloat(String(item.price).trim());
+                            const offStr = String(item.offer_price ?? '').trim();
+                            const off = offStr !== '' ? parseFloat(offStr) : NaN;
+                            const invalid = !Number.isNaN(off) && !Number.isNaN(curr) && off > curr;
+                            return invalid ? (
+                              <Text style={styles.priceErrorText}>Offer price cannot be greater than current price.</Text>
+                            ) : null;
+                          })()}
                         </View>
                         <View style={styles.saveCancelRow}>
                           <TouchableOpacity
@@ -356,7 +380,12 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
                           <TouchableOpacity
                             style={[styles.saveBtn, styles.saveBtnShadow, { backgroundColor: BLUE_COLOR }]}
                             onPress={() => saveService(item)}
-                            disabled={savingId !== null}
+                            disabled={savingId !== null || (() => {
+                              const curr = parseFloat(String(item.price).trim());
+                              const offStr = String(item.offer_price ?? '').trim();
+                              const off = offStr !== '' ? parseFloat(offStr) : NaN;
+                              return !Number.isNaN(off) && !Number.isNaN(curr) && off > curr;
+                            })()}
                             activeOpacity={0.85}
                           >
                             {savingId === item.id ? (
@@ -666,6 +695,11 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingHorizontal: moderateScale(16),
     paddingVertical: moderateScale(13),
+  },
+  priceErrorText: {
+    fontSize: 12,
+    color: '#DC2626',
+    marginTop: moderateScale(8),
   },
   saveCancelRow: {
     flexDirection: 'row',

@@ -486,8 +486,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
               const result = await authService.cancelBooking(bookingId);
               
               if (result.success) {
-                Alert.alert('Success', result.message || 'Booking cancelled successfully');
-                // Reload bookings to show updated status
+                // Reload bookings to show updated status (no success message)
                 await loadBookings();
               } else {
                 Alert.alert('Error', result.error || 'Failed to cancel booking. Please try again.');

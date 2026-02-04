@@ -10,12 +10,13 @@ import OwnerSettingsScreen from '../screens/owner/OwnerSettingsScreen';
 import OwnerSupportScreen from '../screens/owner/OwnerSupportScreen';
 import OwnerChangePasswordScreen from '../screens/owner/OwnerChangePasswordScreen';
 import OwnerServicesScreen from '../screens/owner/OwnerServicesScreen';
+import OwnerPaymentsScreen from '../screens/owner/OwnerPaymentsScreen';
 import { useTheme } from '../context/ThemeContext';
 import { FONT_SIZES } from '../utils/fonts';
 import { moderateScale, iconScale } from '../utils/responsive';
 
 type TabKey = 'home' | 'requests' | 'activity' | 'account';
-type AccountSubView = 'profile' | 'settings' | 'support' | 'password' | 'services';
+type AccountSubView = 'profile' | 'settings' | 'support' | 'password' | 'services' | 'payments';
 
 interface OwnerTabsProps {
   userData: any;
@@ -49,6 +50,10 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
             onViewAll={() => setActiveTab('requests')}
             onViewAllActivity={() => setActiveTab('activity')}
             onBookingRequestPress={() => setActiveTab('requests')}
+            onPaymentListPress={() => {
+              setActiveTab('account');
+              setAccountSubView('payments');
+            }}
             businessName={userData?.businessName || userData?.business_name || 'Premium Auto Wash'}
             userData={userData}
           />
@@ -99,6 +104,12 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
                 onSessionExpired={onSessionExpired}
               />
             );
+          case 'payments':
+            return (
+              <OwnerPaymentsScreen
+                onBack={() => setAccountSubView('profile')}
+              />
+            );
           default:
             return (
               <OwnerAccountScreen
@@ -108,6 +119,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
                 onOpenSettings={() => setAccountSubView('settings')}
                 onOpenSupport={() => setAccountSubView('support')}
                 onOpenServices={() => setAccountSubView('services')}
+                onOpenPayments={() => setAccountSubView('payments')}
                 onOwnerProfileUpdated={onOwnerProfileUpdated}
               />
             );

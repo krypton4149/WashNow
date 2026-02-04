@@ -53,6 +53,7 @@ interface OwnerAccountScreenProps {
   onOpenSettings?: () => void;
   onOpenSupport?: () => void;
   onOpenServices?: () => void;
+  onOpenPayments?: () => void;
   onOwnerProfileUpdated?: (user: any) => void;
 }
 
@@ -63,6 +64,7 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
   onOpenSettings,
   onOpenSupport,
   onOpenServices,
+  onOpenPayments,
   onOwnerProfileUpdated,
 }) => {
   const { colors } = useTheme();
@@ -474,6 +476,21 @@ const OwnerAccountScreen: React.FC<OwnerAccountScreenProps> = ({
                 <Ionicons name="pricetags-outline" size={18} color={BLUE_COLOR} />
               </View>
               <Text style={styles.actionLabel}>Services & Pricing</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+          <View style={styles.actionDivider} />
+          <TouchableOpacity
+            style={styles.actionItem}
+            activeOpacity={0.7}
+            onPress={onOpenPayments}
+            disabled={!onOpenPayments}
+          >
+            <View style={styles.actionItemLeft}>
+              <View style={styles.actionIcon}>
+                <Ionicons name="card-outline" size={18} color={BLUE_COLOR} />
+              </View>
+              <Text style={styles.actionLabel}>Payment List</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
           </TouchableOpacity>
