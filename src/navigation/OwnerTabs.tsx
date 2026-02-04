@@ -11,6 +11,8 @@ import OwnerSupportScreen from '../screens/owner/OwnerSupportScreen';
 import OwnerChangePasswordScreen from '../screens/owner/OwnerChangePasswordScreen';
 import OwnerServicesScreen from '../screens/owner/OwnerServicesScreen';
 import { useTheme } from '../context/ThemeContext';
+import { FONT_SIZES } from '../utils/fonts';
+import { moderateScale, iconScale } from '../utils/responsive';
 
 type TabKey = 'home' | 'requests' | 'activity' | 'account';
 type AccountSubView = 'profile' | 'settings' | 'support' | 'password' | 'services';
@@ -18,6 +20,7 @@ type AccountSubView = 'profile' | 'settings' | 'support' | 'password' | 'service
 interface OwnerTabsProps {
   userData: any;
   onLogout?: () => void;
+  onSessionExpired?: () => void;
   onViewAllActivity?: () => void;
   onBookingRequestPress?: () => void;
   onOwnerProfileUpdated?: (user: any) => void;
@@ -26,6 +29,7 @@ interface OwnerTabsProps {
 const OwnerTabs: React.FC<OwnerTabsProps> = ({
   userData,
   onLogout,
+  onSessionExpired,
   onViewAllActivity,
   onBookingRequestPress,
   onOwnerProfileUpdated,
@@ -41,6 +45,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
         return (
           <OwnerDashboardScreen
             onLogout={onLogout}
+            onSessionExpired={onSessionExpired}
             onViewAll={() => setActiveTab('requests')}
             onViewAllActivity={() => setActiveTab('activity')}
             onBookingRequestPress={() => setActiveTab('requests')}
@@ -52,6 +57,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
         return (
           <OwnerRequestsScreen
             onBack={() => setActiveTab('home')}
+            onSessionExpired={onSessionExpired}
           />
         );
       case 'activity':
@@ -90,6 +96,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
               <OwnerServicesScreen
                 onBack={() => setAccountSubView('profile')}
                 onLogout={onLogout}
+                onSessionExpired={onSessionExpired}
               />
             );
           default:
@@ -118,7 +125,7 @@ const OwnerTabs: React.FC<OwnerTabsProps> = ({
     const color = isActive ? activeColor : inactiveColor;
     return (
       <TouchableOpacity style={styles.tab} onPress={() => setActiveTab(keyId)}>
-        <Ionicons name={iconName} size={24} color={color} />
+        <Ionicons name={iconName} size={iconScale(24)} color={color} />
         <Text style={[styles.tabLabel, { color }]}>{label}</Text>
       </TouchableOpacity>
     );
@@ -162,9 +169,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingHorizontal: moderateScale(8),
+    paddingTop: moderateScale(8),
+    paddingBottom: moderateScale(16),
     borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -173,7 +180,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   tab: { alignItems: 'center', justifyContent: 'center' },
-  tabLabel: { fontSize: 12, marginTop: 4, fontWeight: '600' },
+  tabLabel: { fontSize: FONT_SIZES.LABEL, marginTop: moderateScale(4), fontWeight: '600' },
 });
 
 export default OwnerTabs;

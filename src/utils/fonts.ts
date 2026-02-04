@@ -1,7 +1,7 @@
 /**
  * App Font Guidelines – Inter (Global)
  * Designed for screens. Highly readable. Modern, neutral.
- * All sizes are responsive (scale with device via moderateScale).
+ * All sizes are responsive (scale with device width + height via fontScale).
  *
  * Weights: Regular (400), Medium (500), SemiBold (600), Bold (700)
  * Line height: 1.5 (font size × 1.5) for airy, premium feel.
@@ -16,7 +16,7 @@
  */
 
 import { Platform } from 'react-native';
-import { moderateScale } from './responsive';
+import { fontScale } from './responsive';
 
 // ─── Font families (Inter only) ─────────────────────────────────────────────
 export const FONTS = {
@@ -56,59 +56,59 @@ export const FONTS = {
 // Line height multiplier (1.4–1.6)
 const LINE_HEIGHT_MULT = 1.5;
 
-// ─── Responsive font sizes (scale with device) ───────────────────────────────
+// ─── Responsive font sizes (scale with device width + height) ─────────────────
 export const FONT_SIZES = {
   // Screen Title: 22–24 px / Bold or SemiBold
-  SCREEN_TITLE: moderateScale(22),
-  SCREEN_TITLE_LARGE: moderateScale(24),
+  SCREEN_TITLE: fontScale(22),
+  SCREEN_TITLE_LARGE: fontScale(24),
 
   // Section Heading: 16–18 px / SemiBold
-  SECTION_HEADING: moderateScale(16),
-  SECTION_HEADING_LARGE: moderateScale(18),
+  SECTION_HEADING: fontScale(16),
+  SECTION_HEADING_LARGE: fontScale(18),
 
   // Card Title: 15–16 px / Medium or SemiBold
-  CARD_TITLE: moderateScale(15),
-  CARD_TITLE_LARGE: moderateScale(16),
+  CARD_TITLE: fontScale(15),
+  CARD_TITLE_LARGE: fontScale(16),
 
   // Body: Primary 14–15 px, Secondary 12–13 px
-  BODY_PRIMARY: moderateScale(14),
-  BODY_PRIMARY_LARGE: moderateScale(15),
-  BODY_SECONDARY: moderateScale(12),
-  BODY_SECONDARY_LARGE: moderateScale(13),
+  BODY_PRIMARY: fontScale(14),
+  BODY_PRIMARY_LARGE: fontScale(15),
+  BODY_SECONDARY: fontScale(12),
+  BODY_SECONDARY_LARGE: fontScale(13),
 
   // Captions / Hints: 11–12 px
-  CAPTION: moderateScale(11),
-  CAPTION_LARGE: moderateScale(12),
+  CAPTION: fontScale(11),
+  CAPTION_LARGE: fontScale(12),
 
   // Buttons: 14–16 px / Medium or SemiBold
-  BUTTON: moderateScale(14),
-  BUTTON_LARGE: moderateScale(15),
-  BUTTON_XL: moderateScale(16),
+  BUTTON: fontScale(14),
+  BUTTON_LARGE: fontScale(15),
+  BUTTON_XL: fontScale(16),
 
   // Input: 14–15 px, Label: 12–13 px
-  INPUT: moderateScale(14),
-  INPUT_LARGE: moderateScale(15),
-  LABEL: moderateScale(12),
-  LABEL_LARGE: moderateScale(13),
+  INPUT: fontScale(14),
+  INPUT_LARGE: fontScale(15),
+  LABEL: fontScale(12),
+  LABEL_LARGE: fontScale(13),
 
   // Legacy aliases (for backward compatibility)
-  APP_TITLE_SMALL: moderateScale(22),
-  APP_TITLE_MEDIUM: moderateScale(23),
-  APP_TITLE_LARGE: moderateScale(24),
-  HEADING_SMALL: moderateScale(16),
-  HEADING_MEDIUM: moderateScale(17),
-  HEADING_LARGE: moderateScale(18),
-  BODY_SMALL: moderateScale(14),
-  BODY_MEDIUM: moderateScale(15),
-  BODY_LARGE: moderateScale(16),
-  CAPTION_SMALL: moderateScale(12),
-  CAPTION_MEDIUM: moderateScale(13),
-  BUTTON_SMALL: moderateScale(14),
-  BUTTON_MEDIUM: moderateScale(15),
-  BUTTON_LARGE: moderateScale(16),
-  NUMBER_SMALL: moderateScale(18),
-  NUMBER_MEDIUM: moderateScale(20),
-  NUMBER_LARGE: moderateScale(22),
+  APP_TITLE_SMALL: fontScale(22),
+  APP_TITLE_MEDIUM: fontScale(23),
+  APP_TITLE_LARGE: fontScale(24),
+  HEADING_SMALL: fontScale(16),
+  HEADING_MEDIUM: fontScale(17),
+  HEADING_LARGE: fontScale(18),
+  BODY_SMALL: fontScale(14),
+  BODY_MEDIUM: fontScale(15),
+  BODY_LARGE: fontScale(16),
+  CAPTION_SMALL: fontScale(12),
+  CAPTION_MEDIUM: fontScale(13),
+  BUTTON_SMALL: fontScale(14),
+  BUTTON_MEDIUM: fontScale(15),
+  BUTTON_LARGE: fontScale(16),
+  NUMBER_SMALL: fontScale(18),
+  NUMBER_MEDIUM: fontScale(20),
+  NUMBER_LARGE: fontScale(22),
 };
 
 // ─── Global text styles (Inter, responsive, with line height) ───────────────

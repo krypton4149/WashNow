@@ -39,6 +39,7 @@ interface DashboardScreenProps {
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
   onLogout?: () => void;
+  onSessionExpired?: () => void;
   userData?: UserData | null;
 }
 
@@ -81,6 +82,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onNotificationPress,
   onProfilePress,
   onLogout,
+  onSessionExpired,
   userData,
 }) => {
   const { colors } = useTheme();
@@ -288,6 +290,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
       }
       setError(result.error || 'Failed to load bookings');
       setBookings([]);
+      // Session expired / 401 — redirect to user login
+      const isSessionExpired = /session\s*expired|unauthorized|401|login\s*again/i.test(result.error || '');
+      if (isSessionExpired && onSessionExpired) {
+        onSessionExpired();
+        return;
+      }
       // Backend returned "Forbidden: not a visitor" — current token is not a visitor (e.g. owner). Log out so user can sign in with correct account.
       const isNotVisitor = result.error?.toLowerCase().includes('not a visitor') ?? false;
       if (isNotVisitor && onLogout) {
@@ -1251,7 +1259,7 @@ const styles = StyleSheet.create({
   },
   yellowBannerTitle: {
     ...TEXT_STYLES.sectionHeadingMedium,
-    fontSize: moderateScale(15),
+    fontSize: FONT_SIZES.BODY_PRIMARY_LARGE,
     color: '#111827',
     marginBottom: 2,
   },
@@ -1278,7 +1286,7 @@ const styles = StyleSheet.create({
   },
   bookNowText: {
     ...TEXT_STYLES.buttonProduction,
-    fontSize: moderateScale(13),
+    fontSize: FONT_SIZES.CAPTION_MEDIUM,
     color: '#111827',
   },
   sectionHeader: {

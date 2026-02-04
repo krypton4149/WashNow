@@ -14,10 +14,10 @@ import {
   Keyboard,
   KeyboardAvoidingView,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
-import { TEXT_STYLES } from '../../utils/fonts';
+import { TEXT_STYLES, FONTS, FONT_SIZES } from '../../utils/fonts';
 import { moderateScale } from '../../utils/responsive';
 import authService from '../../services/authService';
 
@@ -28,6 +28,7 @@ const GRAY_INACTIVE = '#6B7280';
 interface OwnerServicesScreenProps {
   onBack?: () => void;
   onLogout?: () => void;
+  onSessionExpired?: () => void;
 }
 
 type ServiceEdit = {
@@ -42,13 +43,14 @@ type ServiceEdit = {
   _original?: { price: string; offer_price: string; status: 'active' | 'inactive' };
 };
 
-const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLogout }) => {
+const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLogout, onSessionExpired }) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [services, setServices] = useState<ServiceEdit[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | number | null>(null);
   const inputRefs = useRef<Record<string, TextInput | null>>({});
   const lastFocusedKey = useRef<string | null>(null);
 
@@ -119,14 +121,17 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
     setSavingId(item.id);
     try {
       const payload: { price?: string; offer_price?: string; status?: 'active' | 'inactive'; display_order?: number } = {};
-      if (priceChanged && item.price !== '') payload.price = item.price;
-      if (offerChanged) payload.offer_price = item.offer_price;
+      if (priceChanged || offerChanged) {
+        payload.price = item.price !== '' ? item.price : undefined;
+        payload.offer_price = item.offer_price;
+      }
       if (statusChanged) payload.status = item.status;
       if (item.display_order != null) payload.display_order = item.display_order;
 
       const result = await authService.updateOwnerService(item.id, serviceCentreId, payload);
       if (result.success) {
         updateLocalService(item.id, { _original: { price: item.price, offer_price: item.offer_price, status: item.status } });
+        setEditingId(null);
         const key = lastFocusedKey.current;
         if (key && inputRefs.current[key]) {
           setTimeout(() => inputRefs.current[key]?.focus(), 100);
@@ -134,19 +139,17 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
       } else {
         const msg = result.error || 'Could not update service. Please try again.';
         const isSessionExpired = result.isAuthError || /session\s*expired|login\s*again|unauthorized|401/i.test(msg);
-        if (isSessionExpired && onLogout) {
+        if (isSessionExpired && (onSessionExpired || onLogout)) {
           Alert.alert(
             'Session expired',
             'Please login again to continue.',
             [
               { text: 'Cancel', style: 'cancel' },
+              { text: 'Retry', onPress: () => saveService(item) },
               {
                 text: 'Login again',
-                onPress: async () => {
-                  try {
-                    await authService.logoutOwner();
-                  } catch (_) {}
-                  onLogout();
+                onPress: () => {
+                  onSessionExpired ? onSessionExpired() : onLogout?.();
                 },
               },
             ]
@@ -171,19 +174,17 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
       const msg = e?.message || 'Something went wrong.';
       const isSessionExpired = /session\s*expired|unauthorized|401/i.test(msg);
       const isTimeout = /timeout|taking too long/i.test(msg);
-      if (isSessionExpired && onLogout) {
+      if (isSessionExpired && (onSessionExpired || onLogout)) {
         Alert.alert(
           'Session expired',
           'Please login again to continue.',
           [
             { text: 'Cancel', style: 'cancel' },
+            { text: 'Retry', onPress: () => saveService(item) },
             {
               text: 'Login again',
-              onPress: async () => {
-                try {
-                  await authService.logoutOwner();
-                } catch (_) {}
-                onLogout();
+              onPress: () => {
+                onSessionExpired ? onSessionExpired() : onLogout?.();
               },
             },
           ]
@@ -212,16 +213,23 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
   };
 
   const scrollBottomPadding = Math.max(insets.bottom + 80, 100);
+  const activeCount = services.filter((s) => s.status === 'active').length;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={!onBack} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Services & Pricing</Text>
-        <View style={styles.headerPlaceholder} />
+    <View style={[styles.container, { backgroundColor: BLUE_COLOR }]}>
+      <View style={[styles.safeHeader, { paddingTop: insets.top + moderateScale(12) }]}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity style={styles.headerBackCircle} onPress={onBack} disabled={!onBack} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.headerBadge}>
+            <Text style={styles.headerBadgeText}>{activeCount} Active Service{activeCount !== 1 ? 's' : ''}</Text>
+          </View>
+        </View>
+        <Text style={styles.heroTitle}>Services & Pricing</Text>
+        <Text style={styles.heroSubtitle}>Manage your service offerings</Text>
       </View>
+      <View style={styles.contentWrap}>
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -258,171 +266,213 @@ const OwnerServicesScreen: React.FC<OwnerServicesScreenProps> = ({ onBack, onLog
             </View>
           ) : (
             <>
-              <View style={styles.sectionTop}>
-                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-                  Edit price and toggle Active/Inactive per service.
-                </Text>
-                <View style={[styles.countBadge, { backgroundColor: BLUE_COLOR + '18' }]}>
-                  <Text style={[styles.countBadgeText, { color: BLUE_COLOR }]}>
-                    {services.length} service{services.length !== 1 ? 's' : ''}
-                  </Text>
-                </View>
-              </View>
-              {services.map((item, index) => (
+              {services.map((item, index) => {
+                const priceNum = parseFloat(item.price) || 0;
+                const offerNum = parseFloat(item.offer_price) || 0;
+                const savings = item.offer_price && priceNum > offerNum ? priceNum - offerNum : 0;
+                const iconName = (index % 3 === 0) ? 'sparkles' : (index % 3 === 1) ? 'water-outline' : 'car-outline';
+                return (
                 <View
                   key={`${item.id}-${index}`}
-                  style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[styles.card, styles.cardShadow, { backgroundColor: colors.card }]}
                 >
-                  <View style={styles.cardHeader}>
-                    <View style={styles.serviceNameBlock}>
-                      <Text style={[styles.serviceName, { color: colors.text }]}>{item.name}</Text>
-                      {item.description ? (
-                        <Text style={[styles.serviceDescription, { color: colors.textSecondary }]} numberOfLines={2}>
-                          {item.description}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <View style={styles.statusWrap}>
-                      <View style={[
-                        styles.statusPill,
-                        { backgroundColor: item.status === 'active' ? GREEN_ACTIVE + '18' : GRAY_INACTIVE + '20' },
-                      ]}>
-                        <Text style={[
-                          styles.statusPillText,
-                          { color: item.status === 'active' ? GREEN_ACTIVE : GRAY_INACTIVE },
-                        ]}>
-                          {item.status === 'active' ? 'Active' : 'Inactive'}
-                        </Text>
+                  <View style={styles.cardInner}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardIconCircle}>
+                        <Ionicons name={iconName as any} size={24} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.serviceNameBlock}>
+                        <View style={styles.serviceNameRow}>
+                          <Text style={[styles.serviceName, { color: colors.text }]}>{item.name}</Text>
+                          <View style={[
+                            styles.statusPill,
+                            { backgroundColor: item.status === 'active' ? GREEN_ACTIVE + '22' : GRAY_INACTIVE + '22' },
+                          ]}>
+                            <Text style={[
+                              styles.statusPillText,
+                              { color: item.status === 'active' ? GREEN_ACTIVE : GRAY_INACTIVE },
+                            ]}>
+                              {item.status === 'active' ? 'Active' : 'Inactive'}
+                            </Text>
+                          </View>
+                        </View>
+                        {item.description ? (
+                          <Text style={[styles.serviceDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                            {item.description}
+                          </Text>
+                        ) : null}
                       </View>
                       <Switch
                         value={item.status === 'active'}
                         onValueChange={(v) => updateLocalService(item.id, { status: v ? 'active' : 'inactive' })}
-                        trackColor={{ false: '#D1D5DB', true: BLUE_COLOR + '99' }}
-                        thumbColor={item.status === 'active' ? BLUE_COLOR : '#9CA3AF'}
+                        trackColor={{ false: '#E5E7EB', true: BLUE_COLOR + '99' }}
+                        thumbColor={item.status === 'active' ? '#FFFFFF' : '#9CA3AF'}
                       />
                     </View>
+                    {editingId === item.id ? (
+                      <>
+                        <View style={[styles.editSection, { borderTopColor: colors.border }]}>
+                          <View style={styles.priceRow}>
+                            <View style={styles.priceFieldWrap}>
+                              <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Current Price (£)</Text>
+                              <TextInput
+                                ref={(r) => { inputRefs.current[`${item.id}-price`] = r; }}
+                                style={[styles.priceInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+                                value={item.price}
+                                onChangeText={(t) => updateLocalService(item.id, { price: t.replace(/[^0-9.]/g, '') })}
+                                placeholder="0.00"
+                                placeholderTextColor={colors.textSecondary}
+                                keyboardType="decimal-pad"
+                                onFocus={() => { lastFocusedKey.current = `${item.id}-price`; }}
+                              />
+                            </View>
+                            <View style={styles.priceFieldWrap}>
+                              <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Offer Price (£)</Text>
+                              <TextInput
+                                ref={(r) => { inputRefs.current[`${item.id}-offer`] = r; }}
+                                style={[styles.priceInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+                                value={item.offer_price}
+                                onChangeText={(t) => updateLocalService(item.id, { offer_price: t.replace(/[^0-9.]/g, '') })}
+                                placeholder="Optional"
+                                placeholderTextColor={colors.textSecondary}
+                                keyboardType="decimal-pad"
+                                onFocus={() => { lastFocusedKey.current = `${item.id}-offer`; }}
+                              />
+                            </View>
+                          </View>
+                        </View>
+                        <View style={styles.saveCancelRow}>
+                          <TouchableOpacity
+                            style={[styles.cancelBtn, { borderColor: colors.border }]}
+                            onPress={() => {
+                              const o = item._original;
+                              if (o) updateLocalService(item.id, { price: o.price, offer_price: o.offer_price, status: o.status });
+                              setEditingId(null);
+                            }}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={[styles.cancelBtnText, { color: colors.text }]}>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.saveBtn, styles.saveBtnShadow, { backgroundColor: BLUE_COLOR }]}
+                            onPress={() => saveService(item)}
+                            disabled={savingId !== null}
+                            activeOpacity={0.85}
+                          >
+                            {savingId === item.id ? (
+                              <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                              <>
+                                <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" style={styles.saveBtnIcon} />
+                                <Text style={styles.saveBtnText}>Save Changes</Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <View style={[styles.priceSummaryRow, { backgroundColor: colors.background }]}>
+                          <View style={[styles.priceSummary, styles.priceSummaryInline]}>
+                            <View style={styles.priceSummaryItem}>
+                              <Text style={[styles.priceSummaryLabel, { color: colors.textSecondary }]}>Current Price</Text>
+                              <Text style={[styles.priceSummaryValue, { color: colors.text }]}>£{item.price || '0.00'}</Text>
+                            </View>
+                            <View style={[styles.priceSummaryDivider, { backgroundColor: colors.border }]} />
+                            <View style={styles.priceSummaryItem}>
+                              <Text style={[styles.priceSummaryLabel, { color: colors.textSecondary }]}>Offer Price</Text>
+                              <Text style={[styles.priceSummaryValue, { color: BLUE_COLOR }]}>
+                                {item.offer_price ? `£${item.offer_price}` : '—'}
+                              </Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.editPenButton}
+                            onPress={() => setEditingId(item.id)}
+                            activeOpacity={0.85}
+                          >
+                            <Ionicons name="pencil" size={22} color="#1F2937" />
+                          </TouchableOpacity>
+                        </View>
+                        {savings > 0 ? (
+                          <View style={styles.savingsBadge}>
+                            <Ionicons name="pricetag" size={14} color={GREEN_ACTIVE} style={styles.savingsIcon} />
+                            <Text style={styles.savingsText}>Save £{savings.toFixed(2)}</Text>
+                          </View>
+                        ) : null}
+                      </>
+                    )}
                   </View>
-                  <View style={[styles.priceSummary, { backgroundColor: colors.background }]}>
-                    <View style={styles.priceSummaryItem}>
-                      <Text style={[styles.priceSummaryLabel, { color: colors.textSecondary }]}>Price</Text>
-                      <Text style={[styles.priceSummaryValue, { color: colors.text }]}>£{item.price || '0.00'}</Text>
-                    </View>
-                    {item.offer_price ? (
-                      <View style={[styles.priceSummaryDivider, { backgroundColor: colors.border }]} />
-                    ) : null}
-                    {item.offer_price ? (
-                      <View style={styles.priceSummaryItem}>
-                        <Text style={[styles.priceSummaryLabel, { color: colors.textSecondary }]}>Offer</Text>
-                        <Text style={[styles.priceSummaryValue, { color: BLUE_COLOR }]}>£{item.offer_price}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <View style={styles.priceRow}>
-                    <View style={styles.priceFieldWrap}>
-                      <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Price (£)</Text>
-                      <TextInput
-                        ref={(r) => { inputRefs.current[`${item.id}-price`] = r; }}
-                        style={[styles.priceInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
-                        value={item.price}
-                        onChangeText={(t) => updateLocalService(item.id, { price: t.replace(/[^0-9.]/g, '') })}
-                        placeholder="0.00"
-                        placeholderTextColor={colors.textSecondary}
-                        keyboardType="decimal-pad"
-                        onFocus={() => { lastFocusedKey.current = `${item.id}-price`; }}
-                      />
-                    </View>
-                    <View style={styles.priceFieldWrap}>
-                      <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Offer (£)</Text>
-                      <TextInput
-                        ref={(r) => { inputRefs.current[`${item.id}-offer`] = r; }}
-                        style={[styles.priceInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
-                        value={item.offer_price}
-                        onChangeText={(t) => updateLocalService(item.id, { offer_price: t.replace(/[^0-9.]/g, '') })}
-                        placeholder="Optional"
-                        placeholderTextColor={colors.textSecondary}
-                        keyboardType="decimal-pad"
-                        onFocus={() => { lastFocusedKey.current = `${item.id}-offer`; }}
-                      />
-                    </View>
-                  </View>
-                  {hasChanges(item) && (
-                    <TouchableOpacity
-                      style={[styles.saveBtn, { backgroundColor: BLUE_COLOR }]}
-                      onPress={() => saveService(item)}
-                      disabled={savingId !== null}
-                      activeOpacity={0.85}
-                    >
-                      {savingId === item.id ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <>
-                          <Ionicons name="checkmark-circle-outline" size={20} color="#FFFFFF" style={styles.saveBtnIcon} />
-                          <Text style={styles.saveBtnText}>Save changes</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  )}
                 </View>
-              ))}
+                );
+              })}
             </>
           )}
             </View>
           </TouchableWithoutFeedback>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </View>
+    </View>
   );
 };
 
+const HEADER_BLUE = '#0358a8';
+const LIGHT_GREY_BG = '#F3F4F6';
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  keyboardView: { flex: 1 },
-  header: {
+  container: { flex: 1, backgroundColor: HEADER_BLUE },
+  safeHeader: {
+    paddingHorizontal: moderateScale(20),
+    paddingBottom: moderateScale(20),
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: moderateScale(12),
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    ...TEXT_STYLES.sectionHeading,
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerPlaceholder: { width: 40 },
-  scrollView: { flex: 1 },
-  scrollContent: {
-    padding: moderateScale(16),
-    flexGrow: 1,
-  },
-  sectionTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
     marginBottom: moderateScale(16),
-    gap: moderateScale(8),
   },
-  sectionLabel: {
-    ...TEXT_STYLES.bodySecondary,
-    flex: 1,
-    minWidth: 0,
+  headerBackCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  countBadge: {
-    paddingHorizontal: moderateScale(10),
-    paddingVertical: moderateScale(6),
+  headerBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: moderateScale(14),
+    paddingVertical: moderateScale(8),
     borderRadius: moderateScale(20),
   },
-  countBadgeText: {
+  headerBadgeText: {
     ...TEXT_STYLES.label,
-    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  heroTitle: {
+    ...TEXT_STYLES.screenTitle,
+    color: '#FFFFFF',
+    marginBottom: moderateScale(4),
+  },
+  heroSubtitle: {
+    ...TEXT_STYLES.bodySecondary,
+    color: 'rgba(255,255,255,0.85)',
+  },
+  contentWrap: {
+    flex: 1,
+    backgroundColor: LIGHT_GREY_BG,
+    borderTopLeftRadius: moderateScale(24),
+    borderTopRightRadius: moderateScale(24),
+    overflow: 'hidden',
+  },
+  keyboardView: { flex: 1 },
+  scrollView: { flex: 1, backgroundColor: LIGHT_GREY_BG },
+  scrollContent: {
+    padding: moderateScale(18),
+    paddingTop: moderateScale(22),
+    flexGrow: 1,
+    backgroundColor: LIGHT_GREY_BG,
   },
   loadingBox: {
     alignItems: 'center',
@@ -439,7 +489,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyText: {
-    ...TEXT_STYLES.sectionHeading,
+    ...TEXT_STYLES.sectionHeadingMedium,
     marginTop: moderateScale(12),
   },
   emptySubtext: {
@@ -459,56 +509,89 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   card: {
-    borderRadius: moderateScale(14),
-    borderWidth: 1,
-    padding: moderateScale(14),
-    marginBottom: moderateScale(14),
+    borderRadius: moderateScale(16),
+    marginBottom: moderateScale(16),
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
+  cardShadow: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardInner: {
+    padding: moderateScale(18),
   },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: moderateScale(10),
+    marginBottom: moderateScale(14),
+  },
+  cardIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: BLUE_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: moderateScale(14),
   },
   serviceNameBlock: {
     flex: 1,
-    marginRight: moderateScale(10),
     minWidth: 0,
+    marginRight: moderateScale(10),
+  },
+  serviceNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: moderateScale(8),
+    marginBottom: moderateScale(4),
   },
   serviceName: {
     ...TEXT_STYLES.cardTitleSemiBold,
   },
   serviceDescription: {
     ...TEXT_STYLES.bodySecondary,
-    marginTop: moderateScale(2),
-    lineHeight: Math.round(12 * 1.4),
+    opacity: 0.88,
   },
   statusWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: moderateScale(6),
+    gap: moderateScale(8),
   },
   statusPill: {
-    paddingHorizontal: moderateScale(8),
-    paddingVertical: moderateScale(4),
-    borderRadius: moderateScale(6),
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: moderateScale(5),
+    borderRadius: moderateScale(8),
   },
   statusPillText: {
-    ...TEXT_STYLES.caption,
-    fontWeight: '600',
+    ...TEXT_STYLES.captionLarge,
+  },
+  priceSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: moderateScale(14),
+    paddingHorizontal: moderateScale(14),
+    borderRadius: moderateScale(12),
+    marginBottom: moderateScale(10),
   },
   priceSummary: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    paddingVertical: moderateScale(10),
-    paddingHorizontal: moderateScale(12),
-    borderRadius: moderateScale(10),
+    paddingVertical: moderateScale(14),
+    paddingHorizontal: moderateScale(14),
+    borderRadius: moderateScale(12),
     marginBottom: moderateScale(10),
+  },
+  priceSummaryInline: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    marginBottom: 0,
+    paddingVertical: 0,
   },
   priceSummaryItem: {
     flex: 1,
@@ -517,41 +600,104 @@ const styles = StyleSheet.create({
   },
   priceSummaryDivider: {
     width: 1,
-    marginVertical: 2,
+    marginVertical: 4,
   },
   priceSummaryLabel: {
-    ...TEXT_STYLES.caption,
-    marginBottom: 2,
+    ...TEXT_STYLES.label,
+    marginBottom: 4,
   },
   priceSummaryValue: {
     ...TEXT_STYLES.cardTitleSemiBold,
   },
+  savingsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: GREEN_ACTIVE + '18',
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: moderateScale(6),
+    borderRadius: moderateScale(8),
+    marginBottom: moderateScale(14),
+  },
+  savingsIcon: {
+    marginRight: moderateScale(4),
+  },
+  savingsText: {
+    ...TEXT_STYLES.captionLarge,
+    fontFamily: FONTS.INTER_SEMIBOLD,
+    fontWeight: '600' as const,
+    color: GREEN_ACTIVE,
+  },
+  editPenButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F4C901',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: moderateScale(12),
+  },
+  editSection: {
+    paddingTop: moderateScale(16),
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  editLabel: {
+    ...TEXT_STYLES.label,
+    marginBottom: moderateScale(10),
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   priceRow: {
     flexDirection: 'row',
-    gap: moderateScale(12),
+    gap: moderateScale(16),
   },
   priceFieldWrap: {
     flex: 1,
   },
   priceLabel: {
     ...TEXT_STYLES.label,
-    marginBottom: moderateScale(4),
+    marginBottom: moderateScale(6),
   },
   priceInput: {
     ...TEXT_STYLES.input,
+    fontSize: FONT_SIZES.INPUT_LARGE,
+    lineHeight: Math.round(FONT_SIZES.INPUT_LARGE * 1.5),
     borderWidth: 1,
-    borderRadius: moderateScale(8),
-    paddingHorizontal: moderateScale(12),
-    paddingVertical: moderateScale(10),
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: moderateScale(13),
+  },
+  saveCancelRow: {
+    flexDirection: 'row',
+    gap: moderateScale(12),
+    marginTop: moderateScale(14),
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: moderateScale(14),
+    borderRadius: moderateScale(12),
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelBtnText: {
+    ...TEXT_STYLES.buttonProduction,
   },
   saveBtn: {
-    marginTop: moderateScale(10),
-    paddingVertical: moderateScale(12),
-    borderRadius: moderateScale(10),
+    flex: 1,
+    paddingVertical: moderateScale(14),
+    borderRadius: moderateScale(12),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: moderateScale(8),
+    gap: moderateScale(10),
+  },
+  saveBtnShadow: {
+    shadowColor: BLUE_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   saveBtnIcon: {
     marginRight: 0,

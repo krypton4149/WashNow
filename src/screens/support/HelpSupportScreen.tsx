@@ -10,12 +10,12 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import axios from 'axios';
 import { platformEdges } from '../../utils/responsive';
-import { FONTS, FONT_SIZES } from '../../utils/fonts';
+import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
 const SUPPORT_EMAIL = 'support@washnow.com';
@@ -48,6 +48,7 @@ interface APIFAQ {
 }
 
 const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'faqs' | 'contact'>('faqs');
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -265,8 +266,8 @@ const HelpSupportScreen: React.FC<Props> = ({ onBack, onContactSupport }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={platformEdges as any}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+      <View style={[styles.header, { paddingTop: (insets?.top ?? 0) + 4 }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={Platform.select({ ios: 24, android: 22 })} color="#111827" />
         </TouchableOpacity>
@@ -336,9 +337,7 @@ const styles = StyleSheet.create({
     width: 40,
   },
   title: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.screenTitleSmall,
     color: '#111827',
     letterSpacing: -0.3,
   },
@@ -360,15 +359,12 @@ const styles = StyleSheet.create({
     borderBottomColor: BLUE_COLOR,
   },
   tabText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    ...TEXT_STYLES.bodySecondary,
     color: '#9CA3AF',
   },
   activeTabText: {
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: BLUE_COLOR,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   content: {
     flex: 1,
@@ -431,25 +427,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontWeight: '400',
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodySecondary,
     color: '#FFFFFF',
     opacity: 0.95,
     textAlign: 'center',
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#111827',
     marginBottom: 18,
   },
@@ -472,13 +462,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   faqQuestion: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#111827',
     flex: 1,
     marginRight: 12,
-    lineHeight: 22,
   },
   faqAnswer: {
     marginTop: 14,
@@ -487,10 +474,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
   },
   faqAnswerText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#6B7280',
-    lineHeight: 22,
   },
   contactContainer: {
     flex: 1,
@@ -520,21 +505,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   contactTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#111827',
     marginBottom: 10,
     textAlign: 'center',
   },
   contactSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: '#6B7280',
     marginBottom: 20,
     textAlign: 'center',
-    lineHeight: 22,
     paddingHorizontal: 8,
   },
   contactPointsList: {
@@ -556,11 +536,8 @@ const styles = StyleSheet.create({
   },
   contactPointText: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: '#374151',
-    lineHeight: 20,
   },
   emailRow: {
     flexDirection: 'row',
@@ -576,16 +553,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emailLabel: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_SEMIBOLD,
-    fontWeight: '600',
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#111827',
   },
   emailValue: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    ...TEXT_STYLES.bodyPrimary,
     color: BLUE_COLOR,
   },
   contactButton: {
@@ -605,10 +578,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   contactButtonText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
   loadingContainer: {
     flex: 1,
@@ -618,8 +589,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#6B7280',
   },
   errorContainer: {
@@ -631,8 +601,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginTop: 16,
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#DC2626',
     textAlign: 'center',
     marginBottom: 24,
@@ -646,8 +615,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 16,
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#9CA3AF',
     textAlign: 'center',
     marginBottom: 24,
@@ -661,10 +629,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   retryButtonText: {
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
   },
 });
 

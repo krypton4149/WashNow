@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: FONT_SIZES.BODY_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
-    lineHeight: 20,
+    lineHeight: Math.round(FONT_SIZES.BODY_PRIMARY * 1.5),
     color: '#6B7280',
   },
   bottomContainer: {

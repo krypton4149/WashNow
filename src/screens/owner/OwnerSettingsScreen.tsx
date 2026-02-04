@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
@@ -26,6 +27,7 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
   onChangePassword,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const dynamicStyles = useMemo(() => ({
     container: {
@@ -50,11 +52,6 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
     },
     sectionLabel: {
       color: colors.text,
-      fontSize: FONT_SIZES.BODY_LARGE + 1,
-      fontWeight: '700',
-      fontFamily: FONTS.INTER_BOLD,
-      letterSpacing: -0.3,
-      includeFontPadding: false,
     },
     settingTitle: {
       color: colors.text,
@@ -71,7 +68,7 @@ const OwnerSettingsScreen: React.FC<OwnerSettingsScreenProps> = ({
   return (
     <View style={[styles.container, dynamicStyles.container]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <View style={[styles.header, dynamicStyles.header]}>
+      <View style={[styles.header, dynamicStyles.header, { paddingTop: (insets?.top ?? 0) + 4 }]}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={!onBack}>
           <Ionicons
             name="arrow-back"
@@ -138,7 +135,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
-    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 14,
     paddingBottom: Platform.select({ ios: 12, android: 10 }),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -200,21 +196,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   heroBadgeText: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.label,
     color: '#F9FAFB',
     letterSpacing: 0.3,
   },
   heroTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#FFFFFF',
   },
   heroSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodySecondary,
     color: '#E5E7EB',
   },
   sectionCard: {
@@ -228,9 +219,7 @@ const styles = StyleSheet.create({
     elevation: Platform.select({ ios: 0, android: 3 }),
   },
   sectionLabel: {
-    fontSize: FONT_SIZES.BODY_LARGE + 1,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#111827',
     marginBottom: Platform.select({ ios: 18, android: 16 }),
     letterSpacing: -0.3,
@@ -255,15 +244,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE + 1,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#111827',
     includeFontPadding: false,
   },
   settingSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodySecondary,
     color: '#6B7280',
     marginTop: 4,
   },

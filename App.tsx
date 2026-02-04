@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { FONT_SIZES } from './src/utils/fonts';
 import { STRIPE_PUBLISHABLE_KEY, MERCHANT_IDENTIFIER } from './src/services/paymentService';
 
 // Import StripeProvider with error handling for native module linking
@@ -267,6 +268,24 @@ const AppContent: React.FC = () => {
     );
   };
 
+  /** When session is expired, clear auth and go directly to the correct login (customer or owner). */
+  const handleSessionExpired = async (asUserType: 'customer' | 'service-owner') => {
+    try {
+      await authService.clearAuth();
+      setIsAuthenticated(false);
+      setUserData(null);
+      setUserType(asUserType);
+      setCurrentScreen('auth');
+      console.log('App: session expired → redirect to', asUserType === 'service-owner' ? 'owner login' : 'user login');
+    } catch (error) {
+      console.error('Session expired clear error:', error);
+      setIsAuthenticated(false);
+      setUserData(null);
+      setUserType(asUserType);
+      setCurrentScreen('auth');
+    }
+  };
+
   const handleBookWash = () => {
     // Navigate to booking screen
     setCurrentScreen('book-wash');
@@ -508,6 +527,7 @@ const AppContent: React.FC = () => {
             onEditProfile={() => setCurrentScreen('edit-profile')}
             navigateTo={(screen) => setCurrentScreen(screen as ScreenType)}
             onLogout={handleLogout}
+            onSessionExpired={() => handleSessionExpired('customer')}
             onChangePassword={handleChangePassword}
           />
         );
@@ -516,6 +536,7 @@ const AppContent: React.FC = () => {
           <OwnerTabs
             userData={userData}
             onLogout={handleLogout}
+            onSessionExpired={() => handleSessionExpired('service-owner')}
             onOwnerProfileUpdated={(user) => {
               if (user) setUserData(user);
             }}
@@ -667,6 +688,7 @@ const AppContent: React.FC = () => {
               setCurrentScreen('profile');
             }}
             onSaveProfile={handleSaveProfile}
+            onSessionExpired={() => handleSessionExpired('customer')}
             userData={userData}
             activeTab="account"
             onTabChange={(tab) => {
@@ -783,7 +805,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     color: '#666666',
     fontFamily: 'System',
   },
@@ -794,13 +816,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   placeholderText: {
-    fontSize: 24,
+    fontSize: FONT_SIZES.SCREEN_TITLE_LARGE,
     fontWeight: 'bold',
     color: '#000000',
     marginBottom: 10,
   },
   placeholderSubtext: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     color: '#666666',
   },
 });

@@ -6,6 +6,8 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { FONT_SIZES } from '../../utils/fonts';
+import { moderateScale, verticalScale } from '../../utils/responsive';
 
 interface ButtonProps {
   title: string;
@@ -51,8 +53,8 @@ const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    height: 56,
-    borderRadius: 12,
+    height: verticalScale(56),
+    borderRadius: moderateScale(12),
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 0,
@@ -71,7 +73,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
   },
   buttonText: {
-    fontSize: 17,
+    fontSize: FONT_SIZES.BUTTON_XL,
     fontWeight: '600',
     fontFamily: 'System',
     letterSpacing: -0.2,

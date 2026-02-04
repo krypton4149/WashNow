@@ -14,7 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
-import { platformEdges } from '../../utils/responsive';
+import { platformEdges, moderateScale, verticalScale, iconScale } from '../../utils/responsive';
 import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -225,35 +225,40 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
     const icon = getNotificationIcon(notification.type);
     const isUnread = notification.isUnread || !notification.is_read;
     const isMarking = markingRead === notification.id;
-    
-    // Determine icon background color based on read status
-    const iconBackgroundColor = isUnread ? BLUE_COLOR : '#E5E7EB';
-    
+    const iconBg = isUnread ? BLUE_COLOR : '#E5E7EB';
+    const iconColor = isUnread ? '#FFFFFF' : '#6B7280';
+
     return (
       <TouchableOpacity
         key={notification.id.toString()}
         style={[
           styles.notificationItem,
-          { backgroundColor: colors.card || '#FFFFFF', borderColor: colors.border },
+          { backgroundColor: isUnread ? '#EFF6FF' : (colors.card || '#FFFFFF'), borderColor: colors.border },
         ]}
         onPress={() => handleNotificationPress(notification)}
         disabled={isMarking}
         activeOpacity={0.7}
       >
         <View style={styles.notificationContent}>
-          <View style={[styles.notificationIcon, { backgroundColor: iconBackgroundColor }]}>
-            <Ionicons name={icon.name} size={20} color="#FFFFFF" />
+          <View style={[styles.notificationIcon, { backgroundColor: iconBg }]}>
+            <Ionicons name={icon.name} size={iconScale(18)} color={iconColor} />
           </View>
           <View style={styles.notificationText}>
             <View style={styles.titleRow}>
-              <Text style={[styles.notificationTitle, { color: colors.text }]}>{notification.title}</Text>
+              <Text style={[styles.notificationTitle, { color: colors.text }]} numberOfLines={1} ellipsizeMode="tail">
+                {notification.title}
+              </Text>
               {isMarking ? (
                 <ActivityIndicator size="small" color={BLUE_COLOR} style={styles.markingIndicator} />
               ) : (
                 isUnread && <View style={[styles.unreadDot, { backgroundColor: YELLOW_COLOR }]} />
               )}
             </View>
-            <Text style={[styles.notificationDescription, { color: colors.textSecondary }]}>
+            <Text
+              style={[styles.notificationDescription, { color: colors.textSecondary }]}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
               {notification.description || notification.message || ''}
             </Text>
             <Text style={[styles.notificationTimestamp, { color: colors.textSecondary }]}>
@@ -272,7 +277,7 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
         { 
           backgroundColor: colors.background, 
           borderBottomColor: colors.border,
-          paddingTop: insets.top + Platform.select({ ios: 2, android: 2 }),
+          paddingTop: (insets?.top ?? 0) + 4,
         }
       ]}>
         <View style={styles.headerLeftPlaceholder} />
@@ -324,7 +329,7 @@ const NotificationsScreen: React.FC<Props> = ({ onBack, onNotificationPress }) =
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Ionicons name="notifications-outline" size={64} color={colors.textSecondary} />
+              <Ionicons name="notifications-outline" size={iconScale(64)} color={colors.textSecondary} />
               <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No Notifications</Text>
               <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
                 You're all caught up! New notifications will appear here.
@@ -345,137 +350,144 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingBottom: Platform.select({ ios: 6, android: 5 }),
+    paddingHorizontal: moderateScale(18),
+    paddingBottom: moderateScale(12),
     borderBottomWidth: 1,
   },
   backButton: {
-    width: Platform.select({ ios: 36, android: 32 }),
-    height: Platform.select({ ios: 36, android: 32 }),
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerLeftPlaceholder: {
-    width: Platform.select({ ios: 90, android: 80 }),
-    padding: 4,
+    width: moderateScale(85),
+    padding: moderateScale(4),
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingBottom: moderateScale(4),
   },
   title: {
     ...TEXT_STYLES.screenTitleSmall,
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
     textAlign: 'center',
   },
   unreadCount: {
-    marginTop: Platform.select({ ios: 2, android: 2 }),
+    marginTop: 2,
     ...TEXT_STYLES.bodySecondary,
+    fontSize: FONT_SIZES.CAPTION_LARGE,
     textAlign: 'center',
   },
   markAllButton: {
-    padding: 4,
-    minWidth: Platform.select({ ios: 90, android: 80 }),
+    padding: moderateScale(6),
+    minWidth: moderateScale(85),
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
   markAllText: {
-    ...TEXT_STYLES.cardTitle,
+    ...TEXT_STYLES.label,
+    fontSize: FONT_SIZES.CAPTION_LARGE,
   },
   content: {
     flex: 1,
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    padding: 12, // Reduced from 16
+    paddingHorizontal: moderateScale(18),
+    paddingTop: verticalScale(14),
+    paddingBottom: verticalScale(80),
     backgroundColor: 'transparent',
   },
   notificationsList: {
-    gap: 10, // Reduced from 12
+    gap: moderateScale(10),
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: verticalScale(48),
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: verticalScale(10),
     ...TEXT_STYLES.bodyPrimary,
   },
   notificationItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14, // Increased for modern look
-    padding: 12, // Reduced from 16
+    borderRadius: moderateScale(16),
+    padding: moderateScale(12),
     borderWidth: 1,
-    borderColor: '#E5E7EB', // Light gray border
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-    position: 'relative',
+    shadowRadius: 6,
+    elevation: 2,
   },
   notificationContent: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   notificationIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 10,
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: moderateScale(12),
   },
   notificationText: {
     flex: 1,
+    minWidth: 0,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 2,
   },
   notificationTitle: {
     ...TEXT_STYLES.cardTitleSemiBold,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     flex: 1,
-    marginBottom: 4,
+    marginRight: 8,
   },
   notificationDescription: {
-    ...TEXT_STYLES.bodyPrimary,
-    marginBottom: 6,
+    ...TEXT_STYLES.bodySecondary,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
+    marginBottom: 4,
+    lineHeight: Math.round(FONT_SIZES.BODY_PRIMARY * 1.4),
   },
   notificationTimestamp: {
-    ...TEXT_STYLES.bodySecondaryLarge,
+    ...TEXT_STYLES.caption,
+    fontSize: FONT_SIZES.CAPTION_LARGE,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginLeft: 8,
-    marginTop: 4,
+    marginLeft: 4,
   },
   markingIndicator: {
-    marginLeft: 8,
-    marginTop: 4,
+    marginLeft: 4,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
+    paddingVertical: 48,
+    paddingHorizontal: 32,
   },
   emptyTitle: {
-    ...TEXT_STYLES.sectionHeading,
-    marginTop: 16,
-    marginBottom: 8,
+    ...TEXT_STYLES.sectionHeadingMedium,
+    marginTop: 14,
+    marginBottom: 6,
   },
   emptyDescription: {
-    ...TEXT_STYLES.bodyPrimary,
+    ...TEXT_STYLES.bodySecondary,
     textAlign: 'center',
   },
 });

@@ -15,11 +15,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
 import authService from '../../services/authService';
 import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
-import { platformEdges } from '../../utils/responsive';
+import { platformEdges, moderateScale, verticalScale, iconScale } from '../../utils/responsive';
 
 const BLUE_COLOR = '#0358a8';
 const YELLOW_COLOR = '#f4c901';
-const LIGHT_BLUE_BG = '#E3F2FD';
 
 interface OwnerActivityScreenProps {
   onBack?: () => void;
@@ -233,18 +232,22 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
   };
 
   const getToneStyles = (tone: Tone, isUnread?: boolean) => {
-    // Icon background: YELLOW_COLOR for unread, BLUE_COLOR for read
-    const iconBackground = isUnread ? YELLOW_COLOR : BLUE_COLOR;
-    const iconColor = '#FFFFFF';
-    
-    // Card background: blue for both read and unread (light blue)
-    const cardBackground = LIGHT_BLUE_BG;
-    
+    const toneIconBg: Record<Tone, string> = {
+      success: '#059669',
+      info: BLUE_COLOR,
+      warning: '#D97706',
+      danger: '#DC2626',
+      promo: '#7C3AED',
+    };
+    const iconBackground = isUnread ? (toneIconBg[tone] ?? BLUE_COLOR) : '#E5E7EB';
+    const iconColor = isUnread ? '#FFFFFF' : '#6B7280';
+    const cardBackground = isUnread ? '#EFF6FF' : '#FFFFFF';
+
     return {
       container: { backgroundColor: cardBackground },
       iconBackground,
       iconColor,
-      dotColor: isUnread ? YELLOW_COLOR : 'transparent', // Yellow dot only for unread
+      dotColor: isUnread ? YELLOW_COLOR : 'transparent',
     };
   };
 
@@ -255,7 +258,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
         { 
           backgroundColor: colors.background, 
           borderBottomColor: colors.border,
-          paddingTop: Platform.select({ ios: 0.5, android: 0.5 }),
+          paddingTop: Platform.select({ ios: 4, android: 4 }),
         }
       ]}>
         <View style={styles.headerLeftPlaceholder} />
@@ -290,8 +293,8 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color="#DC2626" />
-          <Text style={styles.errorText}>{error}</Text>
+          <Ionicons name="alert-circle-outline" size={iconScale(44)} color="#DC2626" />
+          <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => loadAlerts()}
@@ -315,10 +318,10 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
         >
           {notifications.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="notifications-outline" size={64} color="#9CA3AF" />
-              <Text style={styles.emptyText}>No Notifications</Text>
-              <Text style={styles.emptySubtext}>
-                You're all caught up! New notifications will appear here.
+              <Ionicons name="notifications-outline" size={iconScale(52)} color="#9CA3AF" />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No notifications</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+                You're all caught up! New activity will appear here.
               </Text>
             </View>
           ) : (
@@ -332,6 +335,7 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
                     style={[
                       styles.notificationCard,
                       toneStyles.container,
+                      { borderColor: isUnread ? '#BFDBFE' : '#E5E7EB' },
                     ]}
                     onPress={() => handleMarkAsRead(item)}
                     activeOpacity={0.7}
@@ -345,13 +349,19 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
                       >
                         <Ionicons
                           name={item.icon as any}
-                          size={20}
+                          size={18}
                           color={toneStyles.iconColor}
                         />
                       </View>
                       <View style={styles.notificationTextContainer}>
                         <View style={styles.titleRow}>
-                          <Text style={styles.notificationTitle}>{item.title}</Text>
+                          <Text
+                            style={[styles.notificationTitle, { color: colors.text }]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {item.title}
+                          </Text>
                           {isUnread && (
                             <View
                               style={[
@@ -361,8 +371,16 @@ const OwnerActivityScreen: React.FC<OwnerActivityScreenProps> = ({
                             />
                           )}
                         </View>
-                        <Text style={styles.notificationMessage}>{item.message}</Text>
-                        <Text style={styles.notificationTime}>{item.timeAgo}</Text>
+                        <Text
+                          style={[styles.notificationMessage, { color: colors.textSecondary }]}
+                          numberOfLines={2}
+                          ellipsizeMode="tail"
+                        >
+                          {item.message}
+                        </Text>
+                        <Text style={[styles.notificationTime, { color: colors.textSecondary }]}>
+                          {item.timeAgo}
+                        </Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -384,21 +402,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.select({ ios: 20, android: 16 }),
-    paddingBottom: Platform.select({ ios: 4, android: 4 }),
+    paddingHorizontal: moderateScale(18),
+    paddingBottom: moderateScale(4),
     paddingTop: 0,
     borderBottomWidth: 1,
   },
   backButton: {
-    width: Platform.select({ ios: 36, android: 32 }),
-    height: Platform.select({ ios: 36, android: 32 }),
-    borderRadius: Platform.select({ ios: 18, android: 16 }),
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerLeftPlaceholder: {
-    width: Platform.select({ ios: 90, android: 80 }),
-    padding: 4,
+    width: moderateScale(85),
+    padding: moderateScale(4),
   },
   headerCenter: {
     flex: 1,
@@ -407,124 +425,121 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TEXT_STYLES.screenTitleSmall,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
     textAlign: 'center',
   },
   headerSubtitle: {
+    marginTop: 2,
     ...TEXT_STYLES.bodySecondary,
-    marginTop: Platform.select({ ios: 2, android: 2 }),
+    fontSize: FONT_SIZES.CAPTION_LARGE,
     textAlign: 'center',
   },
   markAllButton: {
-    padding: 4,
-    minWidth: Platform.select({ ios: 90, android: 80 }),
+    padding: moderateScale(6),
+    minWidth: moderateScale(85),
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
   markAllReadText: {
-    ...TEXT_STYLES.cardTitleSemiBold,
-    fontSize: FONT_SIZES.BODY_PRIMARY,
+    ...TEXT_STYLES.label,
+    fontSize: FONT_SIZES.CAPTION_LARGE,
   },
   scrollView: {
     flex: 1,
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: Platform.select({ 
-      ios: 80,
-      android: 70
-    }),
+    paddingHorizontal: moderateScale(18),
+    paddingTop: verticalScale(14),
+    paddingBottom: verticalScale(76),
     backgroundColor: 'transparent',
   },
   notificationsList: {
-    gap: 12,
+    gap: moderateScale(10),
   },
   notificationCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    borderRadius: moderateScale(16),
+    padding: moderateScale(12),
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 6,
-    elevation: 3,
-    position: 'relative',
+    elevation: 2,
   },
   notificationContent: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
   notificationIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: moderateScale(40),
+    height: moderateScale(40),
+    borderRadius: moderateScale(20),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: moderateScale(12),
   },
   notificationTextContainer: {
     flex: 1,
+    minWidth: 0,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 2,
   },
   notificationTitle: {
     ...TEXT_STYLES.cardTitleSemiBold,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     flex: 1,
-    marginBottom: 4,
-    color: '#111827',
+    marginRight: 8,
   },
   notificationMessage: {
-    ...TEXT_STYLES.bodyPrimary,
-    marginBottom: 6,
-    color: '#374151',
+    ...TEXT_STYLES.bodySecondary,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
+    marginBottom: 4,
+    lineHeight: Math.round(FONT_SIZES.BODY_PRIMARY * 1.4),
   },
   notificationTime: {
     ...TEXT_STYLES.caption,
-    color: '#9CA3AF',
+    fontSize: FONT_SIZES.CAPTION_LARGE,
   },
   notificationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginLeft: 8,
-    marginTop: 4,
+    width: moderateScale(8),
+    height: moderateScale(8),
+    borderRadius: moderateScale(4),
+    marginLeft: moderateScale(4),
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: verticalScale(48),
   },
   loadingText: {
     ...TEXT_STYLES.bodyPrimary,
-    marginTop: 12,
+    marginTop: verticalScale(10),
     color: '#6B7280',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
-    gap: 16,
+    paddingVertical: verticalScale(48),
+    gap: moderateScale(14),
   },
   errorText: {
     ...TEXT_STYLES.bodyPrimary,
     textAlign: 'center',
-    paddingHorizontal: 32,
-    color: '#000000',
+    paddingHorizontal: moderateScale(28),
+    color: '#374151',
   },
   retryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-    marginTop: 8,
+    paddingHorizontal: moderateScale(22),
+    paddingVertical: moderateScale(10),
+    borderRadius: moderateScale(14),
+    marginTop: moderateScale(6),
     backgroundColor: BLUE_COLOR,
   },
   retryButtonText: {
@@ -535,17 +550,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
+    paddingVertical: verticalScale(48),
+    paddingHorizontal: moderateScale(32),
   },
   emptyText: {
-    ...TEXT_STYLES.sectionHeading,
-    marginTop: 16,
-    marginBottom: 8,
+    ...TEXT_STYLES.sectionHeadingMedium,
+    marginTop: verticalScale(14),
+    marginBottom: moderateScale(6),
     color: '#6B7280',
   },
   emptySubtext: {
-    ...TEXT_STYLES.bodyPrimary,
+    ...TEXT_STYLES.bodySecondary,
     textAlign: 'center',
     color: '#6B7280',
   },

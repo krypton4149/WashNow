@@ -3,6 +3,8 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../context/ThemeContext';
+import { FONT_SIZES } from '../utils/fonts';
+import { moderateScale, iconScale } from '../utils/responsive';
 
 type TabKey = 'home' | 'bookings' | 'activity' | 'account';
 
@@ -26,7 +28,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
         onPress={() => onTabChange(keyId)}
         activeOpacity={0.7}
       >
-        <Ionicons name={iconName} size={24} color={color} />
+        <Ionicons name={iconName} size={iconScale(24)} color={color} />
         <Text style={[styles.tabLabel, { color }]}>{label}</Text>
       </TouchableOpacity>
     );
@@ -64,9 +66,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingHorizontal: moderateScale(8),
+    paddingTop: moderateScale(8),
+    paddingBottom: moderateScale(16),
     borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -78,11 +80,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    paddingVertical: 4,
+    paddingVertical: moderateScale(4),
   },
   tabLabel: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: FONT_SIZES.LABEL,
+    marginTop: moderateScale(4),
     fontWeight: '600',
   },
 });

@@ -509,7 +509,7 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
         { 
           backgroundColor: colors.background, 
           borderBottomColor: colors.border,
-          paddingTop: insets.top + moderateScale(14),
+          paddingTop: (insets?.top ?? 0) + 4,
         }
       ]}>
         <View style={styles.headerLeftPlaceholder} />

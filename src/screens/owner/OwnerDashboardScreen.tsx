@@ -27,6 +27,7 @@ interface OwnerDashboardScreenProps {
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
   onLogout?: () => void;
+  onSessionExpired?: () => void;
   onBookingRequestPress?: () => void;
   businessName?: string;
   userData?: any;
@@ -88,6 +89,7 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
   onNotificationPress,
   onProfilePress,
   onLogout,
+  onSessionExpired,
   onBookingRequestPress,
   businessName,
   userData: userDataProp,
@@ -276,6 +278,11 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         }
       } else {
         const errMsg = result.error || 'Failed to load bookings';
+        const isSessionExpired = /session\s*expired|unauthorized|401|login\s*again/i.test(errMsg);
+        if (isSessionExpired && onSessionExpired) {
+          onSessionExpired();
+          return;
+        }
         const isLoginError = errMsg.toLowerCase().includes('login');
         if (isLoginError && !isRetry) {
           // Token might not be ready yet after app reload – retry once after short delay
@@ -709,16 +716,16 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.CAPTION_SMALL,
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
-    lineHeight: 12 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
     includeFontPadding: false,
   },
   userNameText: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: FONT_SIZES.SCREEN_TITLE,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     letterSpacing: -0.5,
-    lineHeight: 22 * 1.5,
+    lineHeight: FONT_SIZES.SCREEN_TITLE * 1.5,
     includeFontPadding: false,
     marginTop: 4,
   },
@@ -773,7 +780,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.INTER_BOLD,
     color: '#FFFFFF',
     marginBottom: 2,
-    lineHeight: 20 * 1.5,
+    lineHeight: FONT_SIZES.NUMBER_MEDIUM * 1.5,
     includeFontPadding: false,
   },
   statLabelBlue: {
@@ -781,7 +788,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: FONTS.INTER_REGULAR,
     color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 12 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
     includeFontPadding: false,
   },
   yellowBanner: {
@@ -816,12 +823,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   yellowBannerTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
     marginBottom: 2,
-    lineHeight: 16 * 1.5,
+    lineHeight: FONT_SIZES.SECTION_HEADING * 1.5,
     includeFontPadding: false,
   },
   yellowBannerSubtitle: {
@@ -829,7 +836,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.INTER_REGULAR,
     fontWeight: '400',
     color: '#374151',
-    lineHeight: 12 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
     includeFontPadding: false,
   },
   bookNowButton: {
@@ -848,11 +855,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   bookNowText: {
-    fontSize: 15,
+    fontSize: FONT_SIZES.BUTTON_LARGE,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
-    lineHeight: 15 * 1.5,
+    lineHeight: FONT_SIZES.BUTTON_LARGE * 1.5,
     includeFontPadding: false,
   },
   sectionHeader: {
@@ -864,11 +871,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     color: '#111827',
-    lineHeight: 16 * 1.5,
+    lineHeight: FONT_SIZES.SECTION_HEADING * 1.5,
     includeFontPadding: false,
   },
   seeAllBtn: {
@@ -881,7 +888,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.INTER_REGULAR,
     color: BLUE_COLOR,
     marginRight: 4,
-    lineHeight: 14 * 1.5,
+    lineHeight: FONT_SIZES.BODY_PRIMARY * 1.5,
   },
   activityItem: {
     marginHorizontal: 20,
@@ -915,12 +922,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   serviceName: { 
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     fontWeight: '600',
     flex: 1,
     fontFamily: FONTS.INTER_SEMIBOLD,
     color: BLUE_COLOR,
-    lineHeight: 16 * 1.5,
+    lineHeight: FONT_SIZES.SECTION_HEADING * 1.5,
     includeFontPadding: false,
     marginBottom: 0,
   },
@@ -929,7 +936,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontFamily: FONTS.INTER_REGULAR,
     color: '#666666',
-    lineHeight: 13 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_MEDIUM * 1.5,
   },
   serviceTypeRow: {
     flexDirection: 'row',
@@ -945,14 +952,14 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: FONTS.INTER_REGULAR,
     color: '#374151',
-    lineHeight: 12 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
   },
   inProgressText: {
     fontSize: FONT_SIZES.CAPTION_SMALL,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#10B981',
-    lineHeight: 12 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
   },
   metaInfoRow: {
     flexDirection: 'row',
@@ -968,7 +975,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
-    lineHeight: 12 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
   },
   bookingNumberRow: {
     flexDirection: 'row',
@@ -987,14 +994,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     color: '#6B7280',
-    lineHeight: 12 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
   },
   bookingNumberValue: {
     fontSize: FONT_SIZES.BODY_LARGE,
     fontWeight: '600',
     fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
-    lineHeight: 16 * 1.5,
+    lineHeight: FONT_SIZES.SECTION_HEADING * 1.5,
   },
   cancelButton: {
     marginTop: 6,
@@ -1016,9 +1023,9 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#991B1B',
     fontWeight: '500',
-    fontSize: 15,
+    fontSize: FONT_SIZES.BUTTON_LARGE,
     fontFamily: FONTS.INTER_MEDIUM,
-    lineHeight: 15 * 1.5,
+    lineHeight: FONT_SIZES.BUTTON_LARGE * 1.5,
   },
   loadingContainer: {
     padding: 20,
@@ -1030,7 +1037,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#666',
     marginTop: 12,
-    lineHeight: 14 * 1.5,
+    lineHeight: FONT_SIZES.BODY_PRIMARY * 1.5,
   },
   emptyContainer: {
     padding: 20,
@@ -1042,7 +1049,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#666',
     marginBottom: 8,
-    lineHeight: 14 * 1.5,
+    lineHeight: FONT_SIZES.BODY_PRIMARY * 1.5,
   },
   emptySubtext: {
     fontSize: FONT_SIZES.CAPTION_SMALL,
@@ -1050,7 +1057,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#666',
     textAlign: 'center',
-    lineHeight: 12 * 1.5,
+    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
   },
 });
 

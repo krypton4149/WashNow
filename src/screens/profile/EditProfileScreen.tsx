@@ -35,6 +35,7 @@ interface UserData {
 interface Props {
   onBack?: () => void;
   onSaveProfile?: (updatedData: UserData) => void;
+  onSessionExpired?: () => void;
   userData?: UserData | null;
   onTabChange?: (tab: 'home' | 'bookings' | 'activity' | 'account') => void;
   activeTab?: 'home' | 'bookings' | 'activity' | 'account';
@@ -43,6 +44,7 @@ interface Props {
 const EditProfileScreen: React.FC<Props> = ({
   onBack,
   onSaveProfile,
+  onSessionExpired,
   userData,
   onTabChange,
   activeTab = 'account',
@@ -329,10 +331,8 @@ const EditProfileScreen: React.FC<Props> = ({
             [
               {
                 text: 'OK',
-                onPress: async () => {
-                  // Optionally logout user here
-                  // await authService.logout();
-                  // onBack();
+                onPress: () => {
+                  onSessionExpired ? onSessionExpired() : onBack?.();
                 }
               }
             ]

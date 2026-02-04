@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
+import { FONT_SIZES } from '../../utils/fonts';
 import authService from '../../services/authService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -269,11 +270,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     fontWeight: 'bold',
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     marginTop: 2,
   },
   content: {
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     fontWeight: '500',
     marginBottom: 8,
   },
@@ -300,7 +301,7 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     paddingVertical: 0,
   },
   eyeButton: {
@@ -312,7 +313,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   requirementsTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     fontWeight: '600',
     marginBottom: 12,
   },
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   requirementText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
   },
   securityTipContainer: {
     flexDirection: 'row',
@@ -341,9 +342,9 @@ const styles = StyleSheet.create({
   },
   securityTipText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     color: '#3B82F6',
-    lineHeight: 20,
+    lineHeight: Math.round(FONT_SIZES.BODY_PRIMARY * 1.5),
   },
   bottomContainer: {
     paddingHorizontal: 20,
@@ -361,7 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   previewButtonText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     fontWeight: '500',
   },
   updateButton: {
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   updateButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_XL,
     fontWeight: '600',
   },
 });

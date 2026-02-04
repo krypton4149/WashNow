@@ -9,6 +9,8 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import HelpSupportScreen from '../screens/support/HelpSupportScreen';
 import { useTheme } from '../context/ThemeContext';
+import { FONT_SIZES } from '../utils/fonts';
+import { moderateScale, iconScale } from '../utils/responsive';
 
 type TabKey = 'home' | 'bookings' | 'activity' | 'account';
 
@@ -23,6 +25,7 @@ interface MainTabsProps {
   onLanguageChange?: (language: string) => void;
   onDarkModeChange?: (isDark: boolean) => void;
   onLogout?: () => void;
+  onSessionExpired?: () => void;
   onChangePassword?: () => void;
   onOpenActivityDetail?: (activity: any) => void;
 }
@@ -37,6 +40,7 @@ const MainTabs: React.FC<MainTabsProps> = ({
   onLanguageChange,
   onDarkModeChange,
   onLogout,
+  onSessionExpired,
   onChangePassword,
   onOpenActivityDetail,
 }) => {
@@ -56,6 +60,7 @@ const MainTabs: React.FC<MainTabsProps> = ({
             onNotificationPress={() => setActiveTab('activity')}
             onProfilePress={() => setActiveTab('account')}
             onLogout={onLogout}
+            onSessionExpired={onSessionExpired}
             userData={userData}
           />
         );
@@ -119,7 +124,7 @@ const MainTabs: React.FC<MainTabsProps> = ({
     const color = isActive ? '#0358a8' : colors.textSecondary;
     return (
       <TouchableOpacity style={styles.tab} onPress={() => setActiveTab(keyId)}>
-        <Ionicons name={iconName} size={24} color={color} />
+        <Ionicons name={iconName} size={iconScale(24)} color={color} />
         <Text style={[styles.tabLabel, { color }]}>{label}</Text>
       </TouchableOpacity>
     );
@@ -155,9 +160,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingHorizontal: moderateScale(8),
+    paddingTop: moderateScale(8),
+    paddingBottom: moderateScale(16),
     borderTopWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -166,7 +171,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   tab: { alignItems: 'center', justifyContent: 'center' },
-  tabLabel: { fontSize: 12, marginTop: 4, fontWeight: '600' },
+  tabLabel: { fontSize: FONT_SIZES.LABEL, marginTop: moderateScale(4), fontWeight: '600' },
 });
 
 export default MainTabs;

@@ -5,6 +5,8 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { FONT_SIZES } from '../../utils/fonts';
+import { moderateScale, verticalScale } from '../../utils/responsive';
 
 interface InputProps {
   placeholder?: string;
@@ -51,11 +53,11 @@ const Input: React.FC<InputProps> = ({
 
 const styles = StyleSheet.create({
   input: {
-    height: 56,
+    height: verticalScale(56),
     backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 17,
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(16),
+    fontSize: FONT_SIZES.INPUT_LARGE,
     color: '#000000',
     fontFamily: 'System',
     borderWidth: 1,

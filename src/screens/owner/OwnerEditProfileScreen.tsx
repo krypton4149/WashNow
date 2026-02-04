@@ -1016,7 +1016,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   locationButtonText: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.LABEL,
     fontWeight: '500',
     fontFamily: FONTS.INTER_MEDIUM,
     color: BLUE_COLOR,
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   coordinatesText: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.LABEL,
     fontFamily: FONTS.INTER_REGULAR,
     color: '#6B7280',
     flex: 1,

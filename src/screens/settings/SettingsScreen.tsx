@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   ImageBackground,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { platformEdges } from '../../utils/responsive';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
+import { FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 interface Props {
   onBack?: () => void;
@@ -26,6 +27,7 @@ const SettingsScreen: React.FC<Props> = ({
   onLogout,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const renderSettingItem = (
     iconColor: string,
@@ -61,8 +63,8 @@ const SettingsScreen: React.FC<Props> = ({
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={platformEdges as any}>
-      <View style={[styles.header, { backgroundColor: colors.surface }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom', 'left', 'right']}>
+      <View style={[styles.header, { backgroundColor: colors.surface, paddingTop: (insets?.top ?? 0) + 4 }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -142,8 +144,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...TEXT_STYLES.screenTitleSmall,
   },
   content: {
     flex: 1,
@@ -168,14 +169,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   bannerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#FFFFFF',
     marginBottom: 4,
     textAlign: 'center',
   },
   bannerSubtitle: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodySecondary,
     color: '#FFFFFF',
     textAlign: 'center',
     opacity: 0.9,
@@ -184,8 +184,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...TEXT_STYLES.sectionHeadingMedium,
     marginBottom: 12,
   },
   card: {
@@ -222,12 +221,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...TEXT_STYLES.cardTitleSemiBold,
     marginBottom: 4,
   },
   settingDescription: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodySecondary,
   },
   divider: {
     height: 1,
@@ -240,7 +238,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   versionText: {
-    fontSize: 14,
+    ...TEXT_STYLES.bodyPrimary,
   },
 });
 

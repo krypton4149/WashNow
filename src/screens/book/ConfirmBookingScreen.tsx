@@ -14,7 +14,7 @@ import BackButton from '../../components/ui/BackButton';
 import authService from '../../services/authService';
 import { platformEdges } from '../../utils/responsive';
 import { useTheme } from '../../context/ThemeContext';
-import { TEXT_STYLES } from '../../utils/fonts';
+import { TEXT_STYLES, FONT_SIZES } from '../../utils/fonts';
 
 interface ConfirmBookingScreenProps {
   onBack: () => void;
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   centerName: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     fontWeight: 'bold',
     color: '#000000',
     marginBottom: 8,
@@ -384,11 +384,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   locationIcon: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     marginRight: 4,
   },
   centerDistance: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     color: '#6B7280',
   },
   separator: {
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   serviceDetailIcon: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     marginRight: 12,
     width: 20,
   },
@@ -412,12 +412,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   serviceDetailLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     color: '#6B7280',
     marginBottom: 2,
   },
   serviceDetailValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     fontWeight: '600',
     color: '#000000',
   },
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   paymentMethodTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     fontWeight: 'bold',
     color: '#000000',
     marginBottom: 16,
@@ -469,14 +469,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   paymentMethodIcon: {
-    fontSize: 20,
+    fontSize: FONT_SIZES.NUMBER_MEDIUM,
     marginRight: 12,
   },
   paymentMethodInfo: {
     flex: 1,
   },
   paymentMethodName: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.SECTION_HEADING,
     fontWeight: '600',
     color: '#000000',
     marginBottom: 2,
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   paymentMethodDescription: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.BODY_PRIMARY,
     color: '#6B7280',
   },
   buttonContainer: {
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.BUTTON_XL,
     fontWeight: 'bold',
   },
 });

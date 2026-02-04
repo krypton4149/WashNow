@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { moderateScale, platformEdges } from '../../utils/responsive';
+import { FONT_SIZES } from '../../utils/fonts';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface ActivityDetail {
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   backButton: { padding: 4 },
-  title: { fontSize: moderateScale(18), fontWeight: '600', color: '#000' },
+  title: { fontSize: FONT_SIZES.SECTION_HEADING_LARGE, fontWeight: '600', color: '#000' },
   content: { padding: moderateScale(16) },
   card: {
     backgroundColor: '#FFFFFF',
@@ -119,26 +120,26 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: moderateScale(20), fontWeight: '700', color: '#111827' },
-  cardSubtitle: { fontSize: moderateScale(15), color: '#6B7280', marginTop: 2 },
-  label: { fontSize: moderateScale(13), color: '#6B7280', marginBottom: 4 },
-  value: { fontSize: moderateScale(16), color: '#111827', fontWeight: '600', marginBottom: 12 },
+  cardTitle: { fontSize: FONT_SIZES.NUMBER_MEDIUM, fontWeight: '700', color: '#111827' },
+  cardSubtitle: { fontSize: FONT_SIZES.BODY_PRIMARY_LARGE, color: '#6B7280', marginTop: 2 },
+  label: { fontSize: FONT_SIZES.BODY_SECONDARY_LARGE, color: '#6B7280', marginBottom: 4 },
+  value: { fontSize: FONT_SIZES.SECTION_HEADING, color: '#111827', fontWeight: '600', marginBottom: 12 },
   divider: { height: 1, backgroundColor: '#E5E7EB', marginVertical: 8 },
   row: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   rowIcon: { marginRight: 10 },
-  rowText: { fontSize: moderateScale(15), color: '#4B5563' },
+  rowText: { fontSize: FONT_SIZES.BODY_PRIMARY_LARGE, color: '#4B5563' },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   statusTag: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14 },
   statusCompleted: { backgroundColor: 'rgba(16,185,129,0.15)' },
   statusProgress: { backgroundColor: 'rgba(59,130,246,0.15)' },
-  statusText: { fontSize: moderateScale(12), fontWeight: '600' },
+  statusText: { fontSize: FONT_SIZES.LABEL, fontWeight: '600' },
   statusTextCompleted: { color: '#10B981' },
   statusTextProgress: { color: '#3B82F6' },
   list: { marginTop: 12 },
   item: { flexDirection: 'row', alignItems: 'center', paddingVertical: moderateScale(10), borderTopWidth: 1, borderTopColor: '#F1F5F9' },
   itemTexts: { flex: 1 },
-  itemLabel: { fontSize: moderateScale(12), color: '#9CA3AF' },
-  itemValue: { fontSize: moderateScale(15), color: '#111827', marginTop: 2 },
+  itemLabel: { fontSize: FONT_SIZES.LABEL, color: '#9CA3AF' },
+  itemValue: { fontSize: FONT_SIZES.BODY_PRIMARY_LARGE, color: '#111827', marginTop: 2 },
 });
 
 export default BookingDetailScreen;

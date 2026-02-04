@@ -991,11 +991,12 @@ class AuthService {
     serviceCentre?: any;
     servicesOffered?: any[];
     error?: string;
+    isAuthError?: boolean;
   }> {
     try {
       const token = await this.getToken();
       if (!token) {
-        return { success: false, error: 'Please login to view profile' };
+        return { success: false, error: 'Please login to view profile', isAuthError: true };
       }
 
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/profile`, {
@@ -1012,6 +1013,15 @@ class AuthService {
         const payload = data?.data || data;
         const user = payload?.user;
         const serviceCentre = payload?.serviceCentre || user?.service_centre;
+
+        const newToken = payload?.token ?? payload?.access_token ?? data?.token ?? user?.token ?? user?.access_token;
+        if (newToken && String(newToken).trim()) {
+          await this.setToken(String(newToken).trim());
+          const currentUser = await this.getUser();
+          if (currentUser && typeof currentUser === 'object') {
+            await this.setUser({ ...currentUser, token: String(newToken).trim() });
+          }
+        }
 
         const collected: any[] = [];
         const seenIds = new Set<string | number>();
@@ -1043,14 +1053,18 @@ class AuthService {
         };
       }
 
+      const isAuthError = response.status === 401;
       return {
         success: false,
         error: data?.message || data?.error || 'Failed to load profile.',
+        isAuthError,
       };
     } catch (error: any) {
+      const isAuthError = /unauthorized|401|session\s*expired/i.test(String(error?.message || ''));
       return {
         success: false,
         error: error.message || 'Failed to load profile.',
+        isAuthError,
       };
     }
   }
@@ -1069,6 +1083,7 @@ class AuthService {
         return { success: false, error: 'Please login to view services' };
       }
 
+      // Use 30s timeout for services list (server can be slow; avoids "Request timeout" on weak networks)
       const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/user/services-list`, {
         method: 'POST',
         headers: {
@@ -1077,7 +1092,7 @@ class AuthService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({}),
-      }, 15000);
+      }, 30000);
 
       const data = await response.json().catch(() => ({}));
 
@@ -1190,14 +1205,9 @@ class AuthService {
   /**
    * Offered services Update (price, offer price, status).
    * API: POST https://carwashapp.shoppypie.in/api/v1/user/update-service
-   * Headers: Accept: application/json, Auth: Bearer Token
-   * Body:
-   *   id (required)
-   *   service_centre_id (required)
-   *   status (optional) - Active | Inactive
-   *   price (optional) - e.g. 10.50, 100.50, 110.30
-   *   offer_price (optional) - e.g. 10.50, 100.50, 110.30
-   *   display_order (optional) - e.g. 1, 2, 3, 5
+   * Headers: Accept: application/json, Authorization: Bearer <token> (and Auth: Bearer for compatibility)
+   * Body: id (required), service_centre_id (required), status (optional), price (optional), offer_price (optional), display_order (optional)
+   * Pass offer_price: null when removing the offer.
    */
   async updateOwnerService(
     serviceId: string | number,
@@ -1213,12 +1223,16 @@ class AuthService {
       id: Number(serviceId),
       service_centre_id: Number(serviceCentreId),
     };
-    if (payload.price !== undefined && payload.price !== null && payload.price !== '') {
-      body.price = parseFloat(String(payload.price));
+    const priceStr = payload.price !== undefined && payload.price !== null ? String(payload.price).trim() : '';
+    if (priceStr !== '') {
+      const num = parseFloat(priceStr);
+      if (!Number.isNaN(num)) body.price = num;
     }
     if (payload.offer_price !== undefined) {
       if (payload.offer_price !== null && String(payload.offer_price).trim() !== '') {
-        body.offer_price = parseFloat(String(payload.offer_price));
+        const offerNum = parseFloat(String(payload.offer_price));
+        if (!Number.isNaN(offerNum)) body.offer_price = offerNum;
+        else body.offer_price = null;
       } else {
         body.offer_price = null;
       }
@@ -1231,13 +1245,15 @@ class AuthService {
     }
 
     const doRequest = async (authToken: string) => {
+      const bearer = `Bearer ${authToken}`;
       const response = await this.fetchWithTimeout(
         `${BASE_URL}/api/v1/user/update-service`,
         {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
+            'Authorization': bearer,
+            'Auth': bearer,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(body),
@@ -1250,6 +1266,12 @@ class AuthService {
 
     try {
       let token = await this.getToken();
+      const user = await this.getUser();
+      const userToken = user?.token ?? user?.rawUserData?.token ?? user?.userData?.token;
+      if (userToken && String(userToken).trim() && String(userToken).trim() !== String(token || '').trim()) {
+        token = String(userToken).trim();
+        await this.setToken(token);
+      }
       if (!token) {
         return { success: false, error: 'Please login to update services' };
       }

@@ -15,6 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
 import { StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -117,11 +118,12 @@ const OwnerSupportScreen: React.FC<OwnerSupportScreenProps> = ({
   };
 
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: (insets?.top ?? 0) + 4 }]}>
         <TouchableOpacity style={styles.backButton} onPress={onBack} disabled={!onBack}>
           <Ionicons
             name="arrow-back"
@@ -311,7 +313,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Platform.select({ ios: 18, android: 16 }),
-    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 14,
     paddingBottom: Platform.select({ ios: 12, android: 10 }),
     backgroundColor: '#FFFFFF',
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -353,12 +354,11 @@ const styles = StyleSheet.create({
     borderBottomColor: BLUE_COLOR,
   },
   tabText: {
-    fontSize: FONT_SIZES.BODY_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.bodySecondary,
     color: '#6B7280',
   },
   tabTextActive: {
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#111827',
   },
   scrollView: {
@@ -391,20 +391,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   heroTitle: {
-    fontSize: FONT_SIZES.HEADING_LARGE,
-    fontWeight: '700',
-    fontFamily: FONTS.MONTserrat_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#FFFFFF',
   },
   heroSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodySecondary,
     color: '#E5E7EB',
   },
   sectionTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#111827',
     marginBottom: 8,
     letterSpacing: -0.3,
@@ -444,9 +439,7 @@ const styles = StyleSheet.create({
   },
   faqQuestion: {
     flex: 1,
-    fontSize: FONT_SIZES.BODY_LARGE + 1,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#111827',
     paddingRight: 16,
     includeFontPadding: false,
@@ -454,9 +447,7 @@ const styles = StyleSheet.create({
   faqAnswer: {
     paddingHorizontal: 20,
     paddingBottom: 18,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    lineHeight: 21,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#4B5563',
   },
   contactCard: {
@@ -473,8 +464,7 @@ const styles = StyleSheet.create({
     gap: Platform.select({ ios: 20, android: 18 }) || 18,
   },
   contactDescription: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#6B7280',
   },
   contactOption: {
@@ -494,15 +484,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactTitle: {
-    fontSize: FONT_SIZES.BODY_LARGE + 1,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.cardTitleSemiBold,
     color: '#111827',
     includeFontPadding: false,
   },
   contactSubtitle: {
-    fontSize: FONT_SIZES.CAPTION_MEDIUM,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodySecondary,
     color: '#6B7280',
     marginTop: 4,
   },
@@ -521,16 +508,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   supportTitle: {
-    fontSize: FONT_SIZES.HEADING_MEDIUM,
-    fontWeight: '700',
-    fontFamily: FONTS.INTER_BOLD,
+    ...TEXT_STYLES.sectionHeadingMedium,
     color: '#111827',
     letterSpacing: -0.3,
     includeFontPadding: false,
   },
   supportSubtitle: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodySecondary,
     color: '#6B7280',
   },
   chatButton: {
@@ -543,9 +527,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   chatButtonText: {
-    fontSize: FONT_SIZES.BUTTON_MEDIUM,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
   },
   loadingContainer: {
@@ -559,8 +541,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#6B7280',
   },
   errorContainer: {
@@ -574,8 +555,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   errorText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#EF4444',
     textAlign: 'center',
   },
@@ -587,9 +567,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   retryButtonText: {
-    fontSize: FONT_SIZES.BUTTON_SMALL,
-    fontWeight: '600',
-    fontFamily: FONTS.INTER_SEMIBOLD,
+    ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
   },
   emptyContainer: {
@@ -603,8 +581,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
-    fontSize: FONT_SIZES.BODY_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
+    ...TEXT_STYLES.bodyPrimary,
     color: '#6B7280',
     textAlign: 'center',
   },

@@ -5,6 +5,8 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { FONT_SIZES } from '../../utils/fonts';
+import { moderateScale } from '../../utils/responsive';
 
 interface BackButtonProps {
   onPress: () => void;
@@ -22,22 +24,22 @@ const BackButton: React.FC<BackButtonProps> = ({ onPress }) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 44,
-    height: 44,
+    width: moderateScale(44),
+    height: moderateScale(44),
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: moderateScale(8),
+    marginBottom: moderateScale(8),
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: moderateScale(44),
+    height: moderateScale(44),
+    borderRadius: moderateScale(22),
     justifyContent: 'center',
     alignItems: 'center',
   },
   icon: {
-    fontSize: 20,
+    fontSize: FONT_SIZES.SECTION_HEADING_LARGE,
     color: '#000000',
     fontWeight: '600',
   },
