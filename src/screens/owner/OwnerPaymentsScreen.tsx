@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   Platform,
   TextInput,
   Keyboard,
+  Modal,
+  FlatList,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -34,6 +37,62 @@ const OwnerPaymentsScreen: React.FC<OwnerPaymentsScreenProps> = ({ onBack }) => 
   const [bookingNoSearch, setBookingNoSearch] = useState('');
   const [referenceNoSearch, setReferenceNoSearch] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  type DateFilterKey = 'all' | 'today' | 'last7' | 'last30' | 'date';
+  const [dateFilter, setDateFilter] = useState<DateFilterKey>('all');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarModalVisible, setCalendarModalVisible] = useState(false);
+
+  const getDateRange = useCallback((key: DateFilterKey, customDate?: Date | null): { start: number; end: number } => {
+    const now = customDate || new Date();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+    let start: number;
+    if (key === 'all') {
+      return { start: 0, end: end + 1 };
+    }
+    if (key === 'today' || key === 'date') {
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+      return { start, end };
+    }
+    if (key === 'last7') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 6);
+      start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+      return { start, end };
+    }
+    const d = new Date(now);
+    d.setDate(d.getDate() - 29);
+    start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+    return { start, end };
+  }, []);
+
+  const dateOptions = useMemo(() => {
+    const list: { date: Date; label: string; key: string }[] = [];
+    const today = new Date();
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      list.push({
+        date: d,
+        label: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        key: d.toISOString().slice(0, 10),
+      });
+    }
+    return list;
+  }, []);
+
+  const filteredPayments = useMemo(() => {
+    if (dateFilter === 'all') return payments;
+    const range = dateFilter === 'date' && selectedDate
+      ? getDateRange('date', selectedDate)
+      : getDateRange(dateFilter);
+    const { start, end } = range;
+    return payments.filter((item: any) => {
+      const raw = item?.created_at ?? item?.date ?? item?.payment_date ?? item?.updated_at;
+      if (!raw) return false;
+      const t = new Date(raw).getTime();
+      return t >= start && t <= end;
+    });
+  }, [payments, dateFilter, selectedDate, getDateRange]);
 
   const loadPayments = useCallback(async (params?: { bookingno?: string; reference_no?: string }) => {
     const result = await authService.getOwnerPaymentsList(params);
@@ -177,6 +236,98 @@ const OwnerPaymentsScreen: React.FC<OwnerPaymentsScreenProps> = ({ onBack }) => 
           </TouchableOpacity>
         </View>
 
+        <View style={[styles.filterSection, { borderColor: colors.border }]}>
+          <View style={styles.filterLabelRow}>
+            <Text style={[styles.filterLabel, { color: colors.textSecondary }]}>Filter by date</Text>
+            <TouchableOpacity
+              style={[styles.calendarIconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => setCalendarModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={iconScale(20)} color={BLUE_COLOR} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.filterRow}>
+            {(['all', 'today', 'last7', 'last30'] as const).map((key) => (
+              <TouchableOpacity
+                key={key}
+                style={[
+                  styles.filterChip,
+                  { borderColor: colors.border },
+                  dateFilter === key && !selectedDate ? { backgroundColor: BLUE_COLOR, borderColor: BLUE_COLOR } : { backgroundColor: colors.card },
+                ]}
+                onPress={() => { setDateFilter(key); setSelectedDate(null); }}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    { color: dateFilter === key && !selectedDate ? '#FFF' : colors.text },
+                  ]}
+                >
+                  {key === 'all' ? 'All' : key === 'today' ? 'Today' : key === 'last7' ? 'Last 7 days' : 'Last 30 days'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            {selectedDate && (
+              <TouchableOpacity
+                style={[styles.filterChip, { backgroundColor: BLUE_COLOR, borderColor: BLUE_COLOR }]}
+                onPress={() => setCalendarModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.filterChipText, { color: '#FFF' }]}>
+                  {selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        <Modal
+          visible={calendarModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setCalendarModalVisible(false)}
+        >
+          <View style={styles.dateModalOverlay}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setCalendarModalVisible(false)} />
+            <View style={[styles.dateModalContent, { backgroundColor: colors.background }]}>
+              <Text style={[styles.dateModalTitle, { color: colors.text }]}>Select date</Text>
+              <TouchableOpacity
+                style={[styles.dateModalAllBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => { setDateFilter('all'); setSelectedDate(null); setCalendarModalVisible(false); }}
+              >
+                <Text style={[styles.dateModalAllText, { color: colors.text }]}>All dates</Text>
+              </TouchableOpacity>
+              <Text style={[styles.dateModalListTitle, { color: colors.textSecondary }]}>Or pick a day</Text>
+              <FlatList
+                data={dateOptions}
+                keyExtractor={(item) => item.key}
+                style={styles.dateModalList}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.dateModalRow,
+                      { borderColor: colors.border },
+                      selectedDate?.toDateString() === item.date.toDateString() ? { backgroundColor: BLUE_COLOR + '20' } : {},
+                    ]}
+                    onPress={() => {
+                      setSelectedDate(item.date);
+                      setDateFilter('date');
+                      setCalendarModalVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.dateModalRowText, { color: colors.text }]}>{item.label}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+              <TouchableOpacity style={[styles.dateModalClose, { backgroundColor: colors.border }]} onPress={() => setCalendarModalVisible(false)}>
+                <Text style={[styles.dateModalCloseText, { color: colors.text }]}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {isLoading && payments.length === 0 && !bookingNoSearch.trim() && !referenceNoSearch.trim() ? (
           <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color={BLUE_COLOR} />
@@ -202,17 +353,23 @@ const OwnerPaymentsScreen: React.FC<OwnerPaymentsScreenProps> = ({ onBack }) => 
                 : 'Payment history will appear here.'}
             </Text>
           </View>
+        ) : filteredPayments.length === 0 ? (
+          <View style={styles.centerBox}>
+            <Ionicons name="calendar-outline" size={iconScale(48)} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>No payments in this date range</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Try another date filter or search.</Text>
+          </View>
         ) : (
           <View style={styles.list}>
-            {payments.length > 1 && (
+            {(filteredPayments.length > 1 || dateFilter !== 'all') && (
               <View style={[styles.resultCountWrap, { backgroundColor: BLUE_COLOR + '12' }]}>
                 <Ionicons name="list-outline" size={iconScale(16)} color={BLUE_COLOR} />
                 <Text style={[styles.resultCount, { color: colors.text }]}>
-                  {payments.length} payment{payments.length !== 1 ? 's' : ''} found
+                  {filteredPayments.length} payment{filteredPayments.length !== 1 ? 's' : ''} found
                 </Text>
               </View>
             )}
-            {payments.map((item: any, index: number) => {
+            {filteredPayments.map((item: any, index: number) => {
               const bookingNo = getPaymentLabel(item, 'booking_no') || getPaymentLabel(item, 'bookingno') || getPaymentLabel(item, 'booking_number');
               const refNo = getPaymentLabel(item, 'reference_no') || getPaymentLabel(item, 'ref_no');
               const amount = getPaymentLabel(item, 'amount') || getPaymentLabel(item, 'total') || getPaymentLabel(item, 'price');
@@ -338,6 +495,97 @@ const styles = StyleSheet.create({
   searchButtonText: {
     ...TEXT_STYLES.buttonProduction,
     color: '#FFFFFF',
+  },
+  filterSection: {
+    marginBottom: moderateScale(16),
+    paddingVertical: moderateScale(8),
+    borderBottomWidth: 1,
+  },
+  filterLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: moderateScale(8),
+  },
+  filterLabel: {
+    ...TEXT_STYLES.label,
+  },
+  calendarIconBtn: {
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: moderateScale(8),
+  },
+  filterChip: {
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: moderateScale(8),
+    borderRadius: moderateScale(20),
+    borderWidth: 1,
+  },
+  filterChipText: {
+    ...TEXT_STYLES.label,
+    fontSize: 13,
+  },
+  dateModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: moderateScale(20),
+  },
+  dateModalContent: {
+    width: '100%',
+    maxWidth: 320,
+    maxHeight: '80%',
+    borderRadius: moderateScale(14),
+    padding: moderateScale(16),
+  },
+  dateModalTitle: {
+    ...TEXT_STYLES.sectionHeadingMedium,
+    marginBottom: moderateScale(12),
+    textAlign: 'center',
+  },
+  dateModalAllBtn: {
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(16),
+    borderRadius: moderateScale(10),
+    borderWidth: 1,
+    marginBottom: moderateScale(12),
+  },
+  dateModalAllText: {
+    ...TEXT_STYLES.bodyPrimary,
+    textAlign: 'center',
+  },
+  dateModalListTitle: {
+    ...TEXT_STYLES.label,
+    marginBottom: moderateScale(8),
+  },
+  dateModalList: {
+    maxHeight: moderateScale(240),
+    marginBottom: moderateScale(12),
+  },
+  dateModalRow: {
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(14),
+    borderBottomWidth: 1,
+  },
+  dateModalRowText: {
+    ...TEXT_STYLES.bodyPrimary,
+  },
+  dateModalClose: {
+    paddingVertical: moderateScale(12),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+  },
+  dateModalCloseText: {
+    ...TEXT_STYLES.buttonProduction,
   },
   loadingRow: {
     flexDirection: 'row',

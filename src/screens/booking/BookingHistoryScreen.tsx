@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, Modal, FlatList, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import authService from '../../services/authService';
 import { useTheme } from '../../context/ThemeContext';
-import { platformEdges, moderateScale } from '../../utils/responsive';
+import { platformEdges, moderateScale, iconScale } from '../../utils/responsive';
 import { FONTS, FONT_SIZES, TEXT_STYLES } from '../../utils/fonts';
 
 const BLUE_COLOR = '#0358a8';
@@ -66,6 +66,45 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [serviceCenters, setServiceCenters] = useState<any[]>([]);
+  type DateFilterKey = 'all' | 'today' | 'last7' | 'last30' | 'date';
+  const [dateFilter, setDateFilter] = useState<DateFilterKey>('all');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [calendarModalVisible, setCalendarModalVisible] = useState(false);
+
+  const getDateRange = useCallback((key: DateFilterKey, customDate?: Date | null): { start: number; end: number } => {
+    const now = customDate || new Date();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).getTime();
+    if (key === 'all') return { start: 0, end: end + 1 };
+    if (key === 'today' || key === 'date') {
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).getTime();
+      return { start, end };
+    }
+    if (key === 'last7') {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 6);
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+      return { start, end };
+    }
+    const d = new Date(now);
+    d.setDate(d.getDate() - 29);
+    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+    return { start, end };
+  }, []);
+
+  const dateOptions = useMemo(() => {
+    const list: { date: Date; label: string; key: string }[] = [];
+    const today = new Date();
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      list.push({
+        date: d,
+        label: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        key: d.toISOString().slice(0, 10),
+      });
+    }
+    return list;
+  }, []);
 
   // Load bookings and service centers from API
   useEffect(() => {
@@ -369,8 +408,36 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
     return 'In Progress'; // Default fallback
   };
 
+  const getBookingTimestampForFilter = useCallback((b: Booking): number => {
+    const dateStr = (b.booking_date || '').trim();
+    const timeStr = (b.booking_time || '00:00:00').trim();
+    if (dateStr) {
+      let datePart = dateStr;
+      const dmY = datePart.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (dmY) {
+        const d = dmY[1].padStart(2, '0');
+        const m = dmY[2].padStart(2, '0');
+        const y = dmY[3];
+        datePart = `${y}-${m}-${d}`;
+      }
+      const t = Date.parse(`${datePart}T${timeStr}`);
+      if (!Number.isNaN(t)) return t;
+    }
+    return new Date(b.created_at || b.createdAt || b.updated_at || 0).getTime();
+  }, []);
+
+  const dateFilteredBookings = useMemo(() => {
+    if (dateFilter === 'all') return bookings || [];
+    const range = dateFilter === 'date' && selectedDate ? getDateRange('date', selectedDate) : getDateRange(dateFilter);
+    const { start, end } = range;
+    return (bookings || []).filter((b) => {
+      const t = getBookingTimestampForFilter(b);
+      return t >= start && t <= end;
+    });
+  }, [bookings, dateFilter, selectedDate, getDateRange, getBookingTimestampForFilter]);
+
   // Sort bookings by created_at date/time (most recent first)
-  const allBookingDisplayData = ([...(bookings || [])]
+  const allBookingDisplayData = ([...(dateFilteredBookings || [])]
     .sort((a, b) => {
       // Prioritize created_at, then createdAt, then updated_at, then booking_date/booking_time
       const dateA = new Date(a.created_at || a.createdAt || a.updated_at || 0).getTime();
@@ -565,6 +632,88 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
         </TouchableOpacity>
       </View>
 
+      <View style={[styles.filterSection, { borderBottomColor: colors.border }]}>
+        <View style={styles.filterLabelRow}>
+          <Text style={[styles.filterLabel, { color: colors.textSecondary }]}>Filter by date</Text>
+          <TouchableOpacity
+            style={[styles.calendarIconBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => setCalendarModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="calendar-outline" size={iconScale(20)} color={BLUE_COLOR} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.filterRow}>
+          {(['all', 'today', 'last7', 'last30'] as const).map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={[
+                styles.filterChip,
+                { borderColor: colors.border },
+                dateFilter === key && !selectedDate ? { backgroundColor: BLUE_COLOR, borderColor: BLUE_COLOR } : { backgroundColor: colors.card },
+              ]}
+              onPress={() => { setDateFilter(key); setSelectedDate(null); }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.filterChipText, { color: dateFilter === key && !selectedDate ? '#FFF' : colors.text }]}>
+                {key === 'all' ? 'All' : key === 'today' ? 'Today' : key === 'last7' ? 'Last 7 days' : 'Last 30 days'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          {selectedDate && (
+            <TouchableOpacity
+              style={[styles.filterChip, { backgroundColor: BLUE_COLOR, borderColor: BLUE_COLOR }]}
+              onPress={() => setCalendarModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.filterChipText, { color: '#FFF' }]}>
+                {selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      <Modal visible={calendarModalVisible} transparent animationType="fade" onRequestClose={() => setCalendarModalVisible(false)}>
+        <View style={styles.dateModalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setCalendarModalVisible(false)} />
+          <View style={[styles.dateModalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.dateModalTitle, { color: colors.text }]}>Select date</Text>
+            <TouchableOpacity
+              style={[styles.dateModalAllBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => { setDateFilter('all'); setSelectedDate(null); setCalendarModalVisible(false); }}
+            >
+              <Text style={[styles.dateModalAllText, { color: colors.text }]}>All dates</Text>
+            </TouchableOpacity>
+            <Text style={[styles.dateModalListTitle, { color: colors.textSecondary }]}>Or pick a day</Text>
+            <FlatList
+              data={dateOptions}
+              keyExtractor={(item) => item.key}
+              style={styles.dateModalList}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.dateModalRow,
+                    { borderColor: colors.border },
+                    selectedDate?.toDateString() === item.date.toDateString() ? { backgroundColor: BLUE_COLOR + '20' } : {},
+                  ]}
+                  onPress={() => {
+                    setSelectedDate(item.date);
+                    setDateFilter('date');
+                    setCalendarModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.dateModalRowText, { color: colors.text }]}>{item.label}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={[styles.dateModalClose, { backgroundColor: colors.border }]} onPress={() => setCalendarModalVisible(false)}>
+              <Text style={[styles.dateModalCloseText, { color: colors.text }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ScrollView 
         style={styles.bookingsList} 
         contentContainerStyle={styles.bookingsListContent}
@@ -721,9 +870,13 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
           ))
         ) : (
           <View style={styles.noBookingsContainer}>
-            <Ionicons name="information-circle-outline" size={48} color={colors.textSecondary} />
-            <Text style={[styles.noBookingsText, { color: colors.textSecondary }]}>No {activeTab.toLowerCase()} bookings</Text>
-            <Text style={[styles.noBookingsSubtext, { color: colors.textSecondary }]}>Check other tabs or book a new service.</Text>
+            <Ionicons name={dateFilter !== 'all' ? 'calendar-outline' : 'information-circle-outline'} size={48} color={colors.textSecondary} />
+            <Text style={[styles.noBookingsText, { color: colors.textSecondary }]}>
+              {dateFilter !== 'all' ? 'No bookings in this date range' : `No ${activeTab.toLowerCase()} bookings`}
+            </Text>
+            <Text style={[styles.noBookingsSubtext, { color: colors.textSecondary }]}>
+              {dateFilter !== 'all' ? 'Try another date filter or check other tabs.' : 'Check other tabs or book a new service.'}
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -802,6 +955,97 @@ const styles = StyleSheet.create({
   tabBadgeText: {
     ...TEXT_STYLES.label,
     color: '#FFFFFF',
+  },
+  filterSection: {
+    paddingHorizontal: LIST_PADDING_H,
+    paddingVertical: moderateScale(10),
+    borderBottomWidth: 1,
+  },
+  filterLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: moderateScale(8),
+  },
+  filterLabel: {
+    ...TEXT_STYLES.label,
+  },
+  calendarIconBtn: {
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: moderateScale(8),
+  },
+  filterChip: {
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: moderateScale(8),
+    borderRadius: moderateScale(20),
+    borderWidth: 1,
+  },
+  filterChipText: {
+    ...TEXT_STYLES.label,
+    fontSize: 13,
+  },
+  dateModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: moderateScale(20),
+  },
+  dateModalContent: {
+    width: '100%',
+    maxWidth: 320,
+    maxHeight: '80%',
+    borderRadius: moderateScale(14),
+    padding: moderateScale(16),
+  },
+  dateModalTitle: {
+    ...TEXT_STYLES.sectionHeadingMedium,
+    marginBottom: moderateScale(12),
+    textAlign: 'center',
+  },
+  dateModalAllBtn: {
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(16),
+    borderRadius: moderateScale(10),
+    borderWidth: 1,
+    marginBottom: moderateScale(12),
+  },
+  dateModalAllText: {
+    ...TEXT_STYLES.bodyPrimary,
+    textAlign: 'center',
+  },
+  dateModalListTitle: {
+    ...TEXT_STYLES.label,
+    marginBottom: moderateScale(8),
+  },
+  dateModalList: {
+    maxHeight: moderateScale(240),
+    marginBottom: moderateScale(12),
+  },
+  dateModalRow: {
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(14),
+    borderBottomWidth: 1,
+  },
+  dateModalRowText: {
+    ...TEXT_STYLES.bodyPrimary,
+  },
+  dateModalClose: {
+    paddingVertical: moderateScale(12),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+  },
+  dateModalCloseText: {
+    ...TEXT_STYLES.buttonProduction,
   },
   bookingsList: {
     flex: 1,
