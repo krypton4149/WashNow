@@ -28,57 +28,75 @@ const OwnerAuthNavigator: React.FC<OwnerAuthNavigatorProps> = ({ onAuthSuccess, 
     onAuthSuccess();
   };
 
-  const handleSendCode = (emailOrPhone: string, method: 'email' | 'phone') => {
+  const handleSendCode = async (emailOrPhone: string, method: 'email' | 'phone') => {
+    if (method !== 'email') {
+      Alert.alert('Not supported', 'Password reset is only available via email for now.');
+      return;
+    }
+    setForgotPasswordData({ emailOrPhone, method });
     try {
-      setForgotPasswordData({ emailOrPhone, method });
-      
-      // Show success message
-      Alert.alert(
-        'Code Sent!',
-        `A verification code has been sent to your ${method === 'email' ? 'email address' : 'phone number'}.`,
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              setCurrentScreen('create-new-password');
-            }
-          }
-        ]
-      );
-    } catch (error) {
+      const result = await authService.requestForgotPassword(emailOrPhone);
+      if (result.success) {
+        Alert.alert(
+          'Code Sent',
+          result.message || 'A verification code has been sent to your email address.',
+          [{ text: 'Continue', onPress: () => setCurrentScreen('create-new-password') }]
+        );
+      } else {
+        Alert.alert(
+          'Failed to Send Code',
+          result.error || 'Please check your email and try again.',
+          [
+            { text: 'OK', style: 'cancel' as const },
+            { text: 'Retry', onPress: () => handleSendCode(emailOrPhone, method) },
+          ]
+        );
+      }
+    } catch (error: any) {
       console.error('Send code error:', error);
       Alert.alert(
         'Failed to Send Code',
-        'There was an error sending the verification code. Please try again.',
-        [{ text: 'OK' }]
+        error?.message || 'There was an error sending the verification code. Please try again.',
+        [
+          { text: 'OK', style: 'cancel' as const },
+          { text: 'Retry', onPress: () => handleSendCode(emailOrPhone, method) },
+        ]
       );
     }
   };
 
-  const handleResetPassword = async (newPassword: string, confirmPassword: string, currentPassword?: string) => {
+  const handleResetPassword = async (
+    newPassword: string,
+    confirmPassword: string,
+    currentPassword?: string,
+    verificationCode?: string
+  ) => {
+    const email = forgotPasswordData?.emailOrPhone;
+    if (!email || forgotPasswordData?.method !== 'email') {
+      Alert.alert('Error', 'Session expired. Please start the forgot password flow again.');
+      setCurrentScreen('forgot-password');
+      return;
+    }
+    if (!verificationCode || !verificationCode.trim()) {
+      Alert.alert('Error', 'Please enter the verification code from your email.');
+      return;
+    }
     try {
-      console.log('Password reset:', { newPassword, confirmPassword });
-      // Here you would typically call your password reset API
-      
-      // Show success message
-      Alert.alert(
-        'Password Reset Successful!',
-        'Your password has been updated successfully. You can now sign in with your new password.',
-        [
-          {
-            text: 'Sign In',
-            onPress: () => {
-              setForgotPasswordData(null);
-              setCurrentScreen('login');
-            }
-          }
-        ]
-      );
-    } catch (error) {
+      const result = await authService.resetPassword(email, verificationCode, newPassword, confirmPassword);
+      if (result.success) {
+        Alert.alert(
+          'Password Reset Successful',
+          result.message || 'Your password has been updated. You can now sign in with your new password.',
+          [{ text: 'Sign In', onPress: () => { setForgotPasswordData(null); setCurrentScreen('login'); } }]
+        );
+      } else {
+        Alert.alert('Password Reset Failed', result.error || 'Please check the code and try again.', [{ text: 'OK' }]);
+      }
+    } catch (error: any) {
       console.error('Password reset error:', error);
       Alert.alert(
         'Password Reset Failed',
-        'There was an error updating your password. Please try again.',
+        error?.message || 'There was an error updating your password. Please try again.',
         [{ text: 'OK' }]
       );
     }

@@ -641,6 +641,86 @@ class AuthService {
     }
   }
 
+  // Forgot password: request reset code/link to email (visitor/customer)
+  async requestForgotPassword(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      }, 30000); // 30 seconds – sending email can be slow
+
+      const data = await response.json();
+
+      if (response.ok && (data.success !== false)) {
+        return {
+          success: true,
+          message: data.message || 'A verification code has been sent to your email address.',
+        };
+      }
+      return {
+        success: false,
+        error: data.message || data.error || 'Failed to send reset code. Please check your email and try again.',
+      };
+    } catch (error: any) {
+      const isTimeout = error?.message?.toLowerCase().includes('timeout');
+      return {
+        success: false,
+        error: isTimeout
+          ? 'The server is taking too long to respond. Please check your connection and try again, or try again later.'
+          : (error.message || 'Network error. Please check your internet connection and try again.'),
+      };
+    }
+  }
+
+  // Reset password with email + otp (visitor/customer) – no auth token required
+  async resetPassword(
+    email: string,
+    otp: string,
+    newPassword: string,
+    newPasswordConfirmation: string
+  ): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const response = await this.fetchWithTimeout(`${BASE_URL}/api/v1/auth/visitor/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          otp: otp.trim(),
+          password: newPassword,
+          password_confirmation: newPasswordConfirmation,
+        }),
+      }, 30000); // 30 seconds for reset
+
+      const data = await response.json();
+
+      if (response.ok && (data.success !== false)) {
+        return {
+          success: true,
+          message: data.message || 'Your password has been reset successfully.',
+        };
+      }
+      return {
+        success: false,
+        error: data.message || data.error || 'Failed to reset password. Please check the code and try again.',
+      };
+    } catch (error: any) {
+      const isTimeout = error?.message?.toLowerCase().includes('timeout');
+      return {
+        success: false,
+        error: isTimeout
+          ? 'The server is taking too long to respond. Please try again in a moment.'
+          : (error.message || 'Network error. Please check your internet connection and try again.'),
+      };
+    }
+  }
+
   // Book Now API
   async bookNow(bookingData: {
     service_centre_id: string;

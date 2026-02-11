@@ -103,13 +103,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     // Log to console
     NSLog("🔥 FIREBASE DEVICE TOKEN (iOS): %@", token)
     
-    let body = [
-      "token": token,
-      "platform": "ios"
-    ]
-    
-    // Uncomment the line below if you have an API service to save the token
-    // api.saveDeviceToken(body)
+    // Pass FCM token to React Native so it can save to backend for notifications
+    FCMTokenModule.sendTokenToJS(token)
   }
   
   // Handle foreground notifications

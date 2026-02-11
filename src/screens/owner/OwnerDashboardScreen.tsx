@@ -563,22 +563,34 @@ const OwnerDashboardScreen: React.FC<OwnerDashboardScreenProps> = ({
         </View>
       </View>
 
-      {/* Yellow Book a Car Wash Card - Only button is clickable */}
+      {/* Yellow card: View Booking Requests */}
       <View style={styles.yellowBanner}>
         <View style={styles.yellowBannerContent}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.yellowBannerTitle}>View Booking Requests</Text>
-            <Text style={styles.yellowBannerSubtitle}>
-              Manage and respond to{'\n'}customer bookings
+          <View style={styles.yellowBannerTextWrap}>
+            <Text
+              style={styles.yellowBannerTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            >
+              View Booking Requests
+            </Text>
+            <Text
+              style={styles.yellowBannerSubtitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              Manage and respond to customer bookings
             </Text>
           </View>
           <TouchableOpacity
-            style={styles.bookNowButton}
+            style={styles.yellowCardViewButton}
             onPress={onBookingRequestPress || onBookWash}
             activeOpacity={0.7}
           >
-            <Ionicons name="calendar-outline" size={22} color="#111827" style={{ marginRight: 8 }} />
-            <Text style={styles.bookNowText}>View</Text>
+            <Ionicons name="calendar-outline" size={18} color="#111827" style={styles.yellowCardViewButtonIcon} />
+            <Text style={styles.yellowCardViewButtonText}>View</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -805,13 +817,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: -20,
     backgroundColor: YELLOW_COLOR,
-    paddingVertical: 12, // Reduced height
-    paddingHorizontal: 20, // Keep horizontal padding
-    borderRadius: 20, // Slightly reduced border radius
-    marginBottom: 0, // Remove bottom margin to eliminate blue gap
-    zIndex: 20, // Higher zIndex to ensure it's on top of blue section
-    borderWidth: 6, // Increased border thickness for more prominent white border
-    borderColor: '#FFFFFF', // White border
+    minHeight: 80,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    marginBottom: 0,
+    zIndex: 20,
+    borderWidth: 6,
+    borderColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: Platform.select({
@@ -831,6 +844,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flex: 1,
+    minHeight: 52,
+  },
+  yellowBannerTextWrap: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    marginRight: 14,
+    paddingRight: 4,
   },
   paymentListCard: {
     marginHorizontal: 20,
@@ -876,42 +898,49 @@ const styles = StyleSheet.create({
   },
   yellowBannerTitle: {
     fontSize: FONT_SIZES.SECTION_HEADING,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
-    marginBottom: 2,
-    lineHeight: FONT_SIZES.SECTION_HEADING * 1.5,
+    marginBottom: 4,
+    lineHeight: FONT_SIZES.SECTION_HEADING * 1.4,
     includeFontPadding: false,
   },
   yellowBannerSubtitle: {
-    fontSize: FONT_SIZES.CAPTION_SMALL,
-    fontFamily: FONTS.INTER_REGULAR,
-    fontWeight: '400',
+    fontSize: FONT_SIZES.BODY_PRIMARY_LARGE,
+    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '500',
     color: '#374151',
-    lineHeight: FONT_SIZES.CAPTION_LARGE * 1.5,
+    lineHeight: FONT_SIZES.BODY_PRIMARY_LARGE * 1.35,
     includeFontPadding: false,
   },
-  bookNowButton: {
+  yellowCardViewButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF08A', // Soft, light yellow color
-    paddingHorizontal: 22,
+    justifyContent: 'center',
+    backgroundColor: '#FEF08A',
     paddingVertical: 6,
-    borderRadius: 24,
+    paddingHorizontal: 16,
+    borderRadius: 22,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.8)', // More visible white border
+    borderColor: 'rgba(255, 255, 255, 0.9)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
+    flexShrink: 0,
+    minWidth: 88,
+    alignSelf: 'center',
   },
-  bookNowText: {
+  yellowCardViewButtonIcon: {
+    marginRight: 6,
+  },
+  yellowCardViewButtonText: {
     fontSize: FONT_SIZES.BUTTON_LARGE,
-    fontWeight: '500',
-    fontFamily: FONTS.INTER_MEDIUM,
+    fontWeight: '600',
+    fontFamily: FONTS.INTER_SEMIBOLD,
     color: '#111827',
-    lineHeight: FONT_SIZES.BUTTON_LARGE * 1.5,
+    lineHeight: FONT_SIZES.BUTTON_LARGE * 1.2,
     includeFontPadding: false,
   },
   sectionHeader: {

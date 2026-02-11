@@ -764,14 +764,6 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
               <View style={styles.cardContent}>
                 <Text style={styles.serviceName}>{booking.name}</Text>
                 
-                {/* Service Name */}
-                {booking.serviceName && (
-                  <View style={styles.serviceNameRow}>
-                    <Ionicons name="water-outline" size={16} color={BLUE_COLOR} />
-                    <Text style={[styles.serviceNameText, { color: colors.text }]}>{booking.serviceName}</Text>
-                  </View>
-                )}
-                
                 {/* Date/Time in Pill - Different colors based on status */}
                 <View style={[
                   styles.dateTimePill, 
@@ -825,12 +817,12 @@ const BookingHistoryScreen: React.FC<Props> = ({ onBack }) => {
                   </Text>
                 </View>
                 
-                {/* Service ID */}
-                {booking.serviceId && (
+                {/* Service name (replaces Service ID) */}
+                {(booking.serviceName || booking.serviceId) && (
                   <View style={styles.infoRow}>
                     <Ionicons name="pricetag-outline" size={14} color={BLUE_COLOR} />
                     <Text style={[styles.serviceIdText, { color: colors.textSecondary }]}>
-                      Service ID: {booking.serviceId}
+                      Service: {booking.serviceName || (booking.serviceId ? `#${booking.serviceId}` : '')}
                     </Text>
                   </View>
                 )}

@@ -7,6 +7,9 @@ import {
   Alert,
   ScrollView,
   Dimensions,
+  Platform,
+  NativeEventEmitter,
+  NativeModules,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
@@ -79,6 +82,20 @@ const AppContent: React.FC = () => {
   // Check authentication status on app start
   useEffect(() => {
     checkAuthStatus();
+  }, []);
+
+  // Listen for FCM token from native (iOS) and save to backend for push notifications
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const FCMTokenModule = NativeModules.FCMTokenModule;
+    if (!FCMTokenModule) return;
+    const emitter = new NativeEventEmitter(FCMTokenModule);
+    const sub = emitter.addListener('FCMTokenReceived', (event: { token: string }) => {
+      if (event?.token) {
+        fcmService.saveTokenFromNative(event.token, 'ios').catch(() => {});
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   const checkAuthStatus = async () => {

@@ -84,4 +84,5 @@ src/config/env.ts
 
 # Google Services (add real files when ready)
 ios/GoogleService-Info.plist
+ios/Cars/GoogleService-Info.plist
 android/app/google-services.json
